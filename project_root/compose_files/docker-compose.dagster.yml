@@ -1,0 +1,62 @@
+services:
+  dagster_code_server:
+    build:
+      context: ../dagster 
+      dockerfile: code_server.Dockerfile 
+    container_name: dagster_code_server
+    image: docker_dagster_code_server
+    restart: always
+    env_file:
+      - ../.env
+    environment:
+      DAGSTER_CURRENT_IMAGE: "docker_dagster_code_server"
+    networks:
+      - vvs_v2_network
+
+  dagster_webserver:
+    build:
+      context: ../dagster 
+      dockerfile: webserver.Dockerfile 
+    entrypoint:
+      - dagster-webserver
+      - -h
+      - "0.0.0.0"
+      - -p
+      - "${DAGSTER_WEBSERVER_PORT}"
+      - -w
+      - workspace.yaml
+      - --path-prefix
+      - /dagster
+    container_name: dagster_webserver
+    expose:
+      - "${DAGSTER_WEBSERVER_PORT}"
+    env_file:
+      - ../.env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - postgresql
+      - dagster_code_server
+
+  dagster_daemon:
+    build:
+      context: ../dagster
+      dockerfile: webserver.Dockerfile
+    entrypoint:
+      - dagster-daemon
+      - run
+    container_name: dagster_daemon
+    restart: on-failure
+    env_file:
+      - ../.env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - postgresql
+      - dagster_code_server

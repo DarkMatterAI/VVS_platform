@@ -1,0 +1,14 @@
+fastapi[standard]
+pydantic
+pydantic-settings
+sqlalchemy[asyncio]
+asyncpg
+psycopg2-binary
+httpx
+pytest
+pytest-asyncio
+aiosqlite
+aioredis
+redis
+pika
+pyyaml

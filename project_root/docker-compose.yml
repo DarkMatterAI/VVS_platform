@@ -1,0 +1,14 @@
+include:
+  - compose_files/docker-compose.db.yml
+  - compose_files/docker-compose.backend.yml
+  - compose_files/docker-compose.dagster.yml
+  - compose_files/docker-compose.messaging.yml
+  - compose_files/docker-compose.testing.yml
+  - compose_files/docker-compose.nginx.yml
+  - compose_files/docker-compose.rdkit_plugin.yml
+
+networks:
+  vvs_v2_network:
+    driver: bridge
+    name: vvs_v2_network
+

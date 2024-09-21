@@ -1,0 +1,15 @@
+services:
+  rdkit_plugin:
+    build:
+      context: ../rdkit_plugin 
+      dockerfile: rdkit_plugin.Dockerfile 
+    profiles: [plugin, rdkit_plugin]
+    env_file:
+      - ../.env
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - rabbitmq
+      - message_consumer
+    deploy:
+      replicas: ${RDKIT_PLUGIN_REPLICAS:-${DEFAULT_REPLICAS}}

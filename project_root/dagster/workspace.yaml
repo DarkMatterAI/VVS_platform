@@ -1,0 +1,6 @@
+load_from:
+  # Each entry here corresponds to a service in the docker-compose file that exposes user code.
+  - grpc_server:
+      host: dagster_code_server
+      port: {"env": "DAGSTER_CODE_SERVER_PORT"}
+      location_name: "dagster_code_server"

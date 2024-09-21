@@ -1,0 +1,4 @@
+plugins:
+  rdkit_plugin:
+    enabled: True
+    profile: rdkit_plugin 

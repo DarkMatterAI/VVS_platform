@@ -1,0 +1,6 @@
+httpx
+pyyaml
+pytest 
+redis
+pika
+numpy

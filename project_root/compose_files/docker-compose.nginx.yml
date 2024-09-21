@@ -1,0 +1,19 @@
+services:
+  nginx:
+    image: nginx:1.25
+    container_name: nginx
+    ports:
+      - "${NGINX_HTTP_PORT}:80"
+      - "${NGINX_TCP_PORT}:5672"
+    volumes:
+      - ../nginx.conf:/etc/nginx/nginx.conf.template:ro
+    environment:
+      - BACKEND_PORT=${BACKEND_PORT}
+      - DAGSTER_WEBSERVER_PORT=${DAGSTER_WEBSERVER_PORT}
+    command: /bin/bash -c "envsubst '$$BACKEND_PORT $$DAGSTER_WEBSERVER_PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - backend
+      - dagster_webserver
+      - rabbitmq

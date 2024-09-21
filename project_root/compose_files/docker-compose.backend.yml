@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: backend.Dockerfile 
+    env_file:
+      - ../.env
+    entrypoint:
+      - fastapi
+      - run 
+      - "app/main.py"
+      - --port 
+      - "${BACKEND_PORT}"
+      - --host
+      - "${BACKEND_HOST}"
+      - --workers
+      - "${BACKEND_WORKERS}"
+    expose:
+      - ${BACKEND_PORT}
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - postgresql
+      - dagster_code_server
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-${DEFAULT_REPLICAS}}

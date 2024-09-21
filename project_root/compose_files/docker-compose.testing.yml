@@ -1,0 +1,55 @@
+services:
+  test_server:
+    build:
+      context: ../test_server
+      dockerfile: test_server.Dockerfile 
+    container_name: test_server
+    profiles: [testing, test_server]
+    env_file:
+      - ../.env
+    entrypoint:
+      - fastapi
+      - run 
+      - "app/main.py"
+      - --port 
+      - "${TEST_SERVER_PORT}"
+      - --host
+      - "${TEST_SERVER_HOST}"
+      - --workers
+      - "1"
+    expose:
+      - ${TEST_SERVER_PORT}
+    ports:
+      - ${TEST_SERVER_PORT}:${TEST_SERVER_PORT}
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - backend
+
+  test_consumer:
+    build:
+      context: ../test_consumer
+      dockerfile: test_consumer.Dockerfile 
+    container_name: test_consumer
+    profiles: [testing, test_consumer]
+    env_file:
+      - ../.env 
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - backend
+      - rabbitmq
+
+  test_executor:
+    build:
+      context: ../test_executor 
+      dockerfile: test_executor.Dockerfile 
+    container_name: test_executor 
+    profiles: [test_executor, integration_test]
+    env_file:
+      - ../.env 
+    networks:
+      - vvs_v2_network
+    depends_on:
+      - backend 
+

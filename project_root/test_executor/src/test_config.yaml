@@ -1,0 +1,22 @@
+unit_tests:
+  backend:
+    service_name: backend
+    enabled: False
+
+  rdkit_plugin:
+    service_name: rdkit_plugin
+    enabled: False
+
+integration_tests:
+  test_consumer:
+    service_name: test_consumer
+    profile: test_consumer
+    enabled: False
+  test_server:
+    service_name: test_server
+    profile: test_server
+    enabled: False
+
+plugin_integration_tests:
+  rdkit_plugin:
+    enabled: True 
