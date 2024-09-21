@@ -1,6 +1,7 @@
 import os
 import pika
 from sqlalchemy import text 
+from .utils import date_print
 
 EXCHANGE_NAME = os.environ['RABBITMQ_EXCHANGE_NAME']
 
@@ -21,7 +22,7 @@ postgres_db = os.getenv('POSTGRES_DB')
 DB_URL = f"postgresql://{postgres_username}:{postgres_password}@{postgres_host}/{postgres_db}"
 
 def get_plugin_record(engine, plugin_id):
-    print(f'Querying database for plugin {plugin_id}')
+    date_print(f"Querying database for plugin {plugin_id}")
     with engine.connect() as conn:
         query = "SELECT * FROM plugins WHERE id = :id"
         query_result = conn.execute(text(query), {"id": plugin_id})
@@ -29,7 +30,7 @@ def get_plugin_record(engine, plugin_id):
     return record._asdict() if record else {}
 
 def get_plugin_from_routing_key(engine, routing_key):
-    print(f"Fetching plugin record from routing key {routing_key}")
+    date_print(f"Fetching plugin record from routing key {routing_key}")
     _, group_key, plugin_type, plugin_id, item_id, request_id = routing_key.split('.')
     record = get_plugin_record(engine, plugin_id)
     return record, plugin_id

@@ -17,7 +17,6 @@ if __name__ == "__main__":
     # wait for rabbitmq
     time.sleep(3)
 
-    print('Setting up RabbitMQ')
     setup_rabbitmq()
 
     worker(args.is_dlx)

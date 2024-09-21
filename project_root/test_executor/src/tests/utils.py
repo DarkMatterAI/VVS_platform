@@ -9,20 +9,24 @@ from typing import List, Dict, Any
 EMBEDDING_SIZE = int(os.environ.get('TEST_EMBEDDING_SIZE', 32))
 NUM_PARENTS = int(os.environ.get('TEST_NUM_PARENTS', 2))
 
-def fetch_plugins_by_name_pattern(backend_client, name_pattern: str, plugin_type: str = None) -> List[Dict[Any, Any]]:
-    params = {"name": name_pattern}
-    if plugin_type:
-        params["plugin_type"] = plugin_type
-    
+def fetch_plugins_by_filter(backend_client, name_pattern: str=None, group_key: str=None, plugin_type: str=None):
+    params = {
+        'name' : name_pattern,
+        'group_key' : group_key,
+        'plugin_type' : plugin_type
+    }
+    params = {k:v for k,v in params.items() if v is not None}
     response = backend_client.get("/api/v1/plugins/", params=params)
     response.raise_for_status()
     return response.json()
 
 def fetch_test_api_plugins(backend_client, plugin_type: str = None) -> List[Dict[Any, Any]]:
-    return fetch_plugins_by_name_pattern(backend_client, f"mock_%_api_%", plugin_type)
+    return fetch_plugins_by_filter(backend_client, name_pattern=f"mock_%_api_%", plugin_type=plugin_type)
+    # return fetch_plugins_by_name_pattern(backend_client, f"mock_%_api_%", plugin_type)
 
 def fetch_test_consumer_plugins(backend_client, plugin_type: str = None) -> List[Dict[Any, Any]]:
-    return fetch_plugins_by_name_pattern(backend_client, f"mock_%_queue_%", plugin_type)
+    return fetch_plugins_by_filter(backend_client, name_pattern=f"mock_%_queue_%", plugin_type=plugin_type)
+    # return fetch_plugins_by_name_pattern(backend_client, f"mock_%_queue_%", plugin_type)
 
 def rabbitmq_publish(channel, routing_key, message):
 

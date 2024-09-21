@@ -1,21 +1,21 @@
-import time 
+# import time 
 import pika
 import json
-from datetime import datetime
 from sqlalchemy import create_engine
 from functools import partial 
 
 from .connections import EXCHANGE_NAME, DB_URL, rabbitmq_params, get_plugin_from_routing_key
 from .chem import execute_plugin
+from .utils import date_print
 
 def callback(ch, method, properties, body, engine):
 
     if properties.headers and ('x-rejection-reason' in properties.headers):
-        print('Message previously rejected - sending to dlx')
+        date_print('Message previously rejected - sending to dlx')
         ch.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
         return 
 
-    print(f'{str(datetime.now())} - RDKit Plugin Worker: {method.routing_key}')
+    date_print(f"Received message with routing key {method.routing_key}")
 
     message_data = json.loads(body)
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -30,7 +30,7 @@ def callback(ch, method, properties, body, engine):
             body=json.dumps(response),
             properties=pika.BasicProperties(delivery_mode=2)
         )
-        print(f"Response published with routing key: {return_key}")
+        date_print(f"Response published with routing key: {return_key}")
     else:
         ch.basic_publish(
             exchange=EXCHANGE_NAME,
@@ -39,7 +39,7 @@ def callback(ch, method, properties, body, engine):
             properties=pika.BasicProperties(delivery_mode=2, 
                                             headers={'x-rejection-reason': reason})
         )
-        print(f"Response rejected for reason: {reason}")
+        date_print(f"Response rejected for reason: {reason}")
 
 def start_consumer():
     engine = create_engine(DB_URL)
@@ -67,5 +67,5 @@ def start_consumer():
         on_message_callback=callback_partial
     )
 
-    print(f"Worker: RDKit plugin consumer started. Waiting for messages...")
-    channel.start_consuming()
+    date_print(f"Consumer started. Waiting for messages...")
+    return channel, connection, engine 

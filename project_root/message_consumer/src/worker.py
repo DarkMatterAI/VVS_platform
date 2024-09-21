@@ -4,28 +4,29 @@ import time
 import signal
 
 from .consumer import start_consumer 
+from .utils import date_print
 
 def worker(is_dlx=False):
     connection = None 
     channel = None 
 
     def cleanup():
-        print(f"Cleaning up message consumer")
+        date_print(f"Cleaning up message consumer")
         if channel:
             try:
-                print('Closing rabbitmq channel')
+                date_print('Closing rabbitmq channel')
                 channel.stop_consuming()
             except Exception as e:
-                print(f"Error stopping consumption: {e}")
+                date_print(f"Error stopping consumption: {e}")
         if connection:
             try:
-                print('Closing rabbitmq connection')
+                date_print('Closing rabbitmq connection')
                 connection.close()
             except Exception as e:
-                print(f"Error closing RabbitMQ connection: {e}")
+                date_print(f"Error closing RabbitMQ connection: {e}")
 
     def signal_handler(signum, frame):
-        print(f"Received signal {signum}. Initiating shutdown...")
+        date_print(f"Received signal {signum}. Initiating shutdown...")
         cleanup()
         sys.exit(0)
 
@@ -37,5 +38,5 @@ def worker(is_dlx=False):
             channel, connection = start_consumer(is_dlx)
             channel.start_consuming()
         except Exception as e:
-            print(f"Worker: Error in consumer: {e}")
+            date_print(f"Worker: Error in consumer: {e}")
             time.sleep(3)  # Wait before attempting to reconnect

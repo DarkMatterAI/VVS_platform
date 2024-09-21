@@ -48,3 +48,10 @@ def test_mapper_api(backend_client, test_api_client):
 
 def test_assembly_api(backend_client, test_api_client):
     helper_test_api_route(backend_client, test_api_client, 'assembly', '/assembly')
+
+def test_backend_execution(backend_client):
+    plugin = fetch_test_api_plugins(backend_client)[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+

@@ -33,12 +33,10 @@ def rabbitmq_connection():
 
 @pytest.fixture(scope="session")
 def backend_client():
-    # Adjust the base_url as needed
     with httpx.Client(base_url=f"http://backend:{os.environ['BACKEND_PORT']}") as client:
         yield client
 
 @pytest.fixture(scope="session")
 def test_api_client():
-    # Adjust the base_url as needed
     with httpx.Client(base_url=f"http://test_server:{os.environ['TEST_SERVER_PORT']}") as client:
         yield client

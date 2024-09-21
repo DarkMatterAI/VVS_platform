@@ -1,5 +1,3 @@
-import json 
-
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import Descriptors
@@ -79,6 +77,17 @@ def num_dummies(mol):
     smile = Chem.MolToSmiles(mol)
     n_attachments = smile.count('*')
     return n_attachments
+
+FILTER_CATALOGUES = {
+    'PAINS' : FilterCatalog(FilterCatalogParams.FilterCatalogs.PAINS),
+    'PAINS_A' : FilterCatalog(FilterCatalogParams.FilterCatalogs.PAINS_A),
+    'PAINS_B' : FilterCatalog(FilterCatalogParams.FilterCatalogs.PAINS_B),
+    'PAINS_C' : FilterCatalog(FilterCatalogParams.FilterCatalogs.PAINS_C),
+    'BRENK' : FilterCatalog(FilterCatalogParams.FilterCatalogs.BRENK),
+    'NIH' : FilterCatalog(FilterCatalogParams.FilterCatalogs.NIH),
+    'ZINC' : FilterCatalog(FilterCatalogParams.FilterCatalogs.ZINC),
+}
+
 
 PROP_FUNCS = {
     'Number of Compounds' : num_compounds,

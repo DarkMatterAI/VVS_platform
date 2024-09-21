@@ -5,11 +5,12 @@ import multiprocessing
 from datetime import datetime
 
 from .connections import rabbitmq_params, redis_client, EXCHANGE_NAME, RESPONSE_QUEUE, ALT_QUEUE, DLX_QUEUE
+from .utils import date_print
 
 MESSAGE_TTL = int(os.environ['REDIS_MESSAGE_TTL'])
 
 def get_dlx_channel():
-    print(f"Consumer: Starting connection to Alt Ex {EXCHANGE_NAME}.alt on queue {ALT_QUEUE}")
+    date_print(f"Consumer: Starting connection to Alt Ex {EXCHANGE_NAME}.alt on queue {ALT_QUEUE}")
 
     connection = pika.BlockingConnection(rabbitmq_params)
     channel = connection.channel()
@@ -31,7 +32,8 @@ def dlx_callback(ch, method, properties, body):
         failure_detail = 'No valid consumers'
 
     redis_key = request_key.replace('.', ':').replace('request', 'response')
-    print(f'{str(datetime.now())} - {failure_reason} {request_key} -> {redis_key}')
+    date_print(f"{failure_reason} {request_key} -> {redis_key}")
+    # print(f'{str(datetime.now())} - {failure_reason} {request_key} -> {redis_key}')
 
     response_data = {'valid': False, 
                      'response_data': None, 
@@ -43,7 +45,7 @@ def dlx_callback(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 def get_response_channel():
-    print(f"Consumer: Starting connection to {EXCHANGE_NAME} on queue {RESPONSE_QUEUE}")
+    date_print(f"Consumer: Starting connection to {EXCHANGE_NAME} on queue {RESPONSE_QUEUE}")
     connection = pika.BlockingConnection(rabbitmq_params)
     channel = connection.channel()
 
@@ -55,7 +57,8 @@ def response_callback(ch, method, properties, body):
     response_data = json.loads(body)
 
     redis_key = method.routing_key.replace('.', ':')
-    print(f'{str(datetime.now())} - {method.routing_key} -> {redis_key}')
+    date_print(f"{method.routing_key} -> {redis_key}")
+    # print(f'{str(datetime.now())} - {method.routing_key} -> {redis_key}')
 
     response_data = {'valid' : True, 'response_data' : response_data}
     redis_client.setex(redis_key, MESSAGE_TTL, json.dumps(response_data))
@@ -69,7 +72,7 @@ def start_consumer(is_dlx=False):
     else:
         channel, connection, consumer_type = get_response_channel()
 
-    print(f"Consumer: {consumer_type} consumer started. Waiting for messages...")
+    date_print(f"Consumer: {consumer_type} consumer started. Waiting for messages...")
     # channel.start_consuming()
     return channel, connection
 

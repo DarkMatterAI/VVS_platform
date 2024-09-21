@@ -1,13 +1,13 @@
-unit_tests:
+services:
   backend:
     service_name: backend
-    enabled: False
-
+    unit_test: False 
+    integration_test: False 
   rdkit_plugin:
     service_name: rdkit_plugin
-    enabled: False
-
-integration_tests:
+    unit_test: False 
+    integration_test: True 
+temp_services:
   test_consumer:
     service_name: test_consumer
     profile: test_consumer
@@ -16,7 +16,3 @@ integration_tests:
     service_name: test_server
     profile: test_server
     enabled: False
-
-plugin_integration_tests:
-  rdkit_plugin:
-    enabled: True 

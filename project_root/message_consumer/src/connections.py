@@ -3,6 +3,8 @@ import pika
 import time 
 import redis
 
+from .utils import date_print
+
 MESSAGE_TTL = int(os.environ['REDIS_MESSAGE_TTL'])
 EXCHANGE_NAME = os.environ['RABBITMQ_EXCHANGE_NAME']
 RESPONSE_QUEUE = os.environ.get('RABBITMQ_RESPONSE_QUEUE_NAME')
@@ -53,7 +55,7 @@ def create_exchange(channel):
 def setup_rabbitmq():
     while True:
         try:
-            print('Setting up RabbitMQ')
+            date_print('Setting up RabbitMQ')
             connection = pika.BlockingConnection(rabbitmq_params)
             channel = connection.channel()
 
@@ -64,12 +66,12 @@ def setup_rabbitmq():
             # close connection 
             channel.close() 
             connection.close()
-            print('RabbitMQ setup complete')
+            date_print('RabbitMQ setup complete')
             return 
         except pika.exceptions.AMQPConnectionError as e:
             print(f"Connection was closed, retrying... Error: {e}")
             time.sleep(1)
         except Exception as e:
-            print(f"Unexpected error occurred: {e}")
+            date_print(f"Unexpected error occurred: {e}")
             return 
         

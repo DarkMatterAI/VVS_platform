@@ -2,4 +2,4 @@
 
 set -e
 set -x
-# pytest tests --disable-warnings
+pytest tests --disable-warnings

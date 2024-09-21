@@ -1,3 +1,4 @@
+import time 
 from tests.utils import (
                             fetch_test_consumer_plugins, 
                             type_to_request_func, 
@@ -69,5 +70,24 @@ def test_dlx_queue(redis_connection, rabbitmq_connection, backend_client):
     response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
     assert response_data['valid'] == False 
     assert response_data['failure_reason'] == 'Dead Letter'
+
+
+def test_backend_execution(redis_connection, rabbitmq_connection, backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client)[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+    result_id = response.json()['result_id']
+
+    for i in range(20):
+        result = backend_client.get(f"/api/v1/execute/{result_id}")
+        assert response.status_code == 200
+        result = result.json()
+        if 'result_id' not in result:
+            return 
+        time.sleep(0.1)
+    assert 'result_id' not in result 
+
 
 
