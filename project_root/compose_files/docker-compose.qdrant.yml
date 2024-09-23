@@ -10,9 +10,14 @@ services:
       - vvs_v2_network
     expose:
       - ${QDRANT__SERVICE__HTTP_PORT}
+      - ${QDRANT__SERVICE__GRPC_PORT}
     # ports:
     #   - ${QDRANT__SERVICE__HTTP_PORT}:${QDRANT__SERVICE__HTTP_PORT}
     #   - ${QDRANT__SERVICE__GRPC_PORT}:${QDRANT__SERVICE__GRPC_PORT}
     volumes:
       - ${QDRANT_STORAGE_DIR}:/qdrant/storage
+      - ${QDRANT_SNAPSHOT_DIR}:/qdrant/qdrant_snapshots
+    # volumes:
+      # - ${QDRANT_STORAGE_DIR}:/qdrant/storage
   #     - ./blob_store/qdrant_snapshots:/qdrant/qdrant_snapshots
+
