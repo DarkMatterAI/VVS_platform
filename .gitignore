@@ -8,4 +8,6 @@ __pycache__
 
 ./test_executor/src/test_config.yaml
 
+blob_store/
+
 design_doc.md

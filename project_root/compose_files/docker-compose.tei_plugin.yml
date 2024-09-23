@@ -28,8 +28,10 @@ services:
       # - CORS_ALLOW_ORIGIN=${TEI_CORS_ALLOW_ORIGIN}
     networks:
       - vvs_v2_network
-    ports:
-      - ${TEI_PORT}:${TEI_PORT}
+    expose:
+      - ${TEI_PORT}
+    # ports:
+    #   - ${TEI_PORT}:${TEI_PORT}
     volumes:
       - "${TEI_HUGGINGFACE_HUB_CACHE}:/data"
     deploy:

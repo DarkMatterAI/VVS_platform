@@ -38,9 +38,10 @@ TEI_EMBEDDING = {
     "endpoint_url": f"http://tei_plugin:{os.environ.get('TEI_PORT', '')}/embed",
     "vector_length": None,
     "distance_metric": os.environ.get('TEI_DISTANCE_METRIC', ''),
-    "config" : {'normalize' : os.environ.get('TEI_NORMALIZE', 'false')}
+    "config" : {'normalize' : False if os.environ.get('TEI_NORMALIZE', 'false')=='false' else True,
+                'truncate' : False if os.environ.get('TEI_TRUNCATE', 'false')=='false' else True,
+                'truncation_direction' : os.environ.get('TEI_TRUNCATION_DIRECTION', 'right')}
 }
-
 
 async def init_rdkit_records(db):
     for record in RDKIT_FILTERS:

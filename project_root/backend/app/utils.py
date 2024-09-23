@@ -144,8 +144,10 @@ async def execute_tei_plugin(plugin: models.Plugin, execute_request: dict):
     retries = plugin.max_retries
     execute_request = execute_request.model_dump()
     data = {'inputs' : execute_request.get('item', '')}
-    if plugin.config['normalize'] == 'false':
-        data['normalize'] = False 
+    data.update(plugin.config)
+    
+    # if plugin.config['normalize'] == 'false':
+    #     data['normalize'] = False 
     response = await make_post_request(url, data, timeout, retries)
     response = {'embedding' : response[0]}
     return response 

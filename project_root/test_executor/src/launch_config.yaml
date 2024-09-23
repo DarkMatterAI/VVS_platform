@@ -1,7 +1,11 @@
 plugins:
-  rdkit_plugin:
-    enabled: False
-    profile: rdkit_plugin 
+  qdrant_plugin:
+    enabled: True
+    profile: qdrant_plugin 
   tei_plugin:
     enabled: True
     profile: tei_plugin 
+  rdkit_plugin:
+    enabled: False
+    profile: rdkit_plugin 
+
