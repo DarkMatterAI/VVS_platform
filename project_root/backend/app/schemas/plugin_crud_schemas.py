@@ -22,6 +22,7 @@ class PluginExecutionType(str, Enum):
     QUEUE = "queue"
     API = "api"
     INTERNAL = "internal"
+    INTERNAL_TEI = 'internal_tei'
 
 class DistanceMetric(str, Enum):
     Cosine = 'Cosine'

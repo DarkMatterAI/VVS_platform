@@ -44,7 +44,6 @@ def create_exchange(channel):
     }
     channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type='topic', arguments=args)
 
-    # bind response queue 
     channel.queue_declare(queue=RESPONSE_QUEUE, durable=True, arguments={
         "x-dead-letter-exchange": f"{EXCHANGE_NAME}.dlx"
     })
@@ -63,7 +62,6 @@ def setup_rabbitmq():
             create_alt(channel)
             create_exchange(channel)
 
-            # close connection 
             channel.close() 
             connection.close()
             date_print('RabbitMQ setup complete')

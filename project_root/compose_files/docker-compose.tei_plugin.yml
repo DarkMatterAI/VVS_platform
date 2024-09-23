@@ -1,0 +1,41 @@
+
+services:
+  tei_plugin:
+    image: ghcr.io/huggingface/text-embeddings-inference:1.5
+    profiles: [plugin, tei_plugin]
+    env_file:
+      - ../.env
+      # - ../tei.env 
+    environment:
+      - MODEL_ID=${TEI_MODEL_ID}
+      # - REVISION=${TEI_REVISION}
+      # - TOKENIZATION_WORKERS=${TEI_TOKENIZATION_WORKERS}
+      # - DTYPE=${TEI_DTYPE}
+      - POOLING=${TEI_POOLING}
+      # - MAX_CONCURRENT_REQUESTS=${TEI_MAX_CONCURRENT_REQUESTS}
+      # - MAX_BATCH_TOKENS=${TEI_MAX_BATCH_TOKENS}
+      # - MAX_BATCH_REQUESTS=${TEI_MAX_BATCH_REQUESTS}
+      # - MAX_CLIENT_BATCH_SIZE=${TEI_MAX_CLIENT_BATCH_SIZE}
+      # - HF_API_TOKEN=${TEI_HF_API_TOKEN}
+      # - HOSTNAME=${TEI_HOSTNAME}
+      - PORT=${TEI_PORT}
+      - HUGGINGFACE_HUB_CACHE=${TEI_HUGGINGFACE_HUB_CACHE}
+      # - UDS_PATH=${TEI_UDS_PATH}
+      # - PAYLOAD_LIMIT=${TEI_PAYLOAD_LIMIT}
+      # - API_KEY=${TEI_API_KEY}
+      # - JSON_OUTPUT=${TEI_JSON_OUTPUT}
+      # - OTLP_ENDPOINT=${TEI_OTLP_ENDPOINT}
+      # - CORS_ALLOW_ORIGIN=${TEI_CORS_ALLOW_ORIGIN}
+    networks:
+      - vvs_v2_network
+    ports:
+      - ${TEI_PORT}:${TEI_PORT}
+    volumes:
+      - "${TEI_HUGGINGFACE_HUB_CACHE}:/data"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]

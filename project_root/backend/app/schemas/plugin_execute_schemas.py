@@ -56,6 +56,7 @@ class MapperResponse(BaseModel):
     embedding: List[List[float]]
 
 class AssemblyItem(BaseModel):
+    assembly_index: int 
     id: Union[int, str]
     external_id: Union[int, str]
     item: str 
@@ -63,11 +64,14 @@ class AssemblyItem(BaseModel):
 class AssemblyRequest(BaseModel):
     # request_id: str 
     parents: List[AssemblyItem]
+
+class AssemblyResult(BaseModel):
+    item: str 
+    external_id: Optional[Union[int, str]]
         
 class AssemblyResponse(BaseModel):
     valid: bool
-    item: str 
-    external_id: Optional[Union[int, str]]
+    result: List[AssemblyResult]
 
 request_type_mapping = {
     PluginType.EMBEDDING : EmbedRequest,

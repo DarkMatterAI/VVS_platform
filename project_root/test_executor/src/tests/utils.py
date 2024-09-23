@@ -22,11 +22,9 @@ def fetch_plugins_by_filter(backend_client, name_pattern: str=None, group_key: s
 
 def fetch_test_api_plugins(backend_client, plugin_type: str = None) -> List[Dict[Any, Any]]:
     return fetch_plugins_by_filter(backend_client, name_pattern=f"mock_%_api_%", plugin_type=plugin_type)
-    # return fetch_plugins_by_name_pattern(backend_client, f"mock_%_api_%", plugin_type)
 
 def fetch_test_consumer_plugins(backend_client, plugin_type: str = None) -> List[Dict[Any, Any]]:
     return fetch_plugins_by_filter(backend_client, name_pattern=f"mock_%_queue_%", plugin_type=plugin_type)
-    # return fetch_plugins_by_name_pattern(backend_client, f"mock_%_queue_%", plugin_type)
 
 def rabbitmq_publish(channel, routing_key, message):
 
@@ -95,7 +93,10 @@ def get_random_item(with_embedding=False, with_named_embedding=False):
     return random_item 
 
 def get_random_parents():
-    return [get_random_item() for i in range(NUM_PARENTS)]
+    parents = [get_random_item() for i in range(NUM_PARENTS)]
+    for i, parent in enumerate(parents):
+        parent['assembly_index'] = i
+    return parents 
 
 def get_embedding_request(plugin_record):
     request_data = get_random_item()

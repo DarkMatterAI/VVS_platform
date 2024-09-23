@@ -6,6 +6,7 @@ include:
   - compose_files/docker-compose.testing.yml
   - compose_files/docker-compose.nginx.yml
   - compose_files/docker-compose.rdkit_plugin.yml
+  - compose_files/docker-compose.tei_plugin.yml
 
 networks:
   vvs_v2_network:

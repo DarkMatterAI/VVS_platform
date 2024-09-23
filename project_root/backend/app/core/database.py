@@ -26,7 +26,7 @@ async def get_db():
 
 async def init_db():
     redis = Redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
-    lock = redis.lock("db_init_lock", timeout=60)  # 60 seconds timeout
+    lock = redis.lock("db_init_lock", timeout=60)
 
     try:
         print('Acquiring redis lock for database init')

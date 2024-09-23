@@ -4,6 +4,7 @@ from tests.utils import (
                             type_to_request_func, 
                             publish_and_poll
                         )
+from tests.schemas import schema_mapping
 
 def test_consumer_plugins_created(backend_client):
     plugins = fetch_test_consumer_plugins(backend_client)
@@ -72,7 +73,35 @@ def test_dlx_queue(redis_connection, rabbitmq_connection, backend_client):
     assert response_data['failure_reason'] == 'Dead Letter'
 
 
-def test_backend_execution(redis_connection, rabbitmq_connection, backend_client):
+def helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, plugin_type):
+    schemas = schema_mapping[plugin_type]
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type=plugin_type)[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    schemas['request'].model_validate(request_data)
+    response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
+    assert response_data['valid'] == True
+    schemas['response'].model_validate(response_data['response_data'])
+
+def test_embedding_consumer(redis_connection, rabbitmq_connection, backend_client):
+    helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, 'embedding')
+
+def test_data_source_consumer(redis_connection, rabbitmq_connection, backend_client):
+    helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, 'data_source')
+
+def test_filter_consumer(redis_connection, rabbitmq_connection, backend_client):
+    helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, 'filter')
+
+def test_score_consumer(redis_connection, rabbitmq_connection, backend_client):
+    helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, 'score')
+
+def test_mapper_consumer(redis_connection, rabbitmq_connection, backend_client):
+    helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, 'mapper')
+
+def test_assembly_consumer(redis_connection, rabbitmq_connection, backend_client):
+    helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, 'assembly')
+
+
+def test_backend_execution(backend_client):
     plugin = fetch_test_consumer_plugins(backend_client)[0]
     request_data = type_to_request_func[plugin['type']](plugin)
 
@@ -88,6 +117,6 @@ def test_backend_execution(redis_connection, rabbitmq_connection, backend_client
             return 
         time.sleep(0.1)
     assert 'result_id' not in result 
-
+    assert result['valid']
 
 

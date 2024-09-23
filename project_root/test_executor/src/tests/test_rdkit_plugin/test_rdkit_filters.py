@@ -13,7 +13,7 @@ def rdkit_test_filter(backend_client):
         response = backend_client.post(
             f"{api_str}/",
             json={
-                "name": f"Test RDKit Filter {next(itertools.count(1))}",
+                "name": f"Test RDKit Filter Integration {next(itertools.count(1))}",
                 "type": "filter",
                 "execution_type": "queue",
                 "group_key": "rdkit_plugin",
@@ -38,15 +38,19 @@ def get_request_data(plugin_record):
     request_data['request_id'] = get_request_id(plugin_record)
     return request_data 
 
+def delete_plugin(plugin_record, backend_client):
+    response = backend_client.delete(f"{api_str}/{plugin_record['id']}")
+    assert response.status_code == 200 
 
-def test_rdkit_consumer(redis_connection, rabbitmq_connection, rdkit_test_filter):
+def test_rdkit_filter_consumer(redis_connection, rabbitmq_connection, rdkit_test_filter, backend_client):
     filter_record = rdkit_test_filter()
     request_data = get_request_data(filter_record)
 
     response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
     assert response_data['valid'] == True
+    delete_plugin(filter_record, backend_client)
 
-def test_backend_execution(redis_connection, rabbitmq_connection, backend_client, rdkit_test_filter):
+def test_rdkit_filter_backend_execution(backend_client, rdkit_test_filter):
     filter_record = rdkit_test_filter()
     request_data = get_request_data(filter_record)
 
@@ -59,9 +63,11 @@ def test_backend_execution(redis_connection, rabbitmq_connection, backend_client
         assert response.status_code == 200
         result = result.json()
         if 'result_id' not in result:
-            return 
+            break 
         time.sleep(0.1)
     assert 'result_id' not in result 
+    assert result['valid']
+    delete_plugin(filter_record, backend_client)
 
 
 

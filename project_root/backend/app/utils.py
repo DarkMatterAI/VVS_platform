@@ -8,6 +8,7 @@ import pika
 import os 
 import json 
 import yaml
+import time 
 
 
 plugin_type_map = {
@@ -104,17 +105,11 @@ def get_request_key(plugin: models.Plugin, item_id=None):
     request_key = f"request.{group_key}.{plugin_type}.{plugin_id}.{item_id}.{request_id}"
     return request_key 
 
-async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
-    url = plugin.endpoint_url
-    timeout = plugin.timeout
-    retries = plugin.max_retries
-    execute_request = execute_request.model_dump()
-    execute_request['request_id'] = get_request_key(plugin, execute_request.get('id', None))
-
+async def make_post_request(url, data, timeout, retries, retry_sleep=0):
     async with httpx.AsyncClient() as client:
         for attempt in range(retries + 1):
             try:
-                response = await client.post(url, json=execute_request, timeout=timeout )
+                response = await client.post(url, json=data, timeout=timeout )
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as e:
@@ -126,8 +121,34 @@ async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
             except Exception as e:
                 if attempt == retries:
                     raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+                
+            if retry_sleep>0:
+                print(f"Post request failed, sleeping")
+                time.sleep(retry_sleep)
 
     raise HTTPException(status_code=500, detail="Failed to execute API plugin after maximum retries")
+
+
+async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
+    url = plugin.endpoint_url
+    timeout = plugin.timeout
+    retries = plugin.max_retries
+    execute_request = execute_request.model_dump()
+    execute_request['request_id'] = get_request_key(plugin, execute_request.get('id', None))
+    response = await make_post_request(url, execute_request, timeout, retries)
+    return response 
+
+async def execute_tei_plugin(plugin: models.Plugin, execute_request: dict):
+    url = plugin.endpoint_url
+    timeout = plugin.timeout
+    retries = plugin.max_retries
+    execute_request = execute_request.model_dump()
+    data = {'inputs' : execute_request.get('item', '')}
+    if plugin.config['normalize'] == 'false':
+        data['normalize'] = False 
+    response = await make_post_request(url, data, timeout, retries)
+    response = {'embedding' : response[0]}
+    return response 
 
 def rabbitmq_publish(routing_key, message):
     rabbitmq_params = pika.ConnectionParameters(
@@ -162,6 +183,7 @@ def execute_queue_plugin(plugin: models.Plugin, execute_request: dict):
 
     execute_request = execute_request.model_dump()
     request_key = get_request_key(plugin, execute_request.get('id', None))
+    execute_request['request_id'] = request_key
     rabbitmq_publish(request_key, execute_request)
     response_key = request_key.replace('request', 'response')
     return {'result_id' : response_key}

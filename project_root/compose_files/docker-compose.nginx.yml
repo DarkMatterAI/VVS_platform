@@ -7,6 +7,7 @@ services:
       - "${NGINX_TCP_PORT}:5672"
     volumes:
       - ../nginx.conf:/etc/nginx/nginx.conf.template:ro
+      - ./tei_transform.js:/etc/nginx/transform.js:ro
     environment:
       - BACKEND_PORT=${BACKEND_PORT}
       - DAGSTER_WEBSERVER_PORT=${DAGSTER_WEBSERVER_PORT}

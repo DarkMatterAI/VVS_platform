@@ -83,7 +83,9 @@ async def mapper(request: schemas.MapperRequest):
 
 @app.post("/assembly", response_model=schemas.AssemblyResponse)
 async def assemble(request: schemas.AssemblyRequest):
-    response = {'valid' : True, 'item' : ''.join([i.item for i in request.parents]), 'external_id' : None}
+    response = {
+        'valid' : True,
+        'result' : [{'item' : ''.join([i.item for i in request.parents]), 'external_id' : None}]
+    }
     await asyncio.sleep(0)
     return response 
-

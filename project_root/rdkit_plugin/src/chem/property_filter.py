@@ -1,4 +1,5 @@
-from .mol_props import PROP_FUNCS, FILTER_CATALOGUES, to_mol, smart_to_mol
+from .rdkit_utils import to_mol, smart_to_mol
+from .mol_props import PROP_FUNCS, FILTER_CATALOGUES
 
 def check_bounds(value, filter_dict):
     min_val = filter_dict.get('min_val')

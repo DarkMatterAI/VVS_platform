@@ -21,6 +21,7 @@ def callback(ch, method, properties, body, engine):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
     response, valid, reason = execute_plugin(engine, message_data, method.routing_key)
+    date_print(f"{method.routing_key} {response} {valid}")
 
     if valid:
         return_key = method.routing_key.replace('request', 'response')

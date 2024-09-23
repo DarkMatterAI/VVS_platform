@@ -70,3 +70,14 @@ class AssemblyResult(BaseModel):
 class AssemblyResponse(BaseModel):
     valid: bool
     result: List[AssemblyResult]
+
+schema_mapping = {
+    'embedding' : {'request' : EmbedRequest, 'response' : EmbedResponse},
+    'data_source' : {'request' : DataSourceRequest, 'response' : DataSourceResponse},
+    'filter' : {'request' : ItemRequest, 'response' : FilterResponse},
+    'score' : {'request' : ItemRequest, 'response' : ScoreResponse},
+    'mapper' : {'request' : MapperRequest, 'response' : MapperResponse},
+    'assembly' : {'request' : AssemblyRequest, 'response' : AssemblyResponse},
+}
+
+

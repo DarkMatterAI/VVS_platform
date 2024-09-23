@@ -21,12 +21,27 @@ postgres_db = os.getenv('POSTGRES_DB')
 
 DB_URL = f"postgresql://{postgres_username}:{postgres_password}@{postgres_host}/{postgres_db}"
 
+# def get_plugin_record(engine, plugin_id):
+#     date_print(f"Querying database for plugin {plugin_id}")
+#     with engine.connect() as conn:
+#         query = "SELECT * FROM plugins WHERE id = :id"
+#         query_result = conn.execute(text(query), {"id": plugin_id})
+#         record = query_result.fetchone()
+#     return record._asdict() if record else {}
+
 def get_plugin_record(engine, plugin_id):
     date_print(f"Querying database for plugin {plugin_id}")
     with engine.connect() as conn:
-        query = "SELECT * FROM plugins WHERE id = :id"
+        query = """
+        SELECT p.*, fp.*, ap.*
+        FROM plugins p
+        LEFT JOIN filter_plugins fp ON p.id = fp.id
+        LEFT JOIN assembly_plugins ap ON p.id = ap.id
+        WHERE p.id = :id
+        """
         query_result = conn.execute(text(query), {"id": plugin_id})
         record = query_result.fetchone()
+
     return record._asdict() if record else {}
 
 def get_plugin_from_routing_key(engine, routing_key):

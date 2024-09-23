@@ -1,12 +1,16 @@
 from enum import Enum
-from pydantic import BaseModel, field_validator
-from typing import List, Dict, Tuple, Optional
+from pydantic import BaseModel, RootModel, field_validator, model_validator, ValidationError
+from typing import List, Dict, Union, Optional
 
 from app.schemas.plugin_crud_schemas import (FilterPluginCreate, 
                                              PluginUpdate, 
                                              FilterPluginInDB,
                                              PluginType,
-                                             PluginExecutionType)
+                                             PluginExecutionType,
+                                             PluginType,
+                                             AssemblyPluginCreate,
+                                             PluginInDBUnion
+                                             )
 
 class PropertyName(str, Enum):
     NUM_COMPOUNDS = "Number of Compounds"
@@ -57,7 +61,6 @@ class CatalogName(str, Enum):
 
 
 field_mapping = {
-    'type' : PluginType.FILTER,
     'execution_type' : PluginExecutionType.QUEUE,
     'group_key' : 'rdkit_plugin'
 }
@@ -91,9 +94,10 @@ def parse_filters(v):
     if not any([filter_config.get('property_filters', []), 
                 filter_config.get('catalog_filters', []),
                 filter_config.get('smarts_filters', [])]):
-        raise ValueError(f"Must be at least one valid filter, found zero")
+        raise ValueError(f"Must be at least one valid property filter, found zero")
 
-    return filter_config
+    return RDKitFilterConfig(**filter_config)
+    # return filter_config
 
 
 class PropertyFilter(BaseModel):
@@ -121,7 +125,7 @@ class RDKitFilterCreate(FilterPluginCreate):
     group_key: str='rdkit_plugin'
     config: RDKitFilterConfig
 
-    @field_validator('type', 'execution_type', 'group_key')
+    @field_validator('execution_type', 'group_key')
     def set_default_fields(cls, v, info):
         return field_mapping[info.field_name]
     
@@ -142,3 +146,223 @@ class RDKitFilterUpdate(PluginUpdate):
     @field_validator('config')
     def parse_config(cls, v, info):
         return parse_filters(v)
+
+
+class SmartsConfig(BaseModel):
+    smarts: str 
+    requires_hs: bool=False 
+        
+    @field_validator('smarts')
+    def parse_smarts(cls, v, info):
+        if ('>>' not in v) or (len(v.split('>>')) != 2):
+            raise ValueError(f"Expected reaction smarts with the form [reactants]>>[products], found {v}")
+            
+        reactants, products = v.split('>>')
+        num_reactants = len(reactants.split('.'))
+        num_products = len(products.split('.'))
+        
+        if not reactants:
+            raise ValueError(f"Reaction smarts missing reactants: {v}")
+        elif num_reactants < 2:
+            raise ValueError(f"Reaction must have at least two reactants, found {num_reactants}: {v}")
+            
+        if not products:
+            raise ValueError(f"Reaction smarts missing products: {v}")
+        elif num_products != 1:
+            raise ValueError(f"Reaction must have at least one product, found {num_products}: {v}")
+        return v
+        
+    @property
+    def num_reactants(self):
+        return len(self.smarts.split('>>')[0].split('.'))
+    
+    @property
+    def num_products(self):
+        return len(self.smarts.split('>>')[1].split('.'))
+
+
+class SmartsReactionStep(BaseModel):
+    step: int
+    reactions: List[SmartsConfig]
+        
+class ReactionConfig(BaseModel):
+    single_stage_reactions: List[SmartsConfig]
+    multi_stage_reactions: List[SmartsReactionStep]
+    
+    @field_validator('single_stage_reactions')
+    def validate_single_stage(cls, v, info):
+        num_reactants = set([i.num_reactants for i in v])
+        if num_reactants and (len(num_reactants) != 1):        
+            raise ValueError(f"Single stage reactions must all have the same number of inputs " \
+                             f"- found {num_reactants}")
+            
+        return v
+    
+    @field_validator('multi_stage_reactions')
+    def validate_multi_stage(cls, v, info):
+        step_vals = [i.step for i in v]
+        if len(step_vals) != len(set(step_vals)):
+            raise ValueError(f"Duplicate reaction steps found: {step_vals}")
+            
+        for reaction_step in v:
+            reactions = reaction_step.reactions
+            for reaction in reactions:
+                if reaction.num_reactants != 2:
+                    raise ValueError(f"Multi step reaction {reaction.smarts} must have exactly two " \
+                                     f"reactants, found {reaction.num_reactants}")
+            
+        return v
+    
+    @model_validator(mode='after')
+    def validate_reactions(cls, values):
+        if (len(values.single_stage_reactions)==0 and 
+            len(values.multi_stage_reactions)==0):
+            raise ValueError(f"No reactions found")
+        
+        return values
+    
+def check_parent_reaction_match(values):
+    if getattr(values, 'num_parents', None) is None:
+        raise ValueError(f"Reaction assembly missing num_parents")
+    
+    for reaction in values.config.single_stage_reactions:
+        if reaction.num_reactants != values.num_parents:
+            raise ValueError(f"Number of reactants must match number of parents for single stage reaction" \
+                                f" - found {reaction.num_reactants}, {values.num_parents}")
+            
+    n_stages = len(values.config.multi_stage_reactions)
+    if n_stages > 0:
+        if n_stages != values.num_parents-1:
+            raise ValueError(f"Assembly with {values.num_parents} parents has {n_stages} "\
+                            f"reaction stages, expected {values.num_parents-1}")
+
+    return values 
+
+class ReactionAssmeblyCreate(AssemblyPluginCreate):
+    type: PluginType=PluginType.ASSEMBLY
+    execution_type: PluginExecutionType=PluginExecutionType.QUEUE
+    group_key: str='rdkit_plugin'
+    config: ReactionConfig
+
+    @field_validator('execution_type', 'group_key')
+    def set_default_fields(cls, v, info):
+        return field_mapping[info.field_name]
+
+    @model_validator(mode='after')
+    def validate_reaction_smarts(cls, values):
+        values = check_parent_reaction_match(values)
+        return values 
+
+class ReactionAssemblyUpdate(PluginUpdate):
+    execution_type: PluginExecutionType=PluginExecutionType.QUEUE
+    group_key: str='rdkit_plugin'
+    config: ReactionConfig
+
+    @field_validator('execution_type', 'group_key')
+    def set_default_fields(cls, v, info):
+        return field_mapping[info.field_name]
+    
+    @model_validator(mode='after')
+    def validate_reaction_smarts(cls, values):
+        values = check_parent_reaction_match(values)
+        return values 
+    
+
+class SyntOnReactionNames(str, Enum):
+    O_ACYLATION = "O-acylation"
+    OLEFINATION = "Olefination"
+    CONDENSATION_OF_Y_NH2_WITH_CARBONYL_COMPOUNDS = "Condensation_of_Y-NH2_with_carbonyl_compounds"
+    AMINE_SULPHOACYLATION = "Amine_sulphoacylation"
+    C_C_COUPLINGS = "C-C couplings"
+    RADICAL_REACTIONS = "Radical_reactions"
+    N_ACYLATION = "N-acylation"
+    O_ALKYLATION_ARYLATION = "O-alkylation_arylation"
+    METAL_ORGANICS_C_C_BONG_ASSEMBLING = "Metal organics C-C bong assembling"
+    S_ALKYLATION_ARYLATION = "S-alkylation_arylation"
+    ALKYLATION_ARYLATION_OF_NH_LACTAM = "Alkylation_arylation_of_NH-lactam"
+    ALKYLATION_ARYLATION_OF_NH_HETEROCYCLES = "Alkylation_arylation_of_NH-heterocycles"
+    AMINE_ALKYLATION_ARYLATION = "Amine_alkylation_arylation"
+
+
+class SyntOnReactionStep(BaseModel):
+    step: int
+    reactions: List[SyntOnReactionNames]
+
+    @field_validator('reactions')
+    def parse_reactions(cls, v, info):
+        if len(v) != len(set(v)):
+            raise ValueError(f"Duplicate reaction names found {v}")
+        return v 
+
+
+class SyntOnReactionConfig(BaseModel):
+    synt_on_reaction_stages: List[SyntOnReactionStep]
+
+    @field_validator('synt_on_reaction_stages')
+    def validate_multi_stage(cls, v, info):
+        if len(v) == 0:
+            raise ValueError(f"No reactions found")
+
+        step_vals = [i.step for i in v]
+        if len(step_vals) != len(set(step_vals)):
+            raise ValueError(f"Duplicate reaction steps found: {step_vals}")
+        return v 
+
+class SyntOnAssmeblyCreate(AssemblyPluginCreate):
+    type: PluginType=PluginType.ASSEMBLY
+    execution_type: PluginExecutionType=PluginExecutionType.QUEUE
+    group_key: str='rdkit_plugin'
+    config: SyntOnReactionConfig
+
+    @field_validator('execution_type', 'group_key')
+    def set_default_fields(cls, v, info):
+        return field_mapping[info.field_name]
+
+    @model_validator(mode='after')
+    def validate_reaction_smarts(cls, values):
+        if getattr(values, 'num_parents', None) is None:
+            raise ValueError(f"Reaction assembly missing num_parents")
+        
+        n_stages = len(values.config.synt_on_reaction_stages)
+        if n_stages != values.num_parents-1:
+            raise ValueError(f"Assembly with {values.num_parents} parents has {n_stages} "\
+                            f"reaction stages, expected {values.num_parents-1}")
+        return values 
+
+class SyntOnAssemblyUpdate(PluginUpdate):
+    execution_type: PluginExecutionType=PluginExecutionType.QUEUE
+    group_key: str='rdkit_plugin'
+    config: SyntOnReactionConfig
+
+    @field_validator('execution_type', 'group_key')
+    def set_default_fields(cls, v, info):
+        return field_mapping[info.field_name]
+    
+    @model_validator(mode='after')
+    def validate_reaction_smarts(cls, values):
+        if getattr(values, 'num_parents', None) is None:
+            raise ValueError(f"Reaction assembly missing num_parents")
+        
+        n_stages = len(values.config.synt_on_reaction_stages)
+        if n_stages != values.num_parents-1:
+            raise ValueError(f"Assembly with {values.num_parents} parents has {n_stages} "\
+                            f"reaction stages, expected {values.num_parents-1}")
+        return values 
+    
+RDKitPluginCreateUnion = Union[
+    RDKitFilterCreate,
+    ReactionAssmeblyCreate,
+    SyntOnAssmeblyCreate
+]
+
+class RDKitPluginCreate(RootModel):
+    root: RDKitPluginCreateUnion
+
+RDKitPluginUpdateUnion = Union[
+    RDKitFilterUpdate,
+    ReactionAssemblyUpdate,
+    SyntOnAssemblyUpdate
+]
+
+class RDKitPluginUpdate(RootModel):
+    root: RDKitPluginUpdateUnion

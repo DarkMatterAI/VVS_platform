@@ -40,7 +40,10 @@ def mapper(request):
     return response
 
 def assembly(request):
-    response = {'valid' : True, 'item' : ''.join([i['item'] for i in request['parents']])}
+    response = {
+        'valid' : True,
+        'result' : [{'item' : ''.join([i['item'] for i in request['parents']]), 'external_id' : None}]
+    }
     return response
 
 func_mapping = {

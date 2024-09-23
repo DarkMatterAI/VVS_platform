@@ -48,7 +48,7 @@ def worker():
             channel, connection, engine = start_consumer()
             channel.start_consuming()
         except Exception as e:
-            date_print('Error in consumer: {e}')
+            date_print(f'Error in consumer: {e}')
             time.sleep(3)
 
 

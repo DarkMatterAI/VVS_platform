@@ -1,9 +1,6 @@
 from src.chem.property_filter import property_filter
 from src.chem.mol_props import FILTER_CATALOGUES, PROP_FUNCS
 
-from .data import VALID_SMILES
-
-
 def get_inputs():
     plugin_record = {
         'config' : {

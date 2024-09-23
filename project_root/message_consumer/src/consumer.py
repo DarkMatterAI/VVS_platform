@@ -33,7 +33,6 @@ def dlx_callback(ch, method, properties, body):
 
     redis_key = request_key.replace('.', ':').replace('request', 'response')
     date_print(f"{failure_reason} {request_key} -> {redis_key}")
-    # print(f'{str(datetime.now())} - {failure_reason} {request_key} -> {redis_key}')
 
     response_data = {'valid': False, 
                      'response_data': None, 
@@ -58,7 +57,6 @@ def response_callback(ch, method, properties, body):
 
     redis_key = method.routing_key.replace('.', ':')
     date_print(f"{method.routing_key} -> {redis_key}")
-    # print(f'{str(datetime.now())} - {method.routing_key} -> {redis_key}')
 
     response_data = {'valid' : True, 'response_data' : response_data}
     redis_client.setex(redis_key, MESSAGE_TTL, json.dumps(response_data))
@@ -73,7 +71,6 @@ def start_consumer(is_dlx=False):
         channel, connection, consumer_type = get_response_channel()
 
     date_print(f"Consumer: {consumer_type} consumer started. Waiting for messages...")
-    # channel.start_consuming()
     return channel, connection
 
 

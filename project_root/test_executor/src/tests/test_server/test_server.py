@@ -1,4 +1,5 @@
 from tests.utils import fetch_test_api_plugins, type_to_request_func
+from tests.schemas import schema_mapping
 
 def test_server_ping(test_api_client):
     response = test_api_client.get('/')
@@ -26,10 +27,13 @@ def test_api_plugins_created(backend_client):
         assert type_counts[k] == v
 
 def helper_test_api_route(backend_client, test_api_client, plugin_type, route):
+    schemas = schema_mapping[plugin_type]
     plugin = fetch_test_api_plugins(backend_client, plugin_type=plugin_type)[0]
     request_data = type_to_request_func[plugin_type](plugin)
+    schemas['request'].model_validate(request_data)
     response = test_api_client.post(route, json=request_data)
     assert response.status_code == 200 
+    schemas['response'].model_validate(response.json())
 
 def test_embedding_api(backend_client, test_api_client):
     helper_test_api_route(backend_client, test_api_client, 'embedding', '/embedding')

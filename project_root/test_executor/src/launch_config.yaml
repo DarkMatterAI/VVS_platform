@@ -1,4 +1,7 @@
 plugins:
   rdkit_plugin:
-    enabled: True
+    enabled: False
     profile: rdkit_plugin 
+  tei_plugin:
+    enabled: True
+    profile: tei_plugin 

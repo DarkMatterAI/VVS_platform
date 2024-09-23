@@ -28,7 +28,7 @@ if __name__ == "__main__":
     test_paths = [Path(f'tests/core_tests')]
 
     for plugin in enabled_plugins:
-        test_path = Path(f'tests/plugin_tests/')
+        test_path = Path(f'tests/plugin_tests/{plugin}')
         if test_path.exists():
             test_paths.append(test_path)
         else:

@@ -1,26 +1,9 @@
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import Descriptors
-from rdkit.Chem import QED
+from rdkit.Chem import rdMolDescriptors, Descriptors, QED
+from rdkit.Chem import AllChem
 from rdkit.Contrib.SA_Score import sascorer
 from rdkit.Chem.FilterCatalog import FilterCatalog, FilterCatalogParams
 from rdkit.Chem.Lipinski import RotatableBondSmarts
-
-def to_mol(smile):
-    try:
-        mol = Chem.MolFromSmiles(smile)
-    except:
-        mol = None
-        
-    return mol
-
-def smart_to_mol(smarts):
-    try:
-        mol = Chem.MolFromSmarts(smarts)
-    except:
-        mol = None
-        
-    return mol
 
 def find_bond_groups(mol):
     """
@@ -87,7 +70,6 @@ FILTER_CATALOGUES = {
     'NIH' : FilterCatalog(FilterCatalogParams.FilterCatalogs.NIH),
     'ZINC' : FilterCatalog(FilterCatalogParams.FilterCatalogs.ZINC),
 }
-
 
 PROP_FUNCS = {
     'Number of Compounds' : num_compounds,

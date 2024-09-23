@@ -40,3 +40,8 @@ def backend_client():
 def test_api_client():
     with httpx.Client(base_url=f"http://test_server:{os.environ['TEST_SERVER_PORT']}") as client:
         yield client
+
+@pytest.fixture(scope="session")
+def tei_client():
+    with httpx.Client(base_url=f"http://tei_plugin:{os.environ['TEI_PORT']}") as client:
+        yield client

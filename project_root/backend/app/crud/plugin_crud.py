@@ -251,11 +251,14 @@ async def execute_plugin(db_plugin, execute_request):
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=str(e))
     
-    if db_plugin.execution_type.lower() == 'api':
+    execution_type = db_plugin.execution_type.lower()
+    if execution_type == 'api':
         response = await utils.execute_api_plugin(db_plugin, execute_request)
-    elif db_plugin.execution_type.lower() == 'queue':
+    elif execution_type == 'queue':
         response = utils.execute_queue_plugin(db_plugin, execute_request)
         await asyncio.sleep(0)
+    elif execution_type == 'internal_tei':
+        response = await utils.execute_tei_plugin(db_plugin, execute_request) 
     else:
         raise HTTPException(status_code=400, detail=f"Execute plugin of type {db_plugin['type']} not supported")
     

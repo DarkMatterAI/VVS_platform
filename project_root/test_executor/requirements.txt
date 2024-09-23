@@ -4,3 +4,4 @@ pytest
 redis
 pika
 numpy
+pydantic
