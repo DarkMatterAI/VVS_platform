@@ -116,13 +116,3 @@ async def init_records():
         await redis.close()
             
 
-
-
-# for each plugin
-#   pull existing records
-#   if plugin is enabled:
-#       check against default records
-#       create if necessary
-#   else:
-#       raise warning of records exist but plugin is not enabled
-#       show number of impacted records

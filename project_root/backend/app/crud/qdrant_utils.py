@@ -99,10 +99,10 @@ async def restore_snapshot(db_record, snapshot_name):
 async def qdrant_query(db_record, request):
     async with get_qdrant_client() as client:
         collection_name = f"data_source_{db_record.id}"
-        embedding_name = f"embedding_{request['embedding']['id']}"
+        embedding_name = f"embedding_{request['id']}"
         qdrant_results = await client.query_points(
             collection_name=collection_name,
-            query=request['embedding']['embedding'],
+            query=request['embedding'],
             using=embedding_name,
             limit=request['k'],
             with_vectors=True

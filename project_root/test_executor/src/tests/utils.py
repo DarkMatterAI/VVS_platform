@@ -110,13 +110,11 @@ def get_embedding_request(plugin_record):
 def get_data_source_request(plugin_record, k=5):
     request_data = {
         'request_id' : get_request_id(plugin_record),
-        'embedding' : {
-            'id' : plugin_record['embedding_ids'][0],
-            'name' : '',
-            'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()
-        },
+        'id' : plugin_record['embedding_ids'][0],
+        'name' : '',
+        'embedding' : np.random.randn(EMBEDDING_SIZE).tolist(),
         'k' : k
-    }
+        }
     return request_data 
 
 def get_filter_request(plugin_record):
@@ -132,12 +130,10 @@ def get_score_request(plugin_record):
 def get_mapper_request(plugin_record):
     request_data = {
         'request_id' : get_request_id(plugin_record),
-        'embedding' : {
-            'id' : plugin_record['input_embedding_id'],
-            'name' : '',
-            'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()
-        },
-    }
+        'id' : plugin_record['input_embedding_id'],
+        'name' : '',
+        'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()
+        }
     return request_data 
 
 def get_assembly_request(plugin_record):

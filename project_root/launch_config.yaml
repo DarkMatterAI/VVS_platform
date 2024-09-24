@@ -2,10 +2,13 @@ plugins:
   qdrant_plugin:
     enabled: True
     profile: qdrant_plugin 
+    requires_integration: True
   tei_plugin:
     enabled: True
     profile: tei_plugin 
+    requires_integration: True
   rdkit_plugin:
     enabled: True
     profile: rdkit_plugin 
+    requires_integration: False
 

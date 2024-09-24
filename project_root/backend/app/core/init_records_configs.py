@@ -45,12 +45,14 @@ async def init_rdkit_records(db):
 TEI_EMBEDDING = {
     "name": f"TEI Embedding {os.environ.get('TEI_MODEL_ID', '')}",
     "type": "embedding",
-    "execution_type": "internal_tei",
+    "execution_type" : "api",
+    # "execution_type": "internal_tei",
     "group_key": "tei_plugin",
     "timeout": 600,
     "max_concurrency": 64,
     "max_retries": 2,
-    "endpoint_url": f"http://tei_plugin:{os.environ.get('TEI_PORT', '')}/embed",
+    "endpoint_url" : f"http://plugin_integration_server:{os.environ.get('PLUGIN_INTEGRATION_SERVER_PORT')}/tei_embed",
+    # "endpoint_url": f"http://tei_plugin:{os.environ.get('TEI_PORT', '')}/embed",
     "vector_length": None,
     "distance_metric": os.environ.get('TEI_DISTANCE_METRIC', ''),
     "config" : {'normalize' : False if os.environ.get('TEI_NORMALIZE', 'false')=='false' else True,
@@ -83,13 +85,17 @@ async def init_tei_records(db):
 
     print("Checking TEI vector size")    
     try:
-        response = await utils.make_post_request(TEI_EMBEDDING['endpoint_url'], {'inputs' : '.'},
+        response = await utils.make_post_request(TEI_EMBEDDING['endpoint_url'], 
+                                                 {'id' : 1, 'external_id' : '1', 'item' : '.'},
                                                  timeout=10, retries=20, retry_sleep=1)
+        # response = await utils.make_post_request(TEI_EMBEDDING['endpoint_url'], {'inputs' : '.'},
+        #                                          timeout=10, retries=20, retry_sleep=1)
     except:
         logger.warning(f"Request to TEI server failed - aborting")
         return 
 
-    TEI_EMBEDDING['vector_length'] = len(response[0])
+    # TEI_EMBEDDING['vector_length'] = len(response[0])
+    TEI_EMBEDDING['vector_length'] = len(response['embedding'])
 
     record = schemas.EmbeddingPluginCreate(**TEI_EMBEDDING)
     try:

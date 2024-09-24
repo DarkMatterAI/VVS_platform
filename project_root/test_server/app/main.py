@@ -44,7 +44,7 @@ async def embed(request: schemas.EmbedRequest):
 @app.post("/data_source", response_model=schemas.DataSourceResponse)
 async def data_source(request: schemas.DataSourceRequest):
 
-    query_embedding = np.array(request.embedding.embedding)
+    query_embedding = np.array(request.embedding)
     response = {
         'valid' : True,
         'result' : []

@@ -14,11 +14,12 @@ class NamedEmbedding(BaseModel):
     id: int # internal id
     name: str
     embedding: List[float]
-    gradient: Optional[List[float]]=None
 
 class DataSourceRequest(BaseModel):
     request_id: str 
-    embedding: NamedEmbedding
+    id: int 
+    name: str 
+    embedding: List[float]
     k: int 
 
 class DataSourceResponseItem(BaseModel):
@@ -47,7 +48,9 @@ class ScoreResponse(BaseModel):
 
 class MapperRequest(BaseModel):
     request_id: str 
-    embedding: NamedEmbedding
+    id: int # internal id
+    name: str
+    embedding: List[float]
         
 class MapperResponse(BaseModel):
     valid: bool

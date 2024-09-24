@@ -13,7 +13,6 @@ class NamedEmbedding(BaseModel):
     id: int # internal id
     name: str
     embedding: List[float]
-    gradient: Optional[List[float]]=None
 
 class ItemRequest(BaseModel):
     request_id: str 

@@ -163,17 +163,17 @@ async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
     response = await make_post_request(url, execute_request, timeout, retries)
     return response 
 
-async def execute_tei_plugin(plugin: models.Plugin, execute_request: dict):
-    url = plugin.endpoint_url
-    timeout = plugin.timeout
-    retries = plugin.max_retries
-    execute_request = execute_request.model_dump()
-    data = {'inputs' : execute_request.get('item', '')}
-    data.update(plugin.config)
+# async def execute_tei_plugin(plugin: models.Plugin, execute_request: dict):
+#     url = plugin.endpoint_url
+#     timeout = plugin.timeout
+#     retries = plugin.max_retries
+#     execute_request = execute_request.model_dump()
+#     data = {'inputs' : execute_request.get('item', '')}
+#     data.update(plugin.config)
 
-    response = await make_post_request(url, data, timeout, retries)
-    response = {'embedding' : response[0]}
-    return response 
+#     response = await make_post_request(url, data, timeout, retries)
+#     response = {'embedding' : response[0]}
+#     return response 
 
 def rabbitmq_publish(routing_key, message):
     rabbitmq_params = pika.ConnectionParameters(
@@ -226,7 +226,7 @@ async def execute_qdrant_plugin(plugin: models.Plugin, execute_request: dict):
 execute_plugin_map = {
     'api' : execute_api_plugin,
     'queue' : execute_queue_plugin,
-    'internal_tei' : execute_tei_plugin,
+    # 'internal_tei' : execute_tei_plugin,
     'internal_qdrant' : execute_qdrant_plugin
 }
 

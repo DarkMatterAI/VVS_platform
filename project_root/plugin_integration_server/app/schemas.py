@@ -32,20 +32,6 @@ class DataSourceResponse(BaseModel):
     valid: bool
     result: List[DataSourceResponseItem]
 
-class ItemRequest(BaseModel):
-    request_id: str 
-    id: Union[int, str]
-    external_id: Union[int, str]
-    item: str 
-    embedding: List[NamedEmbedding]
-        
-class FilterResponse(BaseModel):
-    valid: bool
-        
-class ScoreResponse(BaseModel):
-    valid: bool
-    score: float
-
 class MapperRequest(BaseModel):
     request_id: str 
     id: int # internal id
@@ -56,20 +42,5 @@ class MapperResponse(BaseModel):
     valid: bool
     embedding: List[List[float]]
 
-class AssemblyItem(BaseModel):
-    assembly_index: int 
-    id: Union[int, str]
-    external_id: Union[int, str]
-    item: str 
 
-class AssemblyRequest(BaseModel):
-    request_id: str 
-    parents: List[AssemblyItem]
 
-class AssemblyResult(BaseModel):
-    item: str 
-    external_id: Optional[Union[int, str]]
-        
-class AssemblyResponse(BaseModel):
-    valid: bool
-    result: List[AssemblyResult]

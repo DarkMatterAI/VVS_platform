@@ -11,7 +11,7 @@ def embed(request):
 
 def data_source(request):
 
-    query_embedding = np.array(request['embedding']['embedding'])
+    query_embedding = np.array(request['embedding'])
     response = {
         'valid' : True,
         'result' : []
