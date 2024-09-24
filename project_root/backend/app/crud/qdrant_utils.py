@@ -1,4 +1,5 @@
 import os 
+import time 
 from qdrant_client import AsyncQdrantClient, models
 from fastapi import HTTPException
 from contextlib import asynccontextmanager
@@ -61,7 +62,61 @@ async def qdrant_create(db_record, qdrant_config):
 async def qdrant_delete(db_record):
     async with get_qdrant_client() as client:
         collection_name = f"data_source_{db_record.id}"
+        print(f"Deleting qdrant collection {collection_name}")
         response = await client.delete_collection(collection_name)
+        print(f"Delete collection {collection_name} response: {response}")
         return response 
+
+async def qdrant_get_collection(db_record):
+    async with get_qdrant_client() as client:
+        collection_name = f"data_source_{db_record.id}"
+        response = await client.get_collection(collection_name)
+        return response.model_dump()
+
+async def get_collection_names(retries):
+    # retries in case docker service hasn't started
+    async with get_qdrant_client() as client:
+        for i in range(retries):
+            try:
+                collections = await client.get_collections()
+                collections = collections.model_dump()
+                collection_names = [i['name'] for i in collections['collections']]
+                return collection_names 
+            except:
+                print("Failed to connect to qdrant, sleeping")
+                time.sleep(1)
+        return None 
+
+async def restore_snapshot(db_record, snapshot_name):
+    async with get_qdrant_client() as client:
+        collection_name = f"data_source_{db_record.id}"
+        snapshot_path = f"{os.environ.get('QDRANT__STORAGE__SNAPSHOTS_PATH', 'qdrant_snapshots')}/{collection_name}"
+        snapshot_location = f"file:///qdrant/{snapshot_path}/{snapshot_name}"
+        print(f"Recovering snapshot file {snapshot_location}")
+        snapshot_response = await client.recover_snapshot(collection_name, snapshot_location)
+        return snapshot_response
+
+async def qdrant_query(db_record, request):
+    async with get_qdrant_client() as client:
+        collection_name = f"data_source_{db_record.id}"
+        embedding_name = f"embedding_{request['embedding']['id']}"
+        qdrant_results = await client.query_points(
+            collection_name=collection_name,
+            query=request['embedding']['embedding'],
+            using=embedding_name,
+            limit=request['k'],
+            with_vectors=True
+        )
+
+        results = [] 
+        for result in qdrant_results.points:
+            result_data = {
+                'external_id' : result.payload.get('external_id', 0),
+                'item' : result.payload.get('item', ''),
+                'embedding' : result.vector[embedding_name],
+                'distance' : result.score
+            }
+            results.append(result_data)
+        return results
 
 

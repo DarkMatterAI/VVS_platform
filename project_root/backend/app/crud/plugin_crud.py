@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload, undefer_group
+from sqlalchemy.orm import selectinload, undefer_group, aliased
 from sqlalchemy import insert, delete, func, and_
 from fastapi import HTTPException
 from typing import List, Optional, Dict, Any 
@@ -224,7 +224,8 @@ async def delete_plugin(db: AsyncSession, plugin_id: int):
             linked_plugin_names = [p.name for p in linked_plugins]
             raise HTTPException(
                 status_code=400,
-                detail=f"Cannot delete this embedding plugin. It is linked to the following plugins: {', '.join(linked_plugin_names)}"
+                detail=f"Cannot delete this embedding plugin. It is" \
+                       f"linked to the following plugins: {', '.join(linked_plugin_names)}"
             )
 
     await db.delete(db_plugin)
@@ -245,6 +246,35 @@ async def get_plugins_summary(db: AsyncSession):
     
     return summary
 
+async def count_plugins_by_group_key(db: AsyncSession, group_key_query: str):
+    query = select(func.count(models.Plugin.id)).where(models.Plugin.group_key.like(group_key_query))
+    result = await db.execute(query)
+    count = result.scalar_one()
+    return count
+
+async def count_plugins_linked_to_embedding_id(db: AsyncSession, embedding_id: int) -> int:
+    query = (select(func.count())
+             .select_from(models.plugin_embeddings)
+             .where(models.plugin_embeddings.c.embedding_id == embedding_id)
+             )
+
+    result = await db.execute(query)
+    count = result.scalar_one()
+    return count
+
+async def count_plugins_linked_to_embedding_group(db: AsyncSession, group_key: str) -> int:
+    embedding_plugin = aliased(models.EmbeddingPlugin)
+    plugin_embedding = aliased(models.plugin_embeddings)
+
+    query = (
+        select(func.count())
+        .select_from(plugin_embedding)
+        .join(embedding_plugin, embedding_plugin.id == plugin_embedding.c.embedding_id)
+        .where(embedding_plugin.group_key == group_key)
+    )
+    result = await db.execute(query)
+    count = result.scalar_one()
+    return count
 
 async def execute_plugin(db_plugin, execute_request):
 
@@ -256,14 +286,10 @@ async def execute_plugin(db_plugin, execute_request):
         raise HTTPException(status_code=422, detail=str(e))
     
     execution_type = db_plugin.execution_type.lower()
-    if execution_type == 'api':
-        response = await utils.execute_api_plugin(db_plugin, execute_request)
-    elif execution_type == 'queue':
-        response = utils.execute_queue_plugin(db_plugin, execute_request)
-        await asyncio.sleep(0)
-    elif execution_type == 'internal_tei':
-        response = await utils.execute_tei_plugin(db_plugin, execute_request) 
-    else:
+    execution_function = utils.execute_plugin_map.get(execution_type, None)
+    if execution_function is None:
         raise HTTPException(status_code=400, detail=f"Execute plugin of type {db_plugin['type']} not supported")
+    else:
+        response = await execution_function(db_plugin, execute_request)
     
     return response 

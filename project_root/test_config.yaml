@@ -3,10 +3,14 @@ services:
     service_name: backend
     unit_test: False 
     integration_test: False 
+  qdrant_plugin:
+    service_name: qdrant_plugin
+    unit_test: False 
+    integration_test: True 
   tei_plugin:
     service_name: tei_plugin
     unit_test: False 
-    integration_test: True 
+    integration_test: False 
   rdkit_plugin:
     service_name: rdkit_plugin
     unit_test: False 

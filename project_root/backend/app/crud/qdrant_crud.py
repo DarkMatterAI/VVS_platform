@@ -85,7 +85,6 @@ async def delete(db: AsyncSession, plugin_id: int):
         print(delete_response)
         assert delete_response 
     except Exception as e:
-        print(f"Qdrant delete failed: {e}")
         raise HTTPException(status_code=502, 
                             detail=f"Qdrant delete failed with exception {e}")
 
@@ -93,3 +92,34 @@ async def delete(db: AsyncSession, plugin_id: int):
     response = await plugin_crud.delete_plugin(db, plugin_id)
     return response 
 
+
+async def update_collection_data(db: AsyncSession, plugin_id: int):
+    db_plugin = await plugin_crud.get_plugin(db, plugin_id)
+    if not db_plugin:
+        return None 
+    
+    print("Getting collection data")
+    try:
+        collection_info = await qdrant_utils.qdrant_get_collection(db_plugin)
+    except Exception as e:
+        raise HTTPException(status_code=502, 
+                            detail=f"Qdrant get collection failed with exception {e}")
+    
+    config = dict(db_plugin.config)
+    config['collection_info'] = collection_info
+    setattr(db_plugin, 'config', config)
+    await db.commit()
+    await db.refresh(db_plugin)
+    return db_plugin.id 
+
+async def update_snapshot(db: AsyncSession, plugin_id: int, snapshot_data: schemas.QdrantSnapshotData):
+    db_plugin = await plugin_crud.get_plugin(db, plugin_id)
+    if not db_plugin:
+        return None 
+    
+    config = dict(db_plugin.config)
+    config['snapshot'] = snapshot_data.model_dump()
+    setattr(db_plugin, 'config', config)
+    await db.commit()
+    await db.refresh(db_plugin)
+    return db_plugin.id 

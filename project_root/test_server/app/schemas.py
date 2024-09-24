@@ -18,14 +18,14 @@ class NamedEmbedding(BaseModel):
 
 class DataSourceRequest(BaseModel):
     request_id: str 
-    embedding: List[NamedEmbedding]
+    embedding: NamedEmbedding
     k: int 
 
 class DataSourceResponseItem(BaseModel):
     external_id: Union[int, str] # external id from data source
     item: str 
-    embedding: List[List[float]]
-    distance: Optional[List[float]]
+    embedding: List[float]
+    distance: Optional[float]
         
 class DataSourceResponse(BaseModel):
     valid: bool

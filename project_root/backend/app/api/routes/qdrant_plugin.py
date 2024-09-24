@@ -29,3 +29,22 @@ async def delete_plugin(plugin_id: int, db: AsyncSession = Depends(get_db)):
     if db_plugin is None:
         raise HTTPException(status_code=404, detail="Plugin not found")
     return db_plugin
+
+@router.get("/update_collection_data/{plugin_id}", response_model=schemas.PluginInDBUnion)
+async def update_collection_data(plugin_id: int, db: AsyncSession = Depends(get_db)):
+    record_id = await crud.update_collection_data(db, plugin_id)
+    if record_id is None:
+        raise HTTPException(status_code=404, detail="Plugin not found")
+    # sqlalcehmy throws greenlet error if `get_plugin` is inside `qdrant_crud.update_collection_data`
+    db_plugin = await plugin_crud.get_plugin(db, record_id)
+    return utils.get_plugin_response_model(db_plugin)
+
+@router.post("/update_snapshot/{plugin_id}", response_model=schemas.PluginInDBUnion)
+async def update_snapshot(plugin_id: int, snapshot_data: schemas.QdrantSnapshotData, db: AsyncSession = Depends(get_db)):
+    record_id = await crud.update_snapshot(db, plugin_id, snapshot_data)
+    if record_id is None:
+        raise HTTPException(status_code=404, detail="Plugin not found")
+    db_plugin = await plugin_crud.get_plugin(db, plugin_id)
+    print(db_plugin.config)
+    return utils.get_plugin_response_model(db_plugin)
+

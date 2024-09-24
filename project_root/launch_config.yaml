@@ -6,6 +6,6 @@ plugins:
     enabled: True
     profile: tei_plugin 
   rdkit_plugin:
-    enabled: False
+    enabled: True
     profile: rdkit_plugin 
 

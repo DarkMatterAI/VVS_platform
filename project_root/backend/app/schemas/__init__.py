@@ -41,5 +41,6 @@ from app.schemas.plugin_execute_schemas import (
 )
 
 from app.schemas.qdrant_plugin_schemas import (
-    QdrantDataSourceCreate
+    QdrantDataSourceCreate,
+    QdrantSnapshotData
 )

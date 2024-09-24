@@ -11,7 +11,7 @@ def embed(request):
 
 def data_source(request):
 
-    query_embedding = np.array(request['embedding'][0]['embedding'])
+    query_embedding = np.array(request['embedding']['embedding'])
     response = {
         'valid' : True,
         'result' : []
@@ -23,8 +23,8 @@ def data_source(request):
         response['result'].append({
             'external_id' : np.random.randint(1e8),
             'item' : ''.join(np.random.choice([i for i in string.ascii_lowercase], 16)),
-            'embedding' : [embedding.tolist()],
-            'distance' : [float(distance)]
+            'embedding' : embedding.tolist(),
+            'distance' : float(distance)
         })
 
     return response 

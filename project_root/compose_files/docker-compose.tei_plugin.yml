@@ -30,8 +30,8 @@ services:
       - vvs_v2_network
     expose:
       - ${TEI_PORT}
-    # ports:
-    #   - ${TEI_PORT}:${TEI_PORT}
+    ports:
+      - ${TEI_PORT}:${TEI_PORT}
     volumes:
       - "${TEI_HUGGINGFACE_HUB_CACHE}:/data"
     deploy:

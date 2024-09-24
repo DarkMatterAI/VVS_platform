@@ -3,7 +3,7 @@ import pytest
 import uuid 
 import time 
 
-from tests.utils import publish_and_poll, fetch_plugins_by_filter, get_request_id
+from tests.utils import publish_and_poll, get_request_id, delete_plugin
 
 api_str = '/api/v1/rdkit_plugins'
 
@@ -38,17 +38,13 @@ def get_request_data(plugin_record):
     request_data['request_id'] = get_request_id(plugin_record)
     return request_data 
 
-def delete_plugin(plugin_record, backend_client):
-    response = backend_client.delete(f"{api_str}/{plugin_record['id']}")
-    assert response.status_code == 200 
-
 def test_rdkit_filter_consumer(redis_connection, rabbitmq_connection, rdkit_test_filter, backend_client):
     filter_record = rdkit_test_filter()
     request_data = get_request_data(filter_record)
 
     response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
     assert response_data['valid'] == True
-    delete_plugin(filter_record, backend_client)
+    delete_plugin(filter_record, backend_client, api_str)
 
 def test_rdkit_filter_backend_execution(backend_client, rdkit_test_filter):
     filter_record = rdkit_test_filter()
@@ -67,7 +63,7 @@ def test_rdkit_filter_backend_execution(backend_client, rdkit_test_filter):
         time.sleep(0.1)
     assert 'result_id' not in result 
     assert result['valid']
-    delete_plugin(filter_record, backend_client)
+    delete_plugin(filter_record, backend_client, api_str)
 
 
 

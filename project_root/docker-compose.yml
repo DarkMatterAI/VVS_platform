@@ -1,5 +1,5 @@
 include:
-  - compose_files/docker-compose.db.yml
+  - compose_files/docker-compose.postgres.yml
   - compose_files/docker-compose.backend.yml
   - compose_files/docker-compose.dagster.yml
   - compose_files/docker-compose.messaging.yml

@@ -5,3 +5,4 @@ redis
 pika
 numpy
 pydantic
+qdrant-client==1.11.2

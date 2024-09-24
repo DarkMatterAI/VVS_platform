@@ -3,6 +3,12 @@ from qdrant_client import models
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List, Dict, Union, Mapping
 
+class QdrantSnapshotData(BaseModel):
+    name: str 
+    creation_time: str 
+    size: int 
+    checksum: str 
+
 class QdrantVectorParams(BaseModel):
     embedding_id: int 
     hnsw_config: Optional[models.HnswConfigDiff] = None
@@ -26,8 +32,6 @@ class QdrantConfig(BaseModel):
 class QdrantDataSourceCreate(BaseModel):
     name: str 
     qdrant_config: QdrantConfig
-
-
 
 
 # 1. validate config

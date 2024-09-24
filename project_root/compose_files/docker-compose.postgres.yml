@@ -6,5 +6,7 @@ services:
       - ../.env 
     networks:
       - vvs_v2_network
+    volumes:
+       - ${POSTGRES_STORAGE}:/var/lib/postgresql/data
     # ports:
     #   - ${PGPORT}:${PGPORT}

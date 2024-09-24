@@ -20,6 +20,10 @@ def fetch_plugins_by_filter(backend_client, name_pattern: str=None, group_key: s
     response.raise_for_status()
     return response.json()
 
+def delete_plugin(plugin_record, backend_client, api_str):
+    response = backend_client.delete(f"{api_str}/{plugin_record['id']}")
+    assert response.status_code == 200 
+
 def fetch_test_api_plugins(backend_client, plugin_type: str = None) -> List[Dict[Any, Any]]:
     return fetch_plugins_by_filter(backend_client, name_pattern=f"mock_%_api_%", plugin_type=plugin_type)
 
@@ -106,11 +110,11 @@ def get_embedding_request(plugin_record):
 def get_data_source_request(plugin_record, k=5):
     request_data = {
         'request_id' : get_request_id(plugin_record),
-        'embedding' : [{
+        'embedding' : {
             'id' : plugin_record['embedding_ids'][0],
             'name' : '',
             'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()
-        }],
+        },
         'k' : k
     }
     return request_data 

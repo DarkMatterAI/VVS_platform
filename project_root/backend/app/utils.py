@@ -9,6 +9,9 @@ import os
 import json 
 import yaml
 import time 
+import asyncio
+
+from app.crud.qdrant_utils import qdrant_query
 
 
 plugin_type_map = {
@@ -108,6 +111,7 @@ def get_request_key(plugin: models.Plugin, item_id=None):
 async def make_post_request(url, data, timeout, retries, retry_sleep=0):
     async with httpx.AsyncClient() as client:
         for attempt in range(retries + 1):
+            print(f"Post Request to {url} attempt {attempt+1}")
             try:
                 response = await client.post(url, json=data, timeout=timeout )
                 response.raise_for_status()
@@ -128,6 +132,27 @@ async def make_post_request(url, data, timeout, retries, retry_sleep=0):
 
     raise HTTPException(status_code=500, detail="Failed to execute API plugin after maximum retries")
 
+def get_redis_result(result_id, delete=True):
+    redis_client = redis.Redis(host='redis', 
+                               port=os.environ['REDIS_PORT'],
+                               password=os.environ['REDIS_PASSWORD'],
+                               db=int(os.environ['REDIS_DB'])
+                               ) 
+
+    redis_key = result_id.replace('.', ':')
+    result = redis_client.get(redis_key)
+
+    if not result:
+        return {'result_id' : result_id}
+    else:
+        try:
+            decoded_result = result.decode('utf-8')
+            parsed_result = json.loads(decoded_result)
+            if delete:
+                redis_client.delete(redis_key)
+            return parsed_result 
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail="Invalid JSON data in Redis")
 
 async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
     url = plugin.endpoint_url
@@ -145,9 +170,7 @@ async def execute_tei_plugin(plugin: models.Plugin, execute_request: dict):
     execute_request = execute_request.model_dump()
     data = {'inputs' : execute_request.get('item', '')}
     data.update(plugin.config)
-    
-    # if plugin.config['normalize'] == 'false':
-    #     data['normalize'] = False 
+
     response = await make_post_request(url, data, timeout, retries)
     response = {'embedding' : response[0]}
     return response 
@@ -181,34 +204,29 @@ def rabbitmq_publish(routing_key, message):
         if connection and connection.is_open:
             connection.close()
 
-def execute_queue_plugin(plugin: models.Plugin, execute_request: dict):
+async def execute_queue_plugin(plugin: models.Plugin, execute_request: dict):
 
     execute_request = execute_request.model_dump()
     request_key = get_request_key(plugin, execute_request.get('id', None))
     execute_request['request_id'] = request_key
     rabbitmq_publish(request_key, execute_request)
     response_key = request_key.replace('request', 'response')
+    await asyncio.sleep(0)
     return {'result_id' : response_key}
 
+async def execute_qdrant_plugin(plugin: models.Plugin, execute_request: dict):
+    execute_request = execute_request.model_dump()
+    try:
+        response = await qdrant_query(plugin, execute_request)
+        return response 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while querying qdrant: {str(e)}")
 
-def get_redis_result(result_id, delete=True):
-    redis_client = redis.Redis(host='redis', 
-                               port=os.environ['REDIS_PORT'],
-                               password=os.environ['REDIS_PASSWORD'],
-                               db=int(os.environ['REDIS_DB'])
-                               ) 
 
-    redis_key = result_id.replace('.', ':')
-    result = redis_client.get(redis_key)
+execute_plugin_map = {
+    'api' : execute_api_plugin,
+    'queue' : execute_queue_plugin,
+    'internal_tei' : execute_tei_plugin,
+    'internal_qdrant' : execute_qdrant_plugin
+}
 
-    if not result:
-        return {'result_id' : result_id}
-    else:
-        try:
-            decoded_result = result.decode('utf-8')
-            parsed_result = json.loads(decoded_result)
-            if delete:
-                redis_client.delete(redis_key)
-            return parsed_result 
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail="Invalid JSON data in Redis")

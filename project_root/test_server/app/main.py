@@ -44,7 +44,7 @@ async def embed(request: schemas.EmbedRequest):
 @app.post("/data_source", response_model=schemas.DataSourceResponse)
 async def data_source(request: schemas.DataSourceRequest):
 
-    query_embedding = np.array(request.embedding[0].embedding)
+    query_embedding = np.array(request.embedding.embedding)
     response = {
         'valid' : True,
         'result' : []
@@ -56,8 +56,8 @@ async def data_source(request: schemas.DataSourceRequest):
         response['result'].append({
             'external_id' : np.random.randint(1e8),
             'item' : ''.join(np.random.choice([i for i in string.ascii_lowercase], 16)),
-            'embedding' : [embedding.tolist()],
-            'distance' : [float(distance)]
+            'embedding' : embedding.tolist(),
+            'distance' : float(distance)
         })
 
     await asyncio.sleep(0)
