@@ -19,7 +19,11 @@ async def read_root():
 
 @app.post("/tei_embed", response_model=schemas.EmbedResponse)
 async def tei_embed(request: schemas.EmbedRequest):
-    tei_data = {'inputs' : request.item}
+    tei_data = {'inputs' : request.item,
+                'normalize' : False if os.environ.get('TEI_NORMALIZE', 'false')=='false' else True,
+                'truncate' : False if os.environ.get('TEI_TRUNCATE', 'false')=='false' else True,
+                'truncation_direction' : os.environ.get('TEI_TRUNCATION_DIRECTION', 'right')
+                }
     response = await utils.post_request(tei_data, PLUGIN_CONFIG['tei'])
     response = {'embedding' : response[0]}
     return response 

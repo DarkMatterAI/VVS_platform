@@ -6,6 +6,7 @@ import time
 from tests.utils import publish_and_poll, get_request_id, delete_plugin
 
 api_str = '/api/v1/rdkit_plugins'
+plugin_api_str = '/api/v1/plugins'
 
 @pytest.fixture(scope="function")
 def rdkit_test_filter(backend_client):
@@ -44,7 +45,7 @@ def test_rdkit_filter_consumer(redis_connection, rabbitmq_connection, rdkit_test
 
     response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
     assert response_data['valid'] == True
-    delete_plugin(filter_record, backend_client, api_str)
+    delete_plugin(filter_record, backend_client, plugin_api_str)
 
 def test_rdkit_filter_backend_execution(backend_client, rdkit_test_filter):
     filter_record = rdkit_test_filter()
@@ -63,7 +64,7 @@ def test_rdkit_filter_backend_execution(backend_client, rdkit_test_filter):
         time.sleep(0.1)
     assert 'result_id' not in result 
     assert result['valid']
-    delete_plugin(filter_record, backend_client, api_str)
+    delete_plugin(filter_record, backend_client, plugin_api_str)
 
 
 

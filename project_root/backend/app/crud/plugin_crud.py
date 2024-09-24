@@ -199,10 +199,8 @@ async def update_plugin(db: AsyncSession, plugin_id: int, plugin: schemas.Plugin
     db_plugin = await get_plugin(db, db_plugin.id)
     return db_plugin
 
-async def delete_plugin(db: AsyncSession, plugin_id: int):
-    db_plugin = await get_plugin(db, plugin_id)
-    if not db_plugin:
-        return None
+async def delete_plugin(db: AsyncSession, db_plugin: models.Plugin):
+    plugin_id = db_plugin.id 
 
     # Check if embedding plugin is linked to other records
     if isinstance(db_plugin, models.EmbeddingPlugin):

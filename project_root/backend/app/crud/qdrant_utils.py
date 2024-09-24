@@ -63,8 +63,16 @@ async def qdrant_delete(db_record):
     async with get_qdrant_client() as client:
         collection_name = f"data_source_{db_record.id}"
         print(f"Deleting qdrant collection {collection_name}")
+
         response = await client.delete_collection(collection_name)
         print(f"Delete collection {collection_name} response: {response}")
+        if not response:
+            collections = await client.get_collections()
+            collections = collections.model_dump()
+            collection_names = [i['name'] for i in collections['collections']]
+            if collection_name not in collection_names:
+                print(f"Collection {collection_name} does not exist on qdrant, assuming already deleted")
+                response = True 
         return response 
 
 async def qdrant_get_collection(db_record):

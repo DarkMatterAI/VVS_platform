@@ -2,6 +2,7 @@ import pytest
 import itertools 
 
 api_str = '/api/v1/rdkit_plugins'
+plugin_api_str = '/api/v1/plugins'
 
 def default_json(config, num_parents=2):
     default = {
@@ -158,7 +159,7 @@ async def test_no_reactions(client):
 @pytest.mark.asyncio
 async def test_read_rdkit_smarts_assembly(client, rdkit_test_smarts_assembly):
     record = await rdkit_test_smarts_assembly()
-    response = await client.get(f"{api_str}/{record['id']}")
+    response = await client.get(f"{plugin_api_str}/{record['id']}")
     assert response.status_code == 200
     response = response.json()
     assert response == record
@@ -187,10 +188,10 @@ async def test_invalid_update_rdkit_smarts_assembly(client, rdkit_test_smarts_as
 @pytest.mark.asyncio
 async def test_delete_rdkit_smarts_assembly(client, rdkit_test_smarts_assembly):
     record = await rdkit_test_smarts_assembly()
-    response = await client.delete(f"{api_str}/{record['id']}")
+    response = await client.delete(f"{plugin_api_str}/{record['id']}")
     assert response.status_code == 200
 
-    response = await client.delete(f"{api_str}/{record['id']}")
+    response = await client.delete(f"{plugin_api_str}/{record['id']}")
     assert response.status_code == 404
 
 

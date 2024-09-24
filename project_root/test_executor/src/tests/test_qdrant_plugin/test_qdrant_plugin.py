@@ -97,7 +97,7 @@ def test_qdrant_crud(backend_client, qdrant_client, test_embedding):
     collection_name = f"data_source_{data_source_id}"
     collection_info = qdrant_client.get_collection(collection_name)
 
-    delete_plugin(data_record, backend_client, api_str)
+    delete_plugin(data_record, backend_client, plugin_api_str)
     delete_plugin(embedding_record, backend_client, plugin_api_str)
 
     collections = qdrant_client.get_collections()
@@ -129,7 +129,7 @@ def test_qdrant_execute(backend_client, qdrant_client, test_embedding, test_data
                                    timeout=20)
     assert response.status_code == 200
 
-    delete_plugin(data_record, backend_client, api_str)
+    delete_plugin(data_record, backend_client, plugin_api_str)
     delete_plugin(embedding_record, backend_client, plugin_api_str)
 
 

@@ -7,7 +7,7 @@ from app import schemas
 
 from app.crud import plugin_crud, qdrant_utils 
 
-async def create(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate):
+async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate):
     print('Parsing qdrant create')
     plugin_data = plugin.model_dump(exclude_unset=True)
     qdrant_config = plugin_data['qdrant_config']
@@ -74,10 +74,8 @@ async def create(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate):
     await db.refresh(create_record)
     return create_record.id 
 
-async def delete(db: AsyncSession, plugin_id: int):
-    db_plugin = await plugin_crud.get_plugin(db, plugin_id)
-    if not db_plugin:
-        return None 
+async def delete_qdrant(db: AsyncSession, db_plugin):
+    plugin_id = db_plugin.id 
     
     print("Deleting qdrant collection")
     try:
@@ -89,7 +87,7 @@ async def delete(db: AsyncSession, plugin_id: int):
                             detail=f"Qdrant delete failed with exception {e}")
 
     print("Deleting database record")
-    response = await plugin_crud.delete_plugin(db, plugin_id)
+    response = await plugin_crud.delete_plugin(db, db_plugin)
     return response 
 
 

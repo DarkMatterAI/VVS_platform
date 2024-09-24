@@ -6,6 +6,7 @@ import time
 from tests.utils import publish_and_poll, get_request_id, delete_plugin
 
 api_str = '/api/v1/rdkit_plugins'
+plugin_api_str = '/api/v1/plugins'
 
 SYNTON_NAMES = ["O-acylation", 
                 "Olefination", 
@@ -63,7 +64,7 @@ def test_synton_smarts_assembly_consumer(redis_connection, rabbitmq_connection, 
 
     response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
     assert response_data['valid'] == True
-    delete_plugin(assembly_record, backend_client, api_str)
+    delete_plugin(assembly_record, backend_client, plugin_api_str)
 
 def test_synton_smarts_assembly_backend_execution(backend_client, synton_test_assembly):
     assembly_record = synton_test_assembly()
@@ -81,15 +82,6 @@ def test_synton_smarts_assembly_backend_execution(backend_client, synton_test_as
             break 
         time.sleep(0.1)
     assert 'result_id' not in result 
-    delete_plugin(assembly_record, backend_client, api_str)
-
-
-
-
-
-
-
-
-
+    delete_plugin(assembly_record, backend_client, plugin_api_str)
 
 
