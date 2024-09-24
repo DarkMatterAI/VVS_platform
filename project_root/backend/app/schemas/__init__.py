@@ -40,3 +40,6 @@ from app.schemas.plugin_execute_schemas import (
     ExecuteRequestUnion
 )
 
+from app.schemas.qdrant_plugin_schemas import (
+    QdrantDataSourceCreate
+)

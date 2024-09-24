@@ -12,3 +12,7 @@ if config.get('rdkit_plugin', {}).get('enabled', False):
     from app.api.routes import rdkit_plugin
     api_router.include_router(rdkit_plugin.router, prefix="/rdkit_plugins", tags=["rdkit_plugins"])
 
+if config.get('qdrant_plugin', {}).get('enabled', False):
+    from app.api.routes import qdrant_plugin
+    api_router.include_router(qdrant_plugin.router, prefix="/qdrant_plugins", tags=["qdrant_plugin"])
+

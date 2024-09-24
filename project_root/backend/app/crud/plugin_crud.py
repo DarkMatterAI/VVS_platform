@@ -9,6 +9,12 @@ import asyncio
 
 from app import models, schemas, utils 
 
+async def get_embeddings(db: AsyncSession, embedding_ids: List[int]):
+    stmt = select(models.EmbeddingPlugin).filter(models.EmbeddingPlugin.id.in_(embedding_ids))
+    result = await db.execute(stmt)
+    embeddings = result.scalars().all()
+    return embeddings 
+
 async def validate_embedding_ids(db: AsyncSession, embedding_ids: List[int]) -> None:
     if (len(embedding_ids) == 0):
         return 
@@ -16,9 +22,7 @@ async def validate_embedding_ids(db: AsyncSession, embedding_ids: List[int]) -> 
     if len(embedding_ids) != len(set(embedding_ids)):
         raise HTTPException(status_code=400, detail="Duplicate embedding IDs are not allowed")
 
-    stmt = select(models.EmbeddingPlugin).filter(models.EmbeddingPlugin.id.in_(embedding_ids))
-    result = await db.execute(stmt)
-    valid_embeddings = result.scalars().all()
+    valid_embeddings = await get_embeddings(db, embedding_ids)
 
     if len(valid_embeddings) != len(embedding_ids):
         invalid_ids = set(embedding_ids) - set(e.id for e in valid_embeddings)

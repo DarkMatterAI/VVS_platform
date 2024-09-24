@@ -12,3 +12,4 @@ aioredis
 redis
 pika
 pyyaml
+qdrant-client==1.11.2

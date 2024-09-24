@@ -23,6 +23,7 @@ class PluginExecutionType(str, Enum):
     API = "api"
     INTERNAL = "internal"
     INTERNAL_TEI = 'internal_tei'
+    INTERNAL_QDRANT = 'internal_qdrant'
 
 class DistanceMetric(str, Enum):
     Cosine = 'Cosine'
