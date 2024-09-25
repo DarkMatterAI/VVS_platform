@@ -17,7 +17,6 @@ async def delete_plugin(db: AsyncSession, plugin_id: int):
     if not db_plugin:
         return None
     
-    # if db_plugin.execution_type == 'internal_qdrant':
     if db_plugin.plugin_class == 'internal_qdrant':
         response = await delete_qdrant(db, db_plugin)
     else:

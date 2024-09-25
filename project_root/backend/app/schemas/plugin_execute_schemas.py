@@ -50,7 +50,7 @@ class ScoreResponse(BaseModel):
 
 class MapperRequest(BaseModel):
     # request_id: str 
-    id: int # internal id
+    id: int
     name: str
     embedding: List[float]
         

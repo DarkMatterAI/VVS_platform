@@ -12,7 +12,14 @@ services:
       stack: 67108864
     networks:
       - vvs_v2_network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
     ports:
-      - "8000:8000"
-      - "8001:8001"
-      - "8002:8002"
+      - ${TRITON_HTTP_PORT}:${TRITON_HTTP_PORT}
+      - ${TRITON_METRICS_PORT}:${TRITON_METRICS_PORT}
+

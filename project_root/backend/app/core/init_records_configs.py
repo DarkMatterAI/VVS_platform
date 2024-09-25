@@ -48,24 +48,18 @@ TEI_EMBEDDING = {
     "type": "embedding",
     "plugin_class": "internal_tei",
     "execution_type" : "api",
-    # "execution_type": "internal_tei",
     "group_key": "tei_plugin",
     "timeout": 600,
     "max_concurrency": 64,
     "max_retries": 2,
     "endpoint_url" : f"http://plugin_integration_server:{os.environ.get('PLUGIN_INTEGRATION_SERVER_PORT')}/tei_embed",
-    # "endpoint_url": f"http://tei_plugin:{os.environ.get('TEI_PORT', '')}/embed",
     "vector_length": None,
     "distance_metric": os.environ.get('TEI_DISTANCE_METRIC', ''),
     "config": {}
-    # "config" : {'normalize' : False if os.environ.get('TEI_NORMALIZE', 'false')=='false' else True,
-    #             'truncate' : False if os.environ.get('TEI_TRUNCATE', 'false')=='false' else True,
-    #             'truncation_direction' : os.environ.get('TEI_TRUNCATION_DIRECTION', 'right')}
 }
 
 
 async def init_tei_records(db):
-    # current_tei_records = await crud.get_plugins(db, filter_params={'group_key' : 'tei_plugin'})
     current_tei_records = await crud.get_plugins(db, filter_params={'plugin_class' : 'internal_tei'})
     found_existing = False 
     for record in current_tei_records:
@@ -92,13 +86,10 @@ async def init_tei_records(db):
         response = await utils.make_post_request(TEI_EMBEDDING['endpoint_url'], 
                                                  {'id' : 1, 'external_id' : '1', 'item' : '.', 'request_id' : ''},
                                                  timeout=10, retries=20, retry_sleep=1)
-        # response = await utils.make_post_request(TEI_EMBEDDING['endpoint_url'], {'inputs' : '.'},
-        #                                          timeout=10, retries=20, retry_sleep=1)
     except:
         logger.warning(f"Request to TEI server failed - aborting")
         return 
 
-    # TEI_EMBEDDING['vector_length'] = len(response[0])
     TEI_EMBEDDING['vector_length'] = len(response['embedding'])
 
     record = schemas.EmbeddingPluginCreate(**TEI_EMBEDDING)
@@ -119,7 +110,6 @@ async def init_qdrant_records(db):
     skip = 0
     limit = 100
     while True:
-        # qdrant_records = await crud.get_plugins(db, {'group_key' : 'qdrant_plugin'}, skip, limit)
         qdrant_records = await crud.get_plugins(db, {'plugin_class' : 'internal_qdrant'}, skip, limit)
 
         if not qdrant_records:
@@ -173,17 +163,14 @@ async def init_qdrant_records(db):
 
 PLUGIN_CREATE_DICT = {
     'tei_plugin' : {
-        # 'group_key' : 'tei_plugin',
         'plugin_class' : 'internal_tei',
         'create_func' : init_tei_records
     },
     'qdrant_plugin' : {
-        # 'group_key' : 'qdrant_plugin',
         'plugin_class' : 'internal_qdrant',
         'create_func' : init_qdrant_records
     },
     'rdkit_plugin' : {
-        # 'group_key' : 'rdkit_plugin',
         'plugin_class' : 'internal_rdkit',
         'create_func' : init_rdkit_records
     }

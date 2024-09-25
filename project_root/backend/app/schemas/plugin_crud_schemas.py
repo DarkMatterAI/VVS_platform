@@ -27,9 +27,6 @@ class PluginClass(str, Enum):
 class PluginExecutionType(str, Enum):
     QUEUE = "queue"
     API = "api"
-    # INTERNAL = "internal"
-    # INTERNAL_TEI = 'internal_tei'
-    # INTERNAL_QDRANT = 'internal_qdrant'
 
 class DistanceMetric(str, Enum):
     Cosine = 'Cosine'
@@ -142,7 +139,6 @@ class PluginUpdate(BaseModel):
     config: Optional[Dict] = None
     plugin_metadata: Optional[Dict] = None
 
-    # Add specific fields for each plugin type
     vector_length: Optional[int] = None
     distance_metric: Optional[DistanceMetric] = None
     embedding_ids: Optional[List[int]] = None

@@ -28,7 +28,6 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
         'type' : 'data_source',
         "plugin_class" : "internal_qdrant",
         'embedding_ids' : embedding_ids,
-        # 'execution_type' : 'internal_qdrant',
         "execution_type" : "api",
         'timeout' : int(os.environ.get('QDRANT_QUERY_TIMEOUT', 30)),
         'max_concurrency' : int(os.environ.get('QDRANT_QUERY_CONCURRENCY', 256)),
