@@ -82,6 +82,8 @@ class MapperPlugin(Plugin):
 
     id = Column(Integer, ForeignKey("plugins.id"), primary_key=True)
     input_embedding_id = Column(Integer, ForeignKey("embedding_plugins.id"), nullable=False)
+    output_order = Column(JSON, nullable=False)
+
     input_embedding = relationship("EmbeddingPlugin", foreign_keys=[input_embedding_id])
 
     __mapper_args__ = {

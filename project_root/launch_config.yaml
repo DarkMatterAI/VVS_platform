@@ -11,4 +11,8 @@ plugins:
     enabled: True
     profile: rdkit_plugin 
     requires_integration: False
+  mapper_plugin:
+    enabled: True
+    profile: mapper_plugin
+    requires_integration: False 
 

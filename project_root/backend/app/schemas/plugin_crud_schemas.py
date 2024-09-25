@@ -23,6 +23,7 @@ class PluginClass(str, Enum):
     INTERNAL_RDKIT = 'internal_rdkit'
     INTERNAL_TEI = 'internal_tei'
     INTERNAL_QDRANT = 'internal_qdrant'
+    INTERNAL_MAPPER = 'internal_mapper'
 
 class PluginExecutionType(str, Enum):
     QUEUE = "queue"
@@ -86,10 +87,14 @@ class ScorePluginCreate(PluginBase):
     type: PluginType = PluginType.SCORE
     embedding_ids: Optional[List[int]] = None
 
+class OutputEmbedding(BaseModel):
+    index: int 
+    embedding_id: int 
+
 class MapperPluginCreate(PluginBase):
     type: PluginType = PluginType.MAPPER
     input_embedding_id: int
-    output_embedding_ids: List[int] = Field(..., min_items=2)
+    output_order: List[OutputEmbedding] = Field(..., min_items=2)
 
 class AssemblyPluginCreate(PluginBase):
     type: PluginType = PluginType.ASSEMBLY
@@ -143,7 +148,7 @@ class PluginUpdate(BaseModel):
     distance_metric: Optional[DistanceMetric] = None
     embedding_ids: Optional[List[int]] = None
     input_embedding_id: Optional[int] = None
-    output_embedding_ids: Optional[List[int]] = None
+    output_order: Optional[List[OutputEmbedding]] = None
     num_parents: Optional[int] = None
 
     @field_validator('timeout', 'max_concurrency', 'max_retries', 'group_key')
@@ -190,8 +195,10 @@ class FilterPluginInDB(PluginInDB, FilterPluginCreate):
 class ScorePluginInDB(PluginInDB, ScorePluginCreate):
     pass
 
-class MapperPluginInDB(PluginInDB, MapperPluginCreate):
-    pass
+class MapperPluginInDB(PluginInDB, PluginBase):
+    embedding_ids: Optional[List[int]] = None
+    input_embedding_id: int
+    output_order: List[OutputEmbedding]
 
 class AssemblyPluginInDB(PluginInDB, AssemblyPluginCreate):
     pass

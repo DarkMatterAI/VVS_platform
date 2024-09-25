@@ -73,8 +73,9 @@ def remap_embeddings(plugin: models.Plugin, plugin_dict: dict) -> None:
     elif isinstance(plugin, (models.FilterPlugin, models.ScorePlugin)):
         plugin_dict['embedding_ids'] = [e.id for e in plugin.embeddings] if plugin.embeddings else None
     elif isinstance(plugin, models.MapperPlugin):
+        print('remapping mapper embeddings')
         plugin_dict['input_embedding_id'] = plugin.input_embedding_id
-        plugin_dict['output_embedding_ids'] = [e.id for e in plugin.output_embeddings]
+        plugin_dict['embedding_ids'] = [e.id for e in plugin.embeddings]
 
 def get_plugin_response_model(plugin: models.Plugin) -> schemas.PluginInDBUnion:
     plugin_dict = object_as_dict(plugin)

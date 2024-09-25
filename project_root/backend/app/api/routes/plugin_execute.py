@@ -13,7 +13,7 @@ async def execute_plugin(plugin_id: int,
                          execute_request: schemas.ExecuteRequestUnion,
                          db: AsyncSession = Depends(get_db)
                          ):
-    print(f"{execute_request.model_dump()}")
+    # print(f"{execute_request.model_dump()}")
     print('getting record')
     db_plugin = await crud.get_plugin(db, plugin_id=plugin_id)
     if db_plugin is None:

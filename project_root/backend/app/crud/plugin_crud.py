@@ -89,20 +89,33 @@ async def get_plugins(
     
     return plugins
 
+def validate_output_order(output_order):
+    ids = [i['index'] for i in output_order]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(status_code=422, detail=f"Duplicate index values in output order {ids}")
 
 async def create_plugin(db: AsyncSession, plugin: schemas.PluginCreate):
     plugin_model = utils.get_plugin_data_model(plugin.type)
-    plugin_data = plugin.model_dump(exclude={'embedding_ids', 'input_embedding_id', 'output_embedding_ids'})
+    plugin_data = plugin.model_dump(exclude={'embedding_ids', 'input_embedding_id'})
 
     if isinstance(plugin, schemas.MapperPluginCreate):
-        await validate_embedding_ids(db, [plugin.input_embedding_id] + plugin.output_embedding_ids)
+        embedding_order = [i.model_dump() for i in plugin.output_order]
+        validate_output_order(embedding_order)
+
+        embedding_ids = [i['embedding_id'] for i in embedding_order]
+        embedding_ids.append(plugin.input_embedding_id)
+        embedding_ids = list(set(embedding_ids))
+
+        await validate_embedding_ids(db, embedding_ids)
+
         plugin_data['input_embedding_id'] = plugin.input_embedding_id
-        embedding_ids = plugin.output_embedding_ids
     elif hasattr(plugin, 'embedding_ids') and (plugin.embedding_ids is not None):
         await validate_embedding_ids(db, plugin.embedding_ids)
         embedding_ids = plugin.embedding_ids
     else:
         embedding_ids = []
+
+    print(plugin_data)
 
     db_plugin = plugin_model(**plugin_data)
     db.add(db_plugin)
@@ -148,12 +161,34 @@ async def update_linked_embeddings(db_plugin, update_data, db, key='embedding_id
             )
 
 async def mapper_update(db_plugin, update_data, db):
-    if 'output_embedding_ids' in update_data:
-        await update_linked_embeddings(db_plugin, update_data, db, key='output_embedding_ids')
+
+    new_embeddings = []
 
     if 'input_embedding_id' in update_data:
-        await validate_embedding_ids(db, [update_data['input_embedding_id']])
+        input_embedding_id = update_data['input_embedding_id']
+        await validate_embedding_ids(db, [input_embedding_id])
+        new_embeddings.append(input_embedding_id)
         db_plugin.input_embedding_id = update_data['input_embedding_id']
+    else:
+        new_embeddings.append(db_plugin.input_embedding_id)
+
+    if 'output_order' in update_data:
+        output_order = update_data['output_order']
+        if len(output_order) < 2:
+            raise HTTPException(status_code=422, detail=f"Must have at least two output embeddings")
+        validate_output_order(update_data['output_order'])
+        embedding_ids = list(set([i['embedding_id'] for i in output_order]))
+        print(embedding_ids)
+        await validate_embedding_ids(db, embedding_ids)
+        new_embeddings += embedding_ids 
+        db_plugin.output_order = output_order
+    else:
+        new_embeddings += [i['embedding_id'] for i in db_plugin.output_order]
+
+    new_embeddings = list(set(new_embeddings))
+    update_data['new_embedding_links'] = new_embeddings 
+    await update_linked_embeddings(db_plugin, update_data, db, key='new_embedding_links')
+    update_data.pop('new_embedding_links')
 
 async def update_plugin(db: AsyncSession, plugin_id: int, plugin: schemas.PluginUpdate):
     db_plugin = await get_plugin(db, plugin_id)

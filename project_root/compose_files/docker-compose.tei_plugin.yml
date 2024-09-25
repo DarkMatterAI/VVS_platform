@@ -39,7 +39,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0']
+              device_ids: ['${TEI_DEVICE_ID}']
               capabilities: [gpu]
     depends_on:
       - plugin_integration_server

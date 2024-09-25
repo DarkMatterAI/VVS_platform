@@ -373,14 +373,16 @@ async def test_create_mapper_plugin(client, create_test_embedding):
             "max_concurrency": 10,
             "max_retries" : 1,
             "input_embedding_id": embedding1.id,
-            "output_embedding_ids": [embedding2.id, embedding3.id]
+            "output_order": [{"index": 0, "embedding_id": embedding2.id},
+                             {"index": 1, "embedding_id": embedding2.id}]
         }
     )
     assert response.status_code == 200
     data = response.json()
     assert data["type"] == "mapper"
     assert data["input_embedding_id"] == embedding1.id
-    assert set(data["output_embedding_ids"]) == {embedding2.id, embedding3.id}
+    assert data["output_order"] == [{"index": 0, "embedding_id": embedding2.id},
+                                         {"index": 1, "embedding_id": embedding2.id}]
 
 @pytest.mark.asyncio
 async def test_create_mapper_plugin_fails_without_input_embedding(client, create_test_embedding):
@@ -396,10 +398,32 @@ async def test_create_mapper_plugin_fails_without_input_embedding(client, create
             "timeout": 30,
             "max_concurrency": 5,
             "max_retries": 1,
-            "output_embedding_ids": [embedding.id, embedding.id]
+            "output_order": [{"index": 0, "embedding_id": embedding.id},
+                             {"index": 1, "embedding_id": embedding.id}]
         }
     )
     assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_create_mapper_plugin_duplicate_output_index_fails(client, create_test_embedding):
+    embedding = await create_test_embedding()
+    response = await client.post(
+        f"{api_str}/",
+        json={
+            "name": "Test Mapper",
+            "plugin_class": "generic",
+            "type": "mapper",
+            "execution_type": "queue",
+            "group_key": "test",
+            "timeout": 30,
+            "max_concurrency": 5,
+            "max_retries": 1,
+            "input_embedding_id": embedding.id,
+            "output_order": [{"index": 0, "embedding_id": embedding.id},
+                             {"index": 0, "embedding_id": embedding.id}]
+        }
+    )
+    assert response.status_code == 422, response.text
 
 @pytest.mark.asyncio
 async def test_create_mapper_plugin_fails_with_insufficient_output_embeddings(client, create_test_embedding):
@@ -416,7 +440,7 @@ async def test_create_mapper_plugin_fails_with_insufficient_output_embeddings(cl
             "timeout": 60,
             "max_concurrency": 10,
             "input_embedding_id": embedding1.id,
-            "output_embedding_ids": [embedding2.id]
+            "output_order": [{"index": 0, "embedding_id": embedding2.id}]
         }
     )
     assert response.status_code == 422
@@ -633,7 +657,8 @@ async def test_update_mapper_plugin(client, create_test_embedding):
             "max_concurrency": 10,
             "max_retries": 1,
             "input_embedding_id": embedding1.id,
-            "output_embedding_ids": [embedding2.id, embedding3.id]
+            "output_order": [{"index": 0, "embedding_id": embedding2.id},
+                             {"index": 1, "embedding_id": embedding3.id}]
         }
     )
     assert response.status_code == 200
@@ -642,14 +667,16 @@ async def test_update_mapper_plugin(client, create_test_embedding):
     update_data = {
         "name": "Updated Mapper",
         "input_embedding_id": embedding2.id,
-        "output_embedding_ids": [embedding1.id, embedding3.id]
+        "output_order": [{"index": 0, "embedding_id": embedding2.id},
+                         {"index": 1, "embedding_id": embedding2.id}]
     }
     response = await client.put(f"{api_str}/{mapper_id}", json=update_data)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated Mapper"
     assert data["input_embedding_id"] == embedding2.id
-    assert set(data["output_embedding_ids"]) == {embedding1.id, embedding3.id}
+    assert data["output_order"] == [{"index": 0, "embedding_id": embedding2.id},
+                                                 {"index": 1, "embedding_id": embedding2.id}]
 
 @pytest.mark.asyncio
 async def test_update_assembly_plugin(client):
@@ -750,18 +777,19 @@ async def test_update_mapper_with_less_than_two_output_embeddings_fails(client, 
             "max_concurrency": 10,
             "max_retries": 1,
             "input_embedding_id": embedding1.id,
-            "output_embedding_ids": [embedding2.id, embedding3.id]
+            "output_order": [{"index": 0, "embedding_id": embedding2.id},
+                             {"index": 1, "embedding_id": embedding3.id}]
         }
     )
     assert response.status_code == 200
     mapper_id = response.json()["id"]
 
     update_data = {
-        "output_embedding_ids": [embedding2.id]
+        "output_order": [{"index": 0, "embedding_id": embedding2.id}]
     }
+
     response = await client.put(f"{api_str}/{mapper_id}", json=update_data)
     assert response.status_code == 422
-    assert "validation error for MapperPluginInDB" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_delete_plugin(client, create_test_embedding):
@@ -774,10 +802,8 @@ async def test_delete_plugin(client, create_test_embedding):
 
 @pytest.mark.asyncio
 async def test_delete_linked_embedding_plugin_fails(client, create_test_embedding):
-    # Create an embedding plugin
     embedding = await create_test_embedding()
     
-    # Create a data source plugin linked to the embedding
     response = await client.post(
         f"{api_str}/",
         json={
@@ -794,25 +820,21 @@ async def test_delete_linked_embedding_plugin_fails(client, create_test_embeddin
     )
     assert response.status_code == 200
 
-    # Try to delete the embedding plugin
     response = await client.delete(f"{api_str}/{embedding.id}")
     assert response.status_code == 400
     assert "Cannot delete this embedding plugin" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_scroll_plugins(client, create_test_embedding):
-    # Create multiple plugins
     num_plugins = 15
     for i in range(num_plugins):
         await create_test_embedding(name=f"Test Embedding {i}")
 
-    # Test scrolling with custom limit
     response = await client.get(f"{api_str}/?limit=5")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 5
 
-    # Test scrolling with custom skip and limit
     response = await client.get(f"{api_str}/?skip=10&limit=5")
     assert response.status_code == 200
     data = response.json()

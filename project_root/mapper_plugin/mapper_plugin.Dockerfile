@@ -17,6 +17,8 @@ WORKDIR /opt/app
 
 COPY ./src/mapper_model.py /opt/app 
 
+COPY ./src/roberta_zinc_480m_1_2_bb_mapper.pt /opt/app
+
 COPY ./src/server.py /opt/app 
 
 CMD ["python", "./server.py"]

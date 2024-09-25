@@ -40,7 +40,8 @@ def get_mock_score():
 def get_mock_mapper(input_embedding, output_embeddings):
     mock_data = get_create_data('mapper')
     mock_data['input_embedding_id'] = input_embedding['id']
-    mock_data['output_embedding_ids'] = [i['id'] for i in output_embeddings]
+    mock_data['output_order'] = [{'index' : i, 'embedding_id' : output_embeddings[i]['id']}
+                                  for i in range(len(output_embeddings))]
     return mock_data
 
 def get_mock_assembly():
