@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Enum, Table, D
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, aliased, object_session
 from app.core.database import Base
-from app.schemas import PluginType, PluginExecutionType
+from app.schemas import PluginType, PluginExecutionType, PluginClass
 
 plugin_embeddings = Table('plugin_embeddings', Base.metadata,
     Column('plugin_id', Integer, ForeignKey('plugins.id'), primary_key=True),
@@ -14,6 +14,7 @@ class Plugin(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
+    plugin_class = Column(Enum(PluginClass), nullable=False)
     type = Column(Enum(PluginType), nullable=False)
     execution_type = Column(Enum(PluginExecutionType), nullable=False)
     

@@ -15,6 +15,7 @@ def rdkit_test_filter(backend_client):
             f"{api_str}/",
             json={
                 "name": f"Test RDKit Filter Integration {next(itertools.count(1))}",
+                "plugin_class" : "internal_rdkit",
                 "type": "filter",
                 "execution_type": "queue",
                 "group_key": "rdkit_plugin",

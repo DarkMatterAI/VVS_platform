@@ -28,6 +28,7 @@ def test_embedding(backend_client):
             f"{plugin_api_str}/",
             json={
                 "name": f"Test Qdrant Integration Embedding {next(itertools.count(1))}",
+                "plugin_class" : "generic",
                 "type": "embedding",
                 "execution_type": "queue",
                 "group_key": "fake_queue",

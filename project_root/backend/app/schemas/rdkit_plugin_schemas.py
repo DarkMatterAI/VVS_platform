@@ -8,6 +8,7 @@ from app.schemas.plugin_crud_schemas import (FilterPluginCreate,
                                              PluginType,
                                              PluginExecutionType,
                                              PluginType,
+                                             PluginClass,
                                              AssemblyPluginCreate,
                                              PluginInDBUnion
                                              )
@@ -62,7 +63,8 @@ class CatalogName(str, Enum):
 
 field_mapping = {
     'execution_type' : PluginExecutionType.QUEUE,
-    'group_key' : 'rdkit_plugin'
+    'group_key' : 'rdkit_plugin',
+    'plugin_class' : 'internal_rdkit'
 }
 
 def check_bounds(filter):
@@ -120,12 +122,13 @@ class RDKitFilterConfig(BaseModel):
 
 
 class RDKitFilterCreate(FilterPluginCreate):
+    plugin_class: PluginClass=PluginClass.INTERNAL_RDKIT
     type: PluginType=PluginType.FILTER
     execution_type: PluginExecutionType=PluginExecutionType.QUEUE
     group_key: str='rdkit_plugin'
     config: RDKitFilterConfig
 
-    @field_validator('execution_type', 'group_key')
+    @field_validator('execution_type', 'group_key', 'plugin_class')
     def set_default_fields(cls, v, info):
         return field_mapping[info.field_name]
     
@@ -239,12 +242,13 @@ def check_parent_reaction_match(values):
     return values 
 
 class ReactionAssmeblyCreate(AssemblyPluginCreate):
+    plugin_class: PluginClass=PluginClass.INTERNAL_RDKIT
     type: PluginType=PluginType.ASSEMBLY
     execution_type: PluginExecutionType=PluginExecutionType.QUEUE
     group_key: str='rdkit_plugin'
     config: ReactionConfig
 
-    @field_validator('execution_type', 'group_key')
+    @field_validator('execution_type', 'group_key', 'plugin_class')
     def set_default_fields(cls, v, info):
         return field_mapping[info.field_name]
 
@@ -309,12 +313,13 @@ class SyntOnReactionConfig(BaseModel):
         return v 
 
 class SyntOnAssmeblyCreate(AssemblyPluginCreate):
+    plugin_class: PluginClass=PluginClass.INTERNAL_RDKIT
     type: PluginType=PluginType.ASSEMBLY
     execution_type: PluginExecutionType=PluginExecutionType.QUEUE
     group_key: str='rdkit_plugin'
     config: SyntOnReactionConfig
 
-    @field_validator('execution_type', 'group_key')
+    @field_validator('execution_type', 'group_key', 'plugin_class')
     def set_default_fields(cls, v, info):
         return field_mapping[info.field_name]
 

@@ -30,6 +30,7 @@ def synton_test_assembly(backend_client):
             f"{api_str}/",
             json={
                 "name": f"Test SyntOn Assembly Integration {next(itertools.count(1))}",
+                "plugin_class" : "internal_rdkit",
                 "type": "assembly",
                 "execution_type": "queue",
                 "group_key": "rdkit_plugin",

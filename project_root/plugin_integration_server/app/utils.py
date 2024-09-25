@@ -49,11 +49,12 @@ async def get_qdrant_client():
 
 
 async def qdrant_query(collection_name, request):
+    request = request.model_dump()
     async with get_qdrant_client() as client:
-        embedding_name = f"embedding_{request['embedding']['id']}"
+        embedding_name = f"embedding_{request['id']}"
         qdrant_results = await client.query_points(
             collection_name=collection_name,
-            query=request['embedding']['embedding'],
+            query=request['embedding'],
             using=embedding_name,
             limit=request['k'],
             with_vectors=True
@@ -68,18 +69,7 @@ async def qdrant_query(collection_name, request):
                 'distance' : result.score
             }
             results.append(result_data)
+
+        results = {'valid' : bool(results), 'result' : results}
         return results
-
-
-
-# async def execute_qdrant_plugin(plugin: models.Plugin, execute_request: dict):
-#     execute_request = execute_request.model_dump()
-#     try:
-#         response = await qdrant_query(plugin, execute_request)
-#         return response 
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"An error occurred while querying qdrant: {str(e)}")
-
-
-
 

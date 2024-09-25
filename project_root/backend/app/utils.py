@@ -11,7 +11,7 @@ import yaml
 import time 
 import asyncio
 
-from app.crud.qdrant_utils import qdrant_query
+# from app.crud.qdrant_utils import qdrant_query
 
 
 plugin_type_map = {
@@ -214,19 +214,19 @@ async def execute_queue_plugin(plugin: models.Plugin, execute_request: dict):
     await asyncio.sleep(0)
     return {'result_id' : response_key}
 
-async def execute_qdrant_plugin(plugin: models.Plugin, execute_request: dict):
-    execute_request = execute_request.model_dump()
-    try:
-        response = await qdrant_query(plugin, execute_request)
-        return response 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while querying qdrant: {str(e)}")
+# async def execute_qdrant_plugin(plugin: models.Plugin, execute_request: dict):
+#     execute_request = execute_request.model_dump()
+#     try:
+#         response = await qdrant_query(plugin, execute_request)
+#         return response 
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"An error occurred while querying qdrant: {str(e)}")
 
 
 execute_plugin_map = {
     'api' : execute_api_plugin,
     'queue' : execute_queue_plugin,
     # 'internal_tei' : execute_tei_plugin,
-    'internal_qdrant' : execute_qdrant_plugin
+    # 'internal_qdrant' : execute_qdrant_plugin
 }
 

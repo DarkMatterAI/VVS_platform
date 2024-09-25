@@ -1,5 +1,6 @@
 from app.schemas.plugin_crud_schemas import (
     PluginType,
+    PluginClass,
     PluginExecutionType,
     DistanceMetric,
     PluginBase,

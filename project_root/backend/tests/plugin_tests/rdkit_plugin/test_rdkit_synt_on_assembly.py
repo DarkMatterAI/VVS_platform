@@ -7,6 +7,7 @@ plugin_api_str = '/api/v1/plugins'
 def default_json(config, num_parents=2):
     default = {
                 "name": "Test Assembly",
+                "plugin_class": "internal_rdkit",
                 "type": "assembly",
                 "execution_type": "queue",
                 "group_key": "rdkit_plugin",

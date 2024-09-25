@@ -18,12 +18,18 @@ class PluginType(str, Enum):
     MAPPER = 'mapper'
     ASSEMBLY = 'assembly'
 
+class PluginClass(str, Enum):
+    GENERIC = 'generic'
+    INTERNAL_RDKIT = 'internal_rdkit'
+    INTERNAL_TEI = 'internal_tei'
+    INTERNAL_QDRANT = 'internal_qdrant'
+
 class PluginExecutionType(str, Enum):
     QUEUE = "queue"
     API = "api"
-    INTERNAL = "internal"
-    INTERNAL_TEI = 'internal_tei'
-    INTERNAL_QDRANT = 'internal_qdrant'
+    # INTERNAL = "internal"
+    # INTERNAL_TEI = 'internal_tei'
+    # INTERNAL_QDRANT = 'internal_qdrant'
 
 class DistanceMetric(str, Enum):
     Cosine = 'Cosine'
@@ -33,6 +39,7 @@ class DistanceMetric(str, Enum):
 class PluginBase(BaseModel):
     name: str
     type: PluginType
+    plugin_class: PluginClass
     execution_type: PluginExecutionType
     timeout: Optional[int] = None
     max_concurrency: Optional[int] = None

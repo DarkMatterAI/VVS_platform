@@ -1,5 +1,5 @@
 import os 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from . import schemas, utils 
 
@@ -27,4 +27,12 @@ async def tei_embed(request: schemas.EmbedRequest):
     response = await utils.post_request(tei_data, PLUGIN_CONFIG['tei'])
     response = {'embedding' : response[0]}
     return response 
+
+@app.post("/data_source_qdrant/{collection_name}", response_model=schemas.DataSourceResponse)
+async def qdrant_data_source(collection_name: str, request: schemas.DataSourceRequest):
+    try:
+        response = await utils.qdrant_query(collection_name, request)
+        return response 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while querying qdrant: {str(e)}")
 

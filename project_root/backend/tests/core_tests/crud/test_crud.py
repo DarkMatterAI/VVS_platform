@@ -13,6 +13,7 @@ async def test_create_api_requires_url(client):
         f"{api_str}/",
         json={
             "name": "Test Filter",
+            "plugin_class": "generic",
             "type": "filter",
             "execution_type": "api",
             "group_key": "test",
@@ -29,6 +30,7 @@ async def test_create_requires_group_key(client):
         f"{api_str}/",
         json={
             "name": "Test Embedding",
+            "plugin_class": "generic",
             "type": "embedding",
             "execution_type": "queue",
             "timeout": 30,
@@ -47,6 +49,7 @@ async def test_create_requires_timeout(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -63,6 +66,7 @@ async def test_create_requires_concurrency(client):
         f"{api_str}/",
         json={
             "name": "Test Filter",
+            "plugin_class": "generic",
             "type": "filter",
             "execution_type": "api",
             "group_key": "test",
@@ -80,6 +84,7 @@ async def test_create_requires_retries(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -96,8 +101,9 @@ async def test_create_embedding_plugin(client):
         f"{api_str}/",
         json={
             "name": "Test Embedding",
+            "plugin_class": "generic",
             "type": "embedding",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -119,8 +125,28 @@ async def test_invalid_plugin_type_fails(client):
         f"{api_str}/",
         json={
             "name": "Test Embedding",
+            "plugin_class": "generic",
             "type": "awresty",
-            "execution_type": "internal",
+            "execution_type": "queue",
+            "group_key": "test",
+            "timeout": 30,
+            "max_concurrency": 5,
+            "max_retries": 1,
+            "vector_length": 128,
+            "distance_metric": "Cosine"
+        }
+    )
+    assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_invalid_plugin_class_fails(client):
+    response = await client.post(
+        f"{api_str}/",
+        json={
+            "name": "Test Embedding",
+            "plugin_class": "awresty",
+            "type": "embedding",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -138,6 +164,7 @@ async def test_create_data_source_plugin(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -161,6 +188,7 @@ async def test_create_data_source_plugin_multiple_embeddings(client, create_test
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -181,6 +209,7 @@ async def test_create_data_source_plugin_fails_without_embedding(client):
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -198,6 +227,7 @@ async def test_create_filter_plugin(client):
         f"{api_str}/",
         json={
             "name": "Test Filter",
+            "plugin_class": "generic",
             "type": "filter",
             "execution_type": "api",
             "group_key": "test",
@@ -220,6 +250,7 @@ async def test_create_filter_plugin_with_embedding(client, create_test_embedding
         f"{api_str}/",
         json={
             "name": "Test Filter",
+            "plugin_class": "generic",
             "type": "filter",
             "execution_type": "api",
             "group_key": "test",
@@ -243,6 +274,7 @@ async def test_create_filter_plugin_with_embeddings(client, create_test_embeddin
         f"{api_str}/",
         json={
             "name": "Test Filter",
+            "plugin_class": "generic",
             "type": "filter",
             "execution_type": "api",
             "group_key": "test",
@@ -264,8 +296,9 @@ async def test_create_score_plugin(client):
         f"{api_str}/",
         json={
             "name": "Test Score",
+            "plugin_class": "generic",
             "type": "score",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -285,6 +318,7 @@ async def test_create_score_plugin_with_embedding(client, create_test_embedding)
         f"{api_str}/",
         json={
             "name": "Test Score",
+            "plugin_class": "generic",
             "type": "score",
             "execution_type": "queue",
             "group_key": "test",
@@ -307,6 +341,7 @@ async def test_create_score_plugin_with_embeddings(client, create_test_embedding
         f"{api_str}/",
         json={
             "name": "Test Score",
+            "plugin_class": "generic",
             "type": "score",
             "execution_type": "queue",
             "group_key": "test",
@@ -330,6 +365,7 @@ async def test_create_mapper_plugin(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Mapper",
+            "plugin_class": "generic",
             "type": "mapper",
             "execution_type": "queue",
             "group_key": "test",
@@ -353,8 +389,9 @@ async def test_create_mapper_plugin_fails_without_input_embedding(client, create
         f"{api_str}/",
         json={
             "name": "Test Mapper",
+            "plugin_class": "generic",
             "type": "mapper",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -372,6 +409,7 @@ async def test_create_mapper_plugin_fails_with_insufficient_output_embeddings(cl
         f"{api_str}/",
         json={
             "name": "Test Mapper",
+            "plugin_class": "generic",
             "type": "mapper",
             "execution_type": "queue",
             "group_key": "test",
@@ -389,8 +427,9 @@ async def test_create_assembly_plugin(client):
         f"{api_str}/",
         json={
             "name": "Test Assembly",
+            "plugin_class": "generic",
             "type": "assembly",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -409,8 +448,9 @@ async def test_create_assembly_plugin_fails_with_insufficient_parents(client):
         f"{api_str}/",
         json={
             "name": "Test Assembly",
+            "plugin_class": "generic",
             "type": "assembly",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -427,6 +467,7 @@ async def test_create_embedding_plugin_with_duplicate_embeddings(client, create_
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -445,6 +486,7 @@ async def test_create_data_source_with_invalid_embedding_id(client):
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -490,6 +532,7 @@ async def test_update_data_source_plugin(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -519,6 +562,7 @@ async def test_update_filter_plugin(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Filter",
+            "plugin_class": "generic",
             "type": "filter",
             "execution_type": "api",
             "group_key": "test",
@@ -549,8 +593,9 @@ async def test_update_score_plugin(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Score",
+            "plugin_class": "generic",
             "type": "score",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -580,6 +625,7 @@ async def test_update_mapper_plugin(client, create_test_embedding):
         f"{api_str}/",
         json={
             "name": "Test Mapper",
+            "plugin_class": "generic",
             "type": "mapper",
             "execution_type": "queue",
             "group_key": "test",
@@ -611,8 +657,9 @@ async def test_update_assembly_plugin(client):
         f"{api_str}/",
         json={
             "name": "Test Assembly",
+            "plugin_class": "generic",
             "type": "assembly",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -640,6 +687,7 @@ async def test_update_data_source_with_zero_embeddings_fails(client, create_test
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",
@@ -665,8 +713,9 @@ async def test_update_assembly_with_less_than_two_parents_fails(client):
         f"{api_str}/",
         json={
             "name": "Test Assembly",
+            "plugin_class": "generic",
             "type": "assembly",
-            "execution_type": "internal",
+            "execution_type": "queue",
             "group_key": "test",
             "timeout": 30,
             "max_concurrency": 5,
@@ -693,6 +742,7 @@ async def test_update_mapper_with_less_than_two_output_embeddings_fails(client, 
         f"{api_str}/",
         json={
             "name": "Test Mapper",
+            "plugin_class": "generic",
             "type": "mapper",
             "execution_type": "queue",
             "group_key": "test",
@@ -732,6 +782,7 @@ async def test_delete_linked_embedding_plugin_fails(client, create_test_embeddin
         f"{api_str}/",
         json={
             "name": "Test Data Source",
+            "plugin_class": "generic",
             "type": "data_source",
             "execution_type": "queue",
             "group_key": "test",

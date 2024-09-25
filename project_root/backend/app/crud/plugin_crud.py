@@ -250,6 +250,12 @@ async def count_plugins_by_group_key(db: AsyncSession, group_key_query: str):
     count = result.scalar_one()
     return count
 
+async def count_plugins_by_class(db: AsyncSession, plugin_class: schemas.PluginClass):
+    query = select(func.count(models.Plugin.id)).where(models.Plugin.plugin_class == plugin_class)
+    result = await db.execute(query)
+    count = result.scalar_one()
+    return count
+
 async def count_plugins_linked_to_embedding_id(db: AsyncSession, embedding_id: int) -> int:
     query = (select(func.count())
              .select_from(models.plugin_embeddings)
@@ -269,6 +275,20 @@ async def count_plugins_linked_to_embedding_group(db: AsyncSession, group_key: s
         .select_from(plugin_embedding)
         .join(embedding_plugin, embedding_plugin.id == plugin_embedding.c.embedding_id)
         .where(embedding_plugin.group_key == group_key)
+    )
+    result = await db.execute(query)
+    count = result.scalar_one()
+    return count
+
+async def count_plugins_linked_to_embedding_class(db: AsyncSession, plugin_class: schemas.PluginClass) -> int:
+    embedding_plugin = aliased(models.EmbeddingPlugin)
+    plugin_embedding = aliased(models.plugin_embeddings)
+
+    query = (
+        select(func.count())
+        .select_from(plugin_embedding)
+        .join(embedding_plugin, embedding_plugin.id == plugin_embedding.c.embedding_id)
+        .where(embedding_plugin.plugin_class == plugin_class)
     )
     result = await db.execute(query)
     count = result.scalar_one()

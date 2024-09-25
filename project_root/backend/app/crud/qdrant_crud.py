@@ -26,12 +26,14 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
     create_record = {
         'name' : plugin_data['name'],
         'type' : 'data_source',
+        "plugin_class" : "internal_qdrant",
         'embedding_ids' : embedding_ids,
-        'execution_type' : 'internal_qdrant',
+        # 'execution_type' : 'internal_qdrant',
+        "execution_type" : "api",
         'timeout' : int(os.environ.get('QDRANT_QUERY_TIMEOUT', 30)),
         'max_concurrency' : int(os.environ.get('QDRANT_QUERY_CONCURRENCY', 256)),
         'max_retries' : int(os.environ.get('QDRANT_QUERY_MAX_RETRIES', 4)),
-        'endpoint_url' : None,
+        'endpoint_url' : 'placeholder',
         'group_key' : 'qdrant_plugin',
         'config' : {}
     }
@@ -69,6 +71,10 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
                      'snapshot' : None 
                      }
     setattr(create_record, 'config', record_config)
+
+    endpoint_url = f"http://plugin_integration_server:{os.environ.get('PLUGIN_INTEGRATION_SERVER_PORT')}"
+    endpoint_url = f"{endpoint_url}/data_source_qdrant/data_source_{create_record.id}"
+    setattr(create_record, 'endpoint_url', endpoint_url)
 
     await db.commit()
     await db.refresh(create_record)

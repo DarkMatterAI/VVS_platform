@@ -10,6 +10,7 @@ def get_create_data(plugin_type):
 
     mock_data = {
         "name" : f"mock_{plugin_type}_api_{np.random.randint(1e4)}",
+        "plugin_class" : "generic",
         "type" : plugin_type,
         "execution_type" : "api",
         "group_key" : "mock_api",

@@ -17,11 +17,14 @@ async def _init_records(db):
     
     for plugin_name, plugin_data in config.items():
         plugin_enabled = plugin_data.get('enabled', False)
-        plugin_group_key = PLUGIN_CREATE_DICT[plugin_name]['group_key']
-        current_record_count = await crud.count_plugins_by_group_key(db, plugin_group_key)
+        # plugin_group_key = PLUGIN_CREATE_DICT[plugin_name]['group_key']
+        plugin_class = PLUGIN_CREATE_DICT[plugin_name]['plugin_class']
+        # current_record_count = await crud.count_plugins_by_group_key(db, plugin_group_key)
+        current_record_count = await crud.count_plugins_by_class(db, plugin_class)
         if (not plugin_enabled) and (current_record_count>0):
             if plugin_name=='tei_plugin':
-                linked_record_count = await crud.count_plugins_linked_to_embedding_group(db, plugin_group_key)
+                linked_record_count = await crud.count_plugins_linked_to_embedding_class(db, plugin_class)
+                # linked_record_count = await crud.count_plugins_linked_to_embedding_group(db, plugin_group_key)
                 logger.warning(f"Plugin {plugin_name} is disabled but " \
                                f"{current_record_count} records exist in the database " \
                                f"with {linked_record_count} linked records impacted")

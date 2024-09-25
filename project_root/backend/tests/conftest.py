@@ -54,8 +54,9 @@ def create_test_embedding(db_session):
     async def _create_embedding(name=None, vector_length=128, distance_metric="Cosine"):
         embedding = models.EmbeddingPlugin(
             name=name or f"Test Embedding {next(counter)}",
+            plugin_class="generic",
             type="embedding",
-            execution_type="internal",
+            execution_type="queue",
             group_key="test",
             timeout=30,
             max_concurrency=5,

@@ -7,6 +7,7 @@ plugin_api_str = '/api/v1/plugins'
 def default_json(config):
     default = {
             "name": "Test Filter",
+            "plugin_class": "internal_rdkit",
             "type": "filter",
             "execution_type": "queue",
             "group_key": "rdkit_plugin",

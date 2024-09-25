@@ -24,6 +24,15 @@ async def get_plugins_summary(db: AsyncSession = Depends(get_db)):
 # async def count_by_group(embedding_id: int, db: AsyncSession = Depends(get_db)):
 #     return await crud.count_plugins_linked_to_embedding_id(db, embedding_id)
 
+# @router.get("/count_class")
+# async def count_by_group(plugin_class: schemas.PluginClass, db: AsyncSession = Depends(get_db)):
+#     return await crud.count_plugins_by_class(db, plugin_class)
+
+# @router.get("/count_class_linked")
+# async def count_by_group(plugin_class: schemas.PluginClass, db: AsyncSession = Depends(get_db)):
+#     return await crud.count_plugins_linked_to_embedding_class(db, plugin_class)
+
+
 @router.post("/", response_model=schemas.PluginInDBUnion)
 async def create_plugin(plugin: schemas.PluginCreate, db: AsyncSession = Depends(get_db)):
     response = await crud.create_plugin(db=db, plugin=plugin.root)
@@ -38,6 +47,7 @@ async def read_plugin(plugin_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/", response_model=List[schemas.PluginInDBUnion])
 async def scroll_plugins(plugin_type: Optional[schemas.PluginType]=None, 
+                         plugin_class: Optional[schemas.PluginClass]=None,
                          name: Optional[str] = Query(None),
                          group_key: Optional[str] = Query(None),
                          skip: int = 0, 
@@ -46,6 +56,7 @@ async def scroll_plugins(plugin_type: Optional[schemas.PluginType]=None,
     
     filter_params = {
         'type' : plugin_type,
+        'plugin_class' : plugin_class,
         'group_key' : group_key,
         'name' : name 
     }
