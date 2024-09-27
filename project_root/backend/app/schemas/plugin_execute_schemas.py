@@ -13,14 +13,14 @@ class EmbedResponse(BaseModel):
     embedding: List[float]
 
 class NamedEmbedding(BaseModel):
-    id: int # internal id
-    name: str
+    embedding_id: int # internal id
+    embedding_name: str
     embedding: List[float]
 
 class DataSourceRequest(BaseModel):
     # request_id: str 
-    id: int 
-    name: str 
+    embedding_id: int 
+    embedding_name: str 
     embedding: List[float]
     k: int 
 

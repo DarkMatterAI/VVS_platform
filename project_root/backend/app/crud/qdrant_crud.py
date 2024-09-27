@@ -13,6 +13,8 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
     qdrant_config = plugin_data['qdrant_config']
     embedding_ids = [i['embedding_id'] for i in qdrant_config['vectors_config']]
 
+    # await plugin_crud.validate_embedding_ids(db, embedding_ids)
+
     print("Pulling embedding records")
     embedding_records = await plugin_crud.get_embeddings(db, embedding_ids)
     embedding_record_dict = {i.id:i for i in embedding_records}

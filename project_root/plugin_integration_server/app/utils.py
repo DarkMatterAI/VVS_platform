@@ -1,6 +1,7 @@
 import os 
 import httpx 
 import time 
+import numpy as np 
 from fastapi import HTTPException
 
 from contextlib import asynccontextmanager
@@ -51,7 +52,7 @@ async def get_qdrant_client():
 async def qdrant_query(collection_name, request):
     request = request.model_dump()
     async with get_qdrant_client() as client:
-        embedding_name = f"embedding_{request['id']}"
+        embedding_name = f"embedding_{request['embedding_id']}"
         qdrant_results = await client.query_points(
             collection_name=collection_name,
             query=request['embedding'],
@@ -62,10 +63,18 @@ async def qdrant_query(collection_name, request):
 
         results = [] 
         for result in qdrant_results.points:
+
+            # required to return verbatim embeddings from qdrant collections 
+            # with cosine distance metric
+            embedding = result.vector[embedding_name]
+            norm = result.payload.get('norm', None)
+            if norm is not None:
+                embedding = (np.array(embedding) * norm).tolist()
+
             result_data = {
                 'external_id' : result.payload.get('external_id', 0),
                 'item' : result.payload.get('item', ''),
-                'embedding' : result.vector[embedding_name],
+                'embedding' : embedding,
                 'distance' : result.score
             }
             results.append(result_data)

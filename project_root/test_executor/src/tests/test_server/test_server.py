@@ -53,9 +53,49 @@ def test_mapper_api(backend_client, test_api_client):
 def test_assembly_api(backend_client, test_api_client):
     helper_test_api_route(backend_client, test_api_client, 'assembly', '/assembly')
 
-def test_backend_execution(backend_client):
-    plugin = fetch_test_api_plugins(backend_client)[0]
+# def test_backend_execution(backend_client):
+#     plugin = fetch_test_api_plugins(backend_client)[0]
+#     request_data = type_to_request_func[plugin['type']](plugin)
+#     response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+#     assert response.status_code == 200
+
+def test_embedding_backend_execution(backend_client):
+    plugin = fetch_test_api_plugins(backend_client, plugin_type='embedding')[0]
     request_data = type_to_request_func[plugin['type']](plugin)
     response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
     assert response.status_code == 200
+
+def test_data_source_backend_execution(backend_client):
+    plugin = fetch_test_api_plugins(backend_client, plugin_type='data_source')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+
+def test_filter_backend_execution(backend_client):
+    plugin = fetch_test_api_plugins(backend_client, plugin_type='filter')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+
+def test_score_backend_execution(backend_client):
+    plugin = fetch_test_api_plugins(backend_client, plugin_type='score')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+
+def test_mapper_backend_execution(backend_client):
+    plugin = fetch_test_api_plugins(backend_client, plugin_type='mapper')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+
+def test_assembly_backend_execution(backend_client):
+    plugin = fetch_test_api_plugins(backend_client, plugin_type='assembly')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+
+def test_backend_execution_invalid_plugin_id(backend_client):
+    response = backend_client.post(f"/api/v1/execute/1234567890", json={"id":1,"external_id":"1","item":"item"})
+    assert response.status_code == 404
 

@@ -56,6 +56,23 @@ def poll_redis(redis_connection, response_key, interval=0.1, timeout=10):
 
     raise TimeoutError(f"No response received for key {response_key} after {timeout} seconds")
 
+def poll_backend(backend_client, result_id, interval=0.1, timeout=4):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        result = backend_client.get(f"/api/v1/execute/{result_id}")
+        assert result.status_code == 200
+        result = result.json()
+        if 'result_id' not in result:
+            return result
+        time.sleep(interval)
+    return result 
+
+def backend_execute_and_poll(backend_client, plugin, request_data, interval=0.1, timeout=4):
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
+    assert response.status_code == 200
+    result_id = response.json()['result_id']
+    return poll_backend(backend_client, result_id, interval=interval, timeout=timeout)
+
 # request.<group_key>.<plugin_type>.<plugin_id>.<item_id>.<request_id>
 
 def get_request_id(plugin_record):
@@ -95,12 +112,12 @@ def get_random_item(with_embedding=False, with_named_embedding=False):
 
     if with_named_embedding:
         random_item['embedding'] = [{
-            'id' : 0,
-            'name' : '',
+            'embedding_id' : 0,
+            'embedding_name' : '',
             'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()
         }]
 
-    return random_item 
+    return random_item
 
 def get_random_parents():
     parents = [get_random_item() for i in range(NUM_PARENTS)]
@@ -113,11 +130,11 @@ def get_embedding_request(plugin_record):
     request_data['request_id'] = get_request_id(plugin_record)
     return request_data 
 
-def get_data_source_request(plugin_record, k=5):
+def get_data_source_request(plugin_record, k=5, embedding_index=0):
     request_data = {
         'request_id' : get_request_id(plugin_record),
-        'id' : plugin_record['embedding_ids'][0],
-        'name' : '',
+        'embedding_id' : plugin_record['embedding_ids'][embedding_index],
+        'embedding_name' : '',
         'embedding' : np.random.randn(EMBEDDING_SIZE).tolist(),
         'k' : k
         }

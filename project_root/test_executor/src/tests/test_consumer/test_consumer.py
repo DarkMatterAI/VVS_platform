@@ -2,7 +2,9 @@ import time
 from tests.utils import (
                             fetch_test_consumer_plugins, 
                             type_to_request_func, 
-                            publish_and_poll
+                            publish_and_poll,
+                            poll_backend,
+                            backend_execute_and_poll
                         )
 from tests.schemas import schema_mapping
 
@@ -100,23 +102,45 @@ def test_mapper_consumer(redis_connection, rabbitmq_connection, backend_client):
 def test_assembly_consumer(redis_connection, rabbitmq_connection, backend_client):
     helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, 'assembly')
 
-
-def test_backend_execution(backend_client):
-    plugin = fetch_test_consumer_plugins(backend_client)[0]
+def test_embedding_backend_execution(backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type='embedding')[0]
     request_data = type_to_request_func[plugin['type']](plugin)
-
-    response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
-    assert response.status_code == 200
-    result_id = response.json()['result_id']
-
-    for i in range(20):
-        result = backend_client.get(f"/api/v1/execute/{result_id}")
-        assert response.status_code == 200
-        result = result.json()
-        if 'result_id' not in result:
-            return 
-        time.sleep(0.1)
+    result = backend_execute_and_poll(backend_client, plugin, request_data, timeout=4)
     assert 'result_id' not in result 
     assert result['valid']
 
+def test_data_source_backend_execution(backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type='data_source')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    result = backend_execute_and_poll(backend_client, plugin, request_data, timeout=4)
+    assert 'result_id' not in result 
+    assert result['valid']
+
+def test_filter_backend_execution(backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type='filter')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    result = backend_execute_and_poll(backend_client, plugin, request_data, timeout=4)
+    assert 'result_id' not in result 
+    assert result['valid']  
+
+def test_score_backend_execution(backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type='score')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    result = backend_execute_and_poll(backend_client, plugin, request_data, timeout=4)
+    assert 'result_id' not in result 
+    assert result['valid']
+
+def test_mapper_backend_execution(backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type='mapper')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    result = backend_execute_and_poll(backend_client, plugin, request_data, timeout=4)
+    assert 'result_id' not in result 
+    assert result['valid']  
+
+def test_assembly_backend_execution(backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type='assembly')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    result = backend_execute_and_poll(backend_client, plugin, request_data, timeout=4)
+    assert 'result_id' not in result 
+    assert result['valid']
 

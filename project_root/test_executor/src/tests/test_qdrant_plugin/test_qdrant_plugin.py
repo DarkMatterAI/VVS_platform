@@ -36,7 +36,7 @@ def test_embedding(backend_client):
                 "max_concurrency": 5,
                 "max_retries": 1,
                 "vector_length": 32,
-                "distance_metric": "Cosine",
+                "distance_metric": "Euclid",
                 "config": {}
             }
         )
@@ -47,7 +47,7 @@ def test_embedding(backend_client):
 
 @pytest.fixture(scope="function")
 def test_data_source(backend_client):
-    def _test_data_source(embedding_record):
+    def _test_data_source(embedding_records):
         response = backend_client.post(
             f"{api_str}/",
             json={
@@ -59,6 +59,7 @@ def test_data_source(backend_client):
                             "on_disk": False,
                             "datatype": "float16"
                         }
+                        for embedding_record in embedding_records
                     ]
                 }
             }
@@ -72,6 +73,46 @@ def test_qdrant_ping(qdrant_client):
     collections = qdrant_client.get_collections()
     print(collections)
     assert True 
+
+def test_qdrant_crud_two_embeddings(backend_client, qdrant_client, test_embedding):
+    _ = qdrant_client.get_collections()
+    embedding_record1 = test_embedding()
+    embedding_record2 = test_embedding()
+
+    create_data = {
+        "name": "test_data_source",
+        "qdrant_config": {
+            "vectors_config": [
+                {
+                    "embedding_id": embedding_record1['id'],
+                    "on_disk": False,
+                    "datatype": "float16"
+                },
+                {
+                    "embedding_id": embedding_record2['id'],
+                    "on_disk": False,
+                    "datatype": "float16"
+                }
+            ]
+        }
+    }
+
+    response = backend_client.post(f"{api_str}/", json=create_data)
+    assert response.status_code == 200
+    data_record = response.json()
+
+    data_source_id = data_record['id']
+    collection_name = f"data_source_{data_source_id}"
+    collection_info = qdrant_client.get_collection(collection_name)
+
+    delete_plugin(data_record, backend_client, plugin_api_str)
+    delete_plugin(embedding_record1, backend_client, plugin_api_str)
+    delete_plugin(embedding_record2, backend_client, plugin_api_str)
+
+    collections = qdrant_client.get_collections()
+    collection_names = [i['name'] for i in collections.model_dump()['collections']]
+    assert collection_name not in collection_names 
+
 
 def test_qdrant_crud(backend_client, qdrant_client, test_embedding):
     _ = qdrant_client.get_collections()
@@ -109,7 +150,7 @@ def test_qdrant_crud(backend_client, qdrant_client, test_embedding):
 def test_qdrant_execute(backend_client, qdrant_client, test_embedding, test_data_source):
     _ = qdrant_client.get_collections()
     embedding_record = test_embedding()
-    data_record = test_data_source(embedding_record)
+    data_record = test_data_source([embedding_record])
 
     collection_name = f"data_source_{data_record['id']}"
     embedding_name = f"embedding_{embedding_record['id']}"
@@ -133,4 +174,44 @@ def test_qdrant_execute(backend_client, qdrant_client, test_embedding, test_data
     delete_plugin(data_record, backend_client, plugin_api_str)
     delete_plugin(embedding_record, backend_client, plugin_api_str)
 
+def test_qdrant_crud_two_embeddings(backend_client, qdrant_client, test_embedding, test_data_source):
+    _ = qdrant_client.get_collections()
+    embedding_record1 = test_embedding()
+    embedding_record2 = test_embedding()
+
+    data_record = test_data_source([embedding_record1, embedding_record2])
+
+    collection_name = f"data_source_{data_record['id']}"
+    embedding_name1 = f"embedding_{embedding_record1['id']}"
+    embedding_name2 = f"embedding_{embedding_record2['id']}"
+
+    n_points = 32
+    qdrant_client.upsert(
+        collection_name=collection_name,
+        points=models.Batch(
+            ids=[i+1 for i in range(n_points)],
+            payloads=[{'item' : f"item_{i}", 'external_id' : i} for i in range(n_points)],
+            vectors={embedding_name1 : np.random.rand(n_points, 32).tolist(),
+                     embedding_name2 : np.random.rand(n_points, 32).tolist()}
+            )
+        )
+    
+    request_func = type_to_request_func['data_source']
+
+    data_request_1 = request_func(data_record, embedding_index=0)
+    data_request_2 = request_func(data_record, embedding_index=1)
+
+    response_1 = backend_client.post(f"/api/v1/execute/{data_record['id']}", 
+                                   json=data_request_1, 
+                                   timeout=20)
+    assert response_1.status_code == 200    
+
+    response_2 = backend_client.post(f"/api/v1/execute/{data_record['id']}", 
+                                   json=data_request_2, 
+                                   timeout=20)
+    assert response_2.status_code == 200    
+    
+    delete_plugin(data_record, backend_client, plugin_api_str)
+    delete_plugin(embedding_record1, backend_client, plugin_api_str)
+    delete_plugin(embedding_record2, backend_client, plugin_api_str)
 

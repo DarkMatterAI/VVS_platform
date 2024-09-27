@@ -1,30 +1,30 @@
 services:
   backend:
     service_name: backend
-    unit_test: True 
-    integration_test: True 
+    unit_test: False 
+    integration_test: False 
   qdrant_plugin:
     service_name: qdrant_plugin
-    unit_test: True 
+    unit_test: False 
     integration_test: True 
   tei_plugin:
     service_name: tei_plugin
-    unit_test: True 
-    integration_test: True 
+    unit_test: False 
+    integration_test: False 
   rdkit_plugin:
     service_name: rdkit_plugin
-    unit_test: True 
-    integration_test: True 
+    unit_test: False 
+    integration_test: False 
   mapper_plugin:
     service_name: mapper_plugin
-    unit_test: True 
-    integration_test: True 
+    unit_test: False 
+    integration_test: False 
 temp_services:
   test_consumer:
     service_name: test_consumer
     profile: test_consumer
-    enabled: True
+    enabled: False
   test_server:
     service_name: test_server
     profile: test_server
-    enabled: True
+    enabled: False

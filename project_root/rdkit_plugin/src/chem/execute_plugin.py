@@ -10,8 +10,8 @@ from ..utils import date_print
 from ..connections import get_plugin_from_routing_key
 
 class NamedEmbedding(BaseModel):
-    id: int # internal id
-    name: str
+    embedding_id: int # internal id
+    embedding_name: str
     embedding: List[float]
 
 class ItemRequest(BaseModel):
