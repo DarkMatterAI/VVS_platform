@@ -9,7 +9,8 @@ include:
   - compose_files/docker-compose.rdkit_plugin.yml
   - compose_files/docker-compose.tei_plugin.yml
   - compose_files/docker-compose.qdrant.yml
-  - compose_files/docker-compose.mapper.yml 
+  - compose_files/docker-compose.triton.yml
+  # - compose_files/docker-compose.mapper.yml 
 
 networks:
   vvs_v2_network:

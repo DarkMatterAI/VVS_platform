@@ -222,5 +222,3 @@ PLUGIN_CREATE_DICT = {
 }
 
 
-
-# init mapper record
