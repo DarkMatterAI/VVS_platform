@@ -42,5 +42,3 @@ class MapperResponse(BaseModel):
     valid: bool
     embedding: List[List[float]]
 
-
-
