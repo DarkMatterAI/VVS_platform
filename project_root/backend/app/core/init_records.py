@@ -7,7 +7,8 @@ from app import schemas, utils
 from app.crud import plugin_crud as crud 
 
 from .database import get_db, REDIS_URL
-from .init_records_configs import PLUGIN_CREATE_DICT
+from .plugin_records.records_config import PLUGIN_CREATE_DICT
+# from .init_records_configs import PLUGIN_CREATE_DICT
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)

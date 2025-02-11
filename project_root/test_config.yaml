@@ -17,8 +17,8 @@ services:
     integration_test: True 
   mapper_plugin:
     service_name: mapper_plugin
-    unit_test: False 
-    integration_test: False 
+    unit_test: False # no unit tests 
+    integration_test: True 
 temp_services:
   test_consumer:
     service_name: test_consumer
