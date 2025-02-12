@@ -4,19 +4,19 @@ plugins:
     profile: qdrant_plugin 
     requires_integration: True
   tei_plugin:
-    enabled: True
+    enabled: False
     profile: tei_plugin 
     requires_integration: True
   rdkit_plugin:
     enabled: True
     profile: rdkit_plugin 
     requires_integration: False
-  # triton_plugin:
-  #   enabled: True
-  #   profile: triton_plugin
-  #   requires_integration: False # TODO ADD INTEGRATION
-  mapper_plugin:
+  triton_plugin:
     enabled: True
-    profile: mapper_plugin
-    requires_integration: True 
+    profile: triton_plugin
+    requires_integration: False # TODO ADD INTEGRATION
+  # mapper_plugin:
+  #   enabled: True
+  #   profile: mapper_plugin
+  #   requires_integration: True 
 

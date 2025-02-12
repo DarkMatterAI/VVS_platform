@@ -8,7 +8,6 @@ from app.crud import plugin_crud as crud
 
 from .database import get_db, REDIS_URL
 from .plugin_records.records_config import PLUGIN_CREATE_DICT
-# from .init_records_configs import PLUGIN_CREATE_DICT
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -17,6 +16,11 @@ async def _init_records(db):
     config = utils.read_config()['plugins']
     
     for plugin_name, plugin_data in config.items():
+        if plugin_name not in PLUGIN_CREATE_DICT:
+            logger.warning(f"Plugin {plugin_name} enambed in config but " \
+                           f"no initial records were found")
+            continue 
+
         plugin_enabled = plugin_data.get('enabled', False)
         plugin_class = PLUGIN_CREATE_DICT[plugin_name]['plugin_class']
         current_record_count = await crud.count_plugins_by_class(db, plugin_class)

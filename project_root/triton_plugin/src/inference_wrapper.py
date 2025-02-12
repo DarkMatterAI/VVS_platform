@@ -10,11 +10,18 @@ from logger import logger
 
 EMBBEDDING_MODEL_NAME = 'entropy/roberta_zinc_480m'
 COMPRESSION_MODEL_NAME = 'entropy/roberta_zinc_compression_head'
+MAPPER_64_MODEL_NAME = 'entropy/enamine_embedding_mapper'
+
 TOKENIZER = AutoTokenizer.from_pretrained(EMBBEDDING_MODEL_NAME)
+
 COMPRESSION_CONFIG = AutoConfig.from_pretrained(COMPRESSION_MODEL_NAME, 
                                                 trust_remote_code=True)
-INPUT_SIZE = COMPRESSION_CONFIG.input_size
-HEAD_SIZES = COMPRESSION_CONFIG.compression_sizes
+EMBEDDING_SIZE = COMPRESSION_CONFIG.input_size
+COMPRESSION_HEAD_SIZES = COMPRESSION_CONFIG.compression_sizes
+
+MAPPER_64_CONFIG = AutoConfig.from_pretrained(MAPPER_64_MODEL_NAME, 
+                                              trust_remote_code=True)
+MAPPER_OUTPUT_SHAPE = (MAPPER_64_CONFIG.n_out, MAPPER_64_CONFIG.d_out)
 
 if torch.cuda.is_available():
     DEVICES = [f'cuda:{i}' for i in range(torch.cuda.device_count())]
@@ -52,6 +59,15 @@ def embed(sequence, embedding_size, device, encoder, compression_heads):
 
     return {'embedding' : embeddings.detach().cpu().numpy().astype(np.float32)}
 
+def embedding_mapper(embedding, embedding_size, device, mapper_model):
+    logger.info(f"Enamine Mapper input size {embedding_size}, device {device}, {embedding.shape[0]} inputs")
+
+    with torch.inference_mode(), torch.autocast(device_type=device):
+        embedding = torch.from_numpy(embedding).float().to(device)
+        outputs = mapper_model(embedding)
+
+    return {'embeddings' : outputs.detach().cpu().numpy().astype(np.float32)} 
+
 class InferenceWrapper():
     def __init__(self, device):
         self.device = device
@@ -60,6 +76,7 @@ class InferenceWrapper():
     def load_models(self):
         self.load_embedding_model() 
         self.load_compression_heads()
+        self.load_enamine_mapper_64()
 
     def load_embedding_model(self):
         self.base_embedding = RobertaModel.from_pretrained(EMBBEDDING_MODEL_NAME, 
@@ -76,6 +93,13 @@ class InferenceWrapper():
             head.eval()
             head.to(self.device)
             self.compression_heads[size] = head
+
+    def load_enamine_mapper_64(self):
+        mapper_model = AutoModel.from_pretrained(MAPPER_64_MODEL_NAME,
+                                                 trust_remote_code=True)
+        self.enamine_mapper_64_model = mapper_model.mapper
+        self.enamine_mapper_64_model.eval()
+        self.enamine_mapper_64_model.to(self.device)
 
     @batch
     def embed_768(self, sequence):
@@ -100,10 +124,17 @@ class InferenceWrapper():
     @batch
     def embed_32(self, sequence):
         return embed(sequence, 32, self.device, self.base_embedding, self.compression_heads)
+    
+    @batch
+    def enamine_mapper_64(self, embedding):
+        return embedding_mapper(embedding, 64, self.device, self.enamine_mapper_64_model)
 
 
 MODELS = [InferenceWrapper(i) for i in DEVICES]
 
 def _embed_factory(embedding_size):
     return [getattr(model, f"embed_{embedding_size}") for model in MODELS]
+
+def _enamine_mapper_factory():
+    return [model.enamine_mapper_64 for model in MODELS]
 

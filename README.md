@@ -1,15 +1,17 @@
 # VVS_V2
 VVS V2
 
-Triton plugin
-    Embedding inference with compression
-    Make plugin
-    Make integration
-        refactor integration server
-    Register on backend
-    add to nginx 
+todos
+    add triton plugin
+        integrate to backend
+        integrate to integration server 
+        add to nginx 
+        add integration tests 
+    remove mapper plugin 
+    rdkit plugin
+        add enamine smarts on launch 
+        remove synt-on??
 
-add embedding compression models to HF
 update embedding/mapper
     move embedding, compression heads, mapper to triton
 update plugin server

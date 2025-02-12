@@ -5,12 +5,17 @@ from pytriton.triton import Triton, TritonConfig
 from pytriton.model_config import ModelConfig, DynamicBatcher, Tensor
 
 from logger import logger 
-from inference_wrapper import INPUT_SIZE, HEAD_SIZES, _embed_factory
+from inference_wrapper import (EMBEDDING_SIZE, 
+                               COMPRESSION_HEAD_SIZES, 
+                               MAPPER_OUTPUT_SHAPE,
+                               _embed_factory,
+                               _enamine_mapper_factory)
 
 HOST = os.environ.get('TRITON_HOST', "0.0.0.0")
 HTTP_PORT = int(os.environ.get('TRITON_HTTP_PORT', 8000))
 METRICS_PORT = int(os.environ.get('TRITON_METRICS_PORT', 8002))
 EMBED_BATCH_SIZE = int(os.environ.get('TRITON_EMBED_BATCH_SIZE', 512))
+MAPPER_BATCH_SIZE = int(os.environ.get('TRITON_MAPPER_BATCH_SIZE', 512))
 MAX_DELAY = int(os.environ.get('TRITON_MAX_QUEUE_DELAY', 5000))
 
 triton_config = TritonConfig(http_address=HOST,
@@ -20,7 +25,7 @@ triton_config = TritonConfig(http_address=HOST,
 
 with Triton(config=triton_config) as triton:
     logger.info("Loading models")
-    for embedding_size in [INPUT_SIZE] + HEAD_SIZES:
+    for embedding_size in [EMBEDDING_SIZE] + COMPRESSION_HEAD_SIZES:
         triton.bind(
             model_name=f"EMBED_{embedding_size}",
             infer_func=_embed_factory(embedding_size),
@@ -34,6 +39,21 @@ with Triton(config=triton_config) as triton:
                             batcher=DynamicBatcher(max_queue_delay_microseconds=MAX_DELAY)),
             strict=True,
         )
+
+    triton.bind(
+        model_name="ENAMINE_MAPPER_64",
+        infer_func=_enamine_mapper_factory(),
+        inputs=[
+            Tensor(name="embedding", dtype=np.float32, shape=(-1,))
+        ],
+        outputs=[
+            Tensor(name="embeddings", dtype=np.float32, shape=MAPPER_OUTPUT_SHAPE)
+        ],
+        config=ModelConfig(max_batch_size=MAPPER_BATCH_SIZE,
+                           batcher=DynamicBatcher(max_queue_delay_microseconds=MAX_DELAY)),
+        strict=True,
+    )
+
     logger.info("Serving inference")
     triton.serve()
 
