@@ -25,7 +25,7 @@ async def _init_records(db):
         plugin_class = PLUGIN_CREATE_DICT[plugin_name]['plugin_class']
         current_record_count = await crud.count_plugins_by_class(db, plugin_class)
         if (not plugin_enabled) and (current_record_count>0):
-            if plugin_name=='tei_plugin':
+            if (plugin_name=='tei_plugin') or (plugin_name=='triton_plugin'):
                 linked_record_count = await crud.count_plugins_linked_to_embedding_class(db, plugin_class)
                 logger.warning(f"Plugin {plugin_name} is disabled but " \
                                f"{current_record_count} records exist in the database " \

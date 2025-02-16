@@ -16,8 +16,10 @@ services:
       - "${PLUGIN_INTEGRATION_SERVER_HOST}"
       - --workers
       - "${PLUGIN_INTEGRATION_SERVER_WORKERS}"
-    expose:
-      - ${PLUGIN_INTEGRATION_SERVER_PORT}
+    # expose:
+      # - ${PLUGIN_INTEGRATION_SERVER_PORT}
+    ports:
+      - ${PLUGIN_INTEGRATION_SERVER_PORT}:${PLUGIN_INTEGRATION_SERVER_PORT}
     networks:
       - vvs_v2_network
     deploy:

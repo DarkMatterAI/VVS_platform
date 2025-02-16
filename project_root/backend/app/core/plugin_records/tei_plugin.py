@@ -1,6 +1,5 @@
 import os 
 import logging 
-# import asyncio 
 
 from app.crud import plugin_crud as crud 
 from app import schemas, utils 
@@ -17,7 +16,7 @@ TEI_EMBEDDING = {
     "execution_type" : "api",
     "group_key": "tei_plugin",
     "timeout": 600,
-    "max_concurrency": 64,
+    "max_concurrency": int(os.environ.get('TEI_REQUEST_CONCURRENCY', 64)),
     "max_retries": 2,
     "endpoint_url" : f"http://plugin_integration_server:{os.environ.get('PLUGIN_INTEGRATION_SERVER_PORT')}/tei_embed",
     "vector_length": None,

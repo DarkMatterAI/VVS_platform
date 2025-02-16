@@ -1,25 +1,25 @@
-services:
-  mapper_plugin:
-    build:
-      context: ../mapper_plugin 
-      dockerfile: mapper_plugin.Dockerfile 
-    profiles: [plugin, mapper_plugin]
-    env_file:
-      - ../.env
-    shm_size: 2g
-    ulimits:
-      memlock: -1
-      stack: 67108864
-    networks:
-      - vvs_v2_network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['${TRITON_DEVICE_ID}']
-              capabilities: [gpu]
-    ports:
-      - ${TRITON_HTTP_PORT}:${TRITON_HTTP_PORT}
-      - ${TRITON_METRICS_PORT}:${TRITON_METRICS_PORT}
+# services:
+#   mapper_plugin:
+#     build:
+#       context: ../mapper_plugin 
+#       dockerfile: mapper_plugin.Dockerfile 
+#     profiles: [plugin, mapper_plugin]
+#     env_file:
+#       - ../.env
+#     shm_size: 2g
+#     ulimits:
+#       memlock: -1
+#       stack: 67108864
+#     networks:
+#       - vvs_v2_network
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               device_ids: ['${TRITON_DEVICE_ID}']
+#               capabilities: [gpu]
+#     ports:
+#       - ${TRITON_HTTP_PORT}:${TRITON_HTTP_PORT}
+#       - ${TRITON_METRICS_PORT}:${TRITON_METRICS_PORT}
 

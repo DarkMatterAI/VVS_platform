@@ -6,9 +6,18 @@ PLUGIN_CONFIG = {
         'timeout': 120,
         'retries': 3
     },
-    'mapper': {
-        'url': f"http://mapper_plugin:{os.environ.get('TRITON_HTTP_PORT', '')}/v2/models/Mapper/infer",
+    # 'mapper': {
+    #     'url': f"http://mapper_plugin:{os.environ.get('TRITON_HTTP_PORT', '')}/v2/models/Mapper/infer",
+    #     'timeout': 120,
+    #     'retries': 3
+    # }
+    'triton' : {
+        'base_url': f"http://triton_plugin:{os.environ.get('TRITON_HTTP_PORT', '')}/v2/models",
         'timeout': 120,
-        'retries': 3
+        'retries': 3,
+        'model_names' : {
+            'mapper' : ['ENAMINE_MAPPER_64'],
+            'embedding' : [f'EMBED_{i}' for i in [768, 512, 256, 128, 64, 32]]
+        }
     }
 }

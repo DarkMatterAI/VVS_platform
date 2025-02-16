@@ -2,17 +2,27 @@
 VVS V2
 
 todos
-    add triton plugin
-        integrate to backend
-        integrate to integration server 
-        add to nginx 
-        add integration tests 
     remove mapper plugin 
     rdkit plugin
         add enamine smarts on launch 
         remove synt-on??
+    general
+        fix issue where `unit_test: True` fails for cases with no unit tests
+        add description to plugins?
+    add batched requests and batch size to model 
 
-update embedding/mapper
-    move embedding, compression heads, mapper to triton
-update plugin server
+
+
 use new embeddings to test multi-embedding backend 
+
+documentation notes
+    backend
+    message consumer
+    plugin integration
+    plugins
+        rdkit
+            reactions assume no reagents 
+        tei
+        triton 
+        
+

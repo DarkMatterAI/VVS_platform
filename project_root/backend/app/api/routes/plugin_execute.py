@@ -13,13 +13,12 @@ async def execute_plugin(plugin_id: int,
                          execute_request: schemas.ExecuteRequestUnion,
                          db: AsyncSession = Depends(get_db)
                          ):
-    # print(f"{execute_request.model_dump()}")
-    print('getting record')
+    print(f'getting record for plugin {plugin_id}')
     db_plugin = await crud.get_plugin(db, plugin_id=plugin_id)
     if db_plugin is None:
         raise HTTPException(status_code=404, detail="Plugin not found")
     
-    print('executing plugin')
+    print(f'executing plugin {plugin_id}')
     response = await crud.execute_plugin(db_plugin, execute_request)
     return response 
 

@@ -45,3 +45,9 @@ def test_api_client():
 def tei_client():
     with httpx.Client(base_url=f"http://tei_plugin:{os.environ['TEI_PORT']}") as client:
         yield client
+
+@pytest.fixture(scope="session")
+def triton_client():
+    with httpx.Client(base_url=f"http://triton_plugin:{os.environ['TRITON_HTTP_PORT']}") as client:
+        yield client
+
