@@ -24,7 +24,6 @@ class PluginClass(str, Enum):
     INTERNAL_TEI = 'internal_tei'
     INTERNAL_QDRANT = 'internal_qdrant'
     INTERNAL_TRITON = 'internal_triton'
-    # INTERNAL_MAPPER = 'internal_mapper'
 
 class PluginExecutionType(str, Enum):
     QUEUE = "queue"

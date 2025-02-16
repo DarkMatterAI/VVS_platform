@@ -2,7 +2,6 @@
 VVS V2
 
 todos
-    remove mapper plugin 
     rdkit plugin
         add enamine smarts on launch 
         remove synt-on??

@@ -2,7 +2,6 @@ from .rdkit_plugin import init_rdkit_records
 from .tei_plugin import init_tei_records
 from .qdrant_plugin import init_qdrant_records
 from .triton_plugin import init_triton_records
-# from .mapper_plugin import init_mapper_records
 
 PLUGIN_CREATE_DICT = {
     'tei_plugin' : {
@@ -21,8 +20,4 @@ PLUGIN_CREATE_DICT = {
         'plugin_class' : 'internal_triton',
         'create_func' : init_triton_records
     }
-    # 'mapper_plugin' : {
-    #     'plugin_class' : 'internal_mapper',
-    #     'create_func' : init_mapper_records
-    # }
 }

@@ -15,8 +15,4 @@ plugins:
     enabled: True
     profile: triton_plugin
     requires_integration: True
-  # mapper_plugin:
-  #   enabled: True
-  #   profile: mapper_plugin
-  #   requires_integration: True 
 

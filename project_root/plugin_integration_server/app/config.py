@@ -6,11 +6,6 @@ PLUGIN_CONFIG = {
         'timeout': 120,
         'retries': 3
     },
-    # 'mapper': {
-    #     'url': f"http://mapper_plugin:{os.environ.get('TRITON_HTTP_PORT', '')}/v2/models/Mapper/infer",
-    #     'timeout': 120,
-    #     'retries': 3
-    # }
     'triton' : {
         'base_url': f"http://triton_plugin:{os.environ.get('TRITON_HTTP_PORT', '')}/v2/models",
         'timeout': 120,
