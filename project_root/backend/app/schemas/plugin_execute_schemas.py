@@ -76,6 +76,9 @@ class AssemblyResponse(BaseModel):
     valid: bool
     result: List[AssemblyResult]
 
+class RedisResult(BaseModel):
+    result_id: str 
+
 request_type_mapping = {
     PluginType.EMBEDDING : EmbedRequest,
     PluginType.DATA_SOURCE : DataSourceRequest,
@@ -91,4 +94,12 @@ ExecuteRequestUnion = Union[
     DataSourceRequest,
     EmbedRequest,
     MapperRequest
+]
+
+BatchExecuteRequestUnion = Union[
+    List[ItemRequest],
+    List[AssemblyRequest],
+    List[DataSourceRequest],
+    List[EmbedRequest],
+    List[MapperRequest]
 ]

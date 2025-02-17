@@ -27,39 +27,45 @@ class TritonPlugin(BasePlugin):
             'inputs' : [
                 {
                     'name' : 'sequence',
-                    'shape' : [1, 1],
+                    'shape' : [len(request), 1],
                     'datatype' : 'BYTES',
-                    'data' : [request.item]
+                    'data' : [i.item for i in request]
                 }
             ]
         }
         response = await post_request(request_data, self.request_configs[model_name])
-        return {'embedding' : response['outputs'][0]['data']}
+        data = response['outputs'][0]['data']
+        n_out, d_out = response['outputs'][0]['shape']
+        output = [{'embedding' : data[i*d_out:(i+1)*d_out]} for i in range(n_out)]
+        return output
     
     async def process_mapper(self, request, model_name):
-        embedding = request.embedding
+        embeddings = [i.embedding for i in request]
         mapper_data = {
             "inputs": [
                 {
                     "name": "embedding",
-                    "shape": [1, len(embedding)],
+                    "shape": [len(request), len(embeddings[0])],
                     "datatype": "FP32",
-                    "data": [embedding]
+                    "data": embeddings
                 }
             ]
         }
         response = await post_request(mapper_data, self.request_configs[model_name])
-        n_out, d_out = response['outputs'][0]['shape'][1:]
-        output_embedding = response['outputs'][0]['data']
-        result = {'valid': True, 'embedding': []}
+        data = response['outputs'][0]['data']
+        bs, n_out, d_emb = response['outputs'][0]['shape']
 
-        for i in range(n_out):
-            embedding = output_embedding[i*d_out:(i+1)*d_out]
-            result['embedding'].append(embedding)
+        result = []
+        for i in range(bs):
+            r = {'valid' : True, 'embedding' : []}
 
-        return result
-    
-    async def process(self, request, model_name):
+            for j in range(n_out):
+                embedding = data[i * n_out * d_emb + j * d_emb : i * n_out * d_emb + (j + 1) * d_emb]
+                r['embedding'].append(embedding)
+            result.append(r)
+        return result 
+
+    async def _process(self, request, model_name):
         if model_name in self.embedding_models:
             response = await self.process_embedding(request, model_name)
         elif model_name in self.mapper_models:

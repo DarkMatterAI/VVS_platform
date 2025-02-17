@@ -21,6 +21,7 @@ class Plugin(Base):
     timeout = Column(Integer, nullable=True)
     max_concurrency = Column(Integer, nullable=True)
     max_retries = Column(Integer, nullable=True)
+    batch_size = Column(Integer, nullable=True)
     endpoint_url = Column(String, nullable=True)
     group_key = Column(String, nullable=False)
     config = Column(JSON, nullable=True)

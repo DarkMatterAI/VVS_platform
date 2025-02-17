@@ -1,7 +1,8 @@
 import os
 import numpy as np
 from contextlib import asynccontextmanager
-from qdrant_client import AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient, models
+from fastapi import HTTPException
 from .base import BasePlugin
 
 class QdrantPlugin(BasePlugin):
@@ -19,31 +20,56 @@ class QdrantPlugin(BasePlugin):
         finally:
             await client.close()
 
-    async def process(self, collection_name, request):
-        request_dict = request.model_dump()
+    async def _process(self, request, collection_name):
         async with self.get_client() as client:
-            embedding_name = f"embedding_{request_dict['embedding_id']}"
-            qdrant_results = await client.query_points(
-                collection_name=collection_name,
-                query=request_dict['embedding'],
-                using=embedding_name,
-                limit=request_dict['k'],
-                with_vectors=True
-            )
 
-            results = []
-            for result in qdrant_results.points:
-                embedding = result.vector[embedding_name]
-                norm = result.payload.get('norm', None)
-                if norm is not None:
-                    embedding = (np.array(embedding) * norm).tolist()
+            collection_info = await client.get_collection(collection_name)
+            vector_names = collection_info.config.params.vectors.keys()
+            search_queries = []
+            embedding_names = []
 
-                result_data = {
-                    'external_id': result.payload.get('external_id', 0),
-                    'item': result.payload.get('item', ''),
-                    'embedding': embedding,
-                    'distance': result.score
-                }
-                results.append(result_data)
+            for r in request:
+                embedding_name = f"embedding_{r.embedding_id}"
 
-            return {'valid': bool(results), 'result': results}
+                if embedding_name not in vector_names:
+                    raise HTTPException(status_code=422, detail=f"Query embedding {embedding_name} " \
+                            f"not found in collection {collection_name}, expected one of {list(vector_names)}")
+
+                query = models.QueryRequest(query=r.embedding,
+                                            using=embedding_name,
+                                            limit=r.k,
+                                            with_vector=True,
+                                            with_payload=True
+                                            )
+                search_queries.append(query)
+                embedding_names.append(embedding_name)
+
+
+            try:
+                qdrant_results = await client.query_batch_points(
+                    collection_name=collection_name,
+                    requests=search_queries,
+                )
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"An error occurred while querying qdrant: {str(e)}")
+
+            results_batch = []
+            for i, result in enumerate(qdrant_results):
+                results = []
+                for point in result.points:
+                    embedding = point.vector[embedding_names[i]]
+                    norm = point.payload.get('norm', None)
+                    if norm is not None:
+                        embedding = (np.array(embedding) * norm).tolist()
+
+                    result_data = {
+                        'external_id': point.payload.get('external_id', 0),
+                        'item': point.payload.get('item', ''),
+                        'embedding': embedding,
+                        'distance': point.score
+                    }
+                    results.append(result_data)
+                results_batch.append({'valid' : bool(results), 'result' : results})
+
+            return results_batch
+

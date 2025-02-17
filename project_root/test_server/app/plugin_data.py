@@ -4,6 +4,7 @@ import numpy as np
 test_server_url = f"http://test_server:{os.environ['TEST_SERVER_PORT']}"
 EMBEDDING_SIZE = int(os.environ.get('TEST_SERVER_EMBEDDING_SIZE', 32))
 NUM_PARENTS = int(os.environ.get('TEST_NUM_PARENTS', 2))
+MAX_BATCH_SIZE = int(os.environ.get('TEST_BATCH_SIZE', 5))
 
 
 def get_create_data(plugin_type):
@@ -16,6 +17,7 @@ def get_create_data(plugin_type):
         "group_key" : "mock_api",
         "timeout" : 20,
         "max_concurrency" : 4,
+        "batch_size" : MAX_BATCH_SIZE,
         "max_retries" : 2,
         "endpoint_url" : f"{test_server_url}/{plugin_type}",
     }

@@ -13,7 +13,7 @@ def test_consumer_plugins_created(backend_client):
     assert len(plugins) > 0, "No test consumer plugins found"
     type_counts = {}
     for plugin in plugins:
-        assert plugin['name'].startswith('mock_') and '_queue_' in plugin['name'], f"Unexpected plugin name: {plugin['name']}"
+        assert plugin['name'].startswith('mock_') and '_queue_' in plugin['name'], f"Unexpected plugin: {plugin['name']}"
 
         type_counts[plugin['type']] = type_counts.get(plugin['type'], 0) + 1
 
@@ -40,7 +40,6 @@ def test_response_consumer(redis_connection, rabbitmq_connection, backend_client
     response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
     assert response_data['valid'] == True
 
-
 def test_request_response_loop(redis_connection, rabbitmq_connection, backend_client):
 
     plugin = fetch_test_consumer_plugins(backend_client)[0]
@@ -61,7 +60,6 @@ def test_alt_queue(redis_connection, rabbitmq_connection, backend_client):
     assert response_data['valid'] == False 
     assert response_data['failure_reason'] == 'Alt Ex'
 
-
 def test_dlx_queue(redis_connection, rabbitmq_connection, backend_client):
 
     plugin = fetch_test_consumer_plugins(backend_client)[0]
@@ -73,7 +71,6 @@ def test_dlx_queue(redis_connection, rabbitmq_connection, backend_client):
     response_data = publish_and_poll(redis_connection, rabbitmq_connection, request_data['request_id'], request_data)
     assert response_data['valid'] == False 
     assert response_data['failure_reason'] == 'Dead Letter'
-
 
 def helper_test_consumer_plugins(redis_connection, rabbitmq_connection, backend_client, plugin_type):
     schemas = schema_mapping[plugin_type]
@@ -121,7 +118,27 @@ def test_filter_backend_execution(backend_client):
     request_data = type_to_request_func[plugin['type']](plugin)
     result = backend_execute_and_poll(backend_client, plugin, request_data, timeout=4)
     assert 'result_id' not in result 
-    assert result['valid']  
+    assert result['valid']
+
+def test_filter_backend_execution_batched(backend_client):
+    plugin = fetch_test_consumer_plugins(backend_client, plugin_type='filter')[0]
+    request_data = type_to_request_func[plugin['type']](plugin)
+    response = backend_client.post(f"/api/v1/execute/{plugin['id']}/batch", 
+                                   json=[request_data for i in range(10)])
+    assert response.status_code == 200
+    result_ids = response.json()
+
+    interval = 0.1
+    timeout = 8
+    start = time.time()
+    while (time.time() - start < timeout) and (len(result_ids)>0):
+        result = backend_client.post(f"/api/v1/execute/result_batch",
+                                     json=result_ids)
+        assert result.status_code == 200
+        result_ids = [i for i in result.json() if 'valid' not in i]
+        if len(result_ids) == 0:
+            break 
+        time.sleep(interval)
 
 def test_score_backend_execution(backend_client):
     plugin = fetch_test_consumer_plugins(backend_client, plugin_type='score')[0]

@@ -27,6 +27,7 @@ def get_enabled_plugin_tests(plugin_config, test_config):
     for plugin, details in test_config.get('services', {}).items():
         if (details.get('integration_test', False) and 
             plugin_config.get('plugins', {}).get(plugin, {}).get('enabled', False)):
+            print(f"Adding tests for {plugin}")
             test_path = Path(f"tests/test_{plugin}")
             if test_path.exists():
                 test_paths.append(str(test_path))

@@ -42,6 +42,7 @@ class PluginBase(BaseModel):
     timeout: Optional[int] = None
     max_concurrency: Optional[int] = None
     max_retries: Optional[int] = None
+    batch_size: Optional[int] = None
     endpoint_url: Optional[str] = None
     group_key: Optional[str] = None
     config: Optional[Dict] = None
@@ -51,6 +52,12 @@ class PluginBase(BaseModel):
     def check_queue_api_fields(cls, v, info):
         if v is None:
             raise ValueError(f"{info.field_name} is required")
+        return v
+    
+    @field_validator('batch_size')
+    def check_batch_size(cls, v, info):
+        if (type(v)==int) and (v <= 0):
+            raise ValueError(f"{info.field_name} must be greater than zero")
         return v
 
     @field_validator('endpoint_url')
@@ -139,6 +146,7 @@ class PluginUpdate(BaseModel):
     timeout: Optional[int] = None
     max_concurrency: Optional[int] = None
     max_retries: Optional[int] = None
+    batch_size: Optional[int] = None
     endpoint_url: Optional[str] = None
     group_key: Optional[str] = None
     config: Optional[Dict] = None
@@ -155,6 +163,12 @@ class PluginUpdate(BaseModel):
     def check_queue_api_fields(cls, v, info):
         if v is None:
             raise ValueError(f"{info.field_name} is required")
+        return v
+    
+    @field_validator('batch_size')
+    def check_batch_size(cls, v, info):
+        if (type(v)==int) and (v <= 0):
+            raise ValueError(f"{info.field_name} must be greater than zero")
         return v
 
     @field_validator('endpoint_url')

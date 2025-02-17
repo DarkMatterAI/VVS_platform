@@ -18,5 +18,5 @@ async def startup_event():
 
 @app.get("/")
 async def read_root():
-    return {"Hello": "World"}
+    return {"Hello": "World", "service" : "backend"}
 

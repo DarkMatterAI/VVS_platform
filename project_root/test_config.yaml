@@ -15,4 +15,4 @@ temp_services:
   test_consumer:
     enabled: True
   test_server:
-    enabled: False
+    enabled: True

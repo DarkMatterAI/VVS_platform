@@ -38,7 +38,9 @@ from app.schemas.plugin_execute_schemas import (
     AssemblyItem,
     AssemblyRequest,
     AssemblyResponse,
-    ExecuteRequestUnion
+    RedisResult,
+    ExecuteRequestUnion,
+    BatchExecuteRequestUnion
 )
 
 from app.schemas.qdrant_plugin_schemas import (

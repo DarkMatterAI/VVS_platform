@@ -104,27 +104,27 @@ async def restore_snapshot(db_record, snapshot_name):
         snapshot_response = await client.recover_snapshot(collection_name, snapshot_location)
         return snapshot_response
 
-async def qdrant_query(db_record, request):
-    async with get_qdrant_client() as client:
-        collection_name = f"data_source_{db_record.id}"
-        embedding_name = f"embedding_{request['id']}"
-        qdrant_results = await client.query_points(
-            collection_name=collection_name,
-            query=request['embedding'],
-            using=embedding_name,
-            limit=request['k'],
-            with_vectors=True
-        )
+# async def qdrant_query(db_record, request):
+#     async with get_qdrant_client() as client:
+#         collection_name = f"data_source_{db_record.id}"
+#         embedding_name = f"embedding_{request['id']}"
+#         qdrant_results = await client.query_points(
+#             collection_name=collection_name,
+#             query=request['embedding'],
+#             using=embedding_name,
+#             limit=request['k'],
+#             with_vectors=True
+#         )
 
-        results = [] 
-        for result in qdrant_results.points:
-            result_data = {
-                'external_id' : result.payload.get('external_id', 0),
-                'item' : result.payload.get('item', ''),
-                'embedding' : result.vector[embedding_name],
-                'distance' : result.score
-            }
-            results.append(result_data)
-        return results
+#         results = [] 
+#         for result in qdrant_results.points:
+#             result_data = {
+#                 'external_id' : result.payload.get('external_id', 0),
+#                 'item' : result.payload.get('item', ''),
+#                 'embedding' : result.vector[embedding_name],
+#                 'distance' : result.score
+#             }
+#             results.append(result_data)
+#         return results
 
 

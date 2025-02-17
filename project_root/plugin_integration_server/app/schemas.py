@@ -42,3 +42,12 @@ class MapperResponse(BaseModel):
     valid: bool
     embedding: List[List[float]]
 
+
+EmbedRequestUnion = Union[EmbedRequest, List[EmbedRequest]]
+EmbedResponseUnion = Union[EmbedResponse, List[EmbedResponse]]
+
+DataSourceRequestUnion = Union[DataSourceRequest, List[DataSourceRequest]]
+DataSourceResponseUnion = Union[DataSourceResponse, List[DataSourceResponse]]
+
+MapperRequestUnion = Union[MapperRequest, List[MapperRequest]]
+MapperResponseUnion = Union[MapperResponse, List[MapperResponse]]

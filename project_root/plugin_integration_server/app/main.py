@@ -3,6 +3,7 @@ from . import schemas
 from .plugins.tei import TeiPlugin
 from .plugins.qdrant import QdrantPlugin
 from .plugins.triton import TritonPlugin
+from typing import List 
 
 app = FastAPI()
 tei_plugin = TeiPlugin()
@@ -11,25 +12,22 @@ triton_plugin = TritonPlugin()
 
 @app.get("/")
 async def read_root():
-    return {"Hello": "World"}
+    return {"Hello": "World", "service" : "plugin_integration_server"}
 
-@app.post("/tei_embed", response_model=schemas.EmbedResponse)
-async def tei_embed(request: schemas.EmbedRequest):
-    return await tei_plugin.process(request)
+@app.post("/tei_embed", response_model=schemas.EmbedResponseUnion)
+async def tei_embed(request: schemas.EmbedRequestUnion):
+    response = await tei_plugin.process(request)
+    return response 
 
-@app.post("/data_source_qdrant/{collection_name}", response_model=schemas.DataSourceResponse)
-async def qdrant_data_source(collection_name: str, request: schemas.DataSourceRequest):
-    try:
-        return await qdrant_plugin.process(collection_name, request)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while querying qdrant: {str(e)}")
+@app.post("/data_source_qdrant/{collection_name}", response_model=schemas.DataSourceResponseUnion)
+async def qdrant_data_source(collection_name: str, request: schemas.DataSourceRequestUnion):
+     return await qdrant_plugin.process(request, collection_name=collection_name)
 
-@app.post("/triton_embed/{model_name}", response_model=schemas.EmbedResponse)
-async def triton_embed(model_name: str, request: schemas.EmbedRequest):
-    return await triton_plugin.process(request, model_name)
+@app.post("/triton_embed/{model_name}", response_model=schemas.EmbedResponseUnion)
+async def triton_embed(model_name: str, request: schemas.EmbedRequestUnion):
+    return await triton_plugin.process(request, model_name=model_name)
 
-@app.post("/triton_map/{model_name}", response_model=schemas.MapperResponse)
-async def triton_mapper(model_name: str, request: schemas.MapperRequest):
-    print(request.model_dump())
-    return await triton_plugin.process(request, model_name)
+@app.post("/triton_map/{model_name}", response_model=schemas.MapperResponseUnion)
+async def triton_mapper(model_name: str, request: schemas.MapperRequestUnion):
+    return await triton_plugin.process(request, model_name=model_name)
 

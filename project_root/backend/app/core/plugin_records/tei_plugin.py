@@ -16,7 +16,8 @@ TEI_EMBEDDING = {
     "execution_type" : "api",
     "group_key": "tei_plugin",
     "timeout": 600,
-    "max_concurrency": int(os.environ.get('TEI_REQUEST_CONCURRENCY', 64)),
+    "max_concurrency": int(os.environ.get('TEI_REQUEST_CONCURRENCY', 24)),
+    "batch_size": int(os.environ.get('TEI_MAX_CLIENT_BATCH_SIZE', 256)),
     "max_retries": 2,
     "endpoint_url" : f"http://plugin_integration_server:{os.environ.get('PLUGIN_INTEGRATION_SERVER_PORT')}/tei_embed",
     "vector_length": None,
@@ -49,8 +50,8 @@ async def init_tei_records(db):
 
     print("Checking TEI vector size")    
     try:
-        response = await utils.make_post_request(TEI_EMBEDDING['endpoint_url'], 
-                                                 {'id' : 1, 'external_id' : '1', 'item' : '.', 'request_id' : ''},
+        response = await utils.make_post_request({'id' : 1, 'external_id' : '1', 'item' : '.', 'request_id' : ''},
+                                                 TEI_EMBEDDING['endpoint_url'],
                                                  timeout=10, retries=20, retry_sleep=1)
     except:
         logger.warning(f"Request to TEI server failed - aborting")

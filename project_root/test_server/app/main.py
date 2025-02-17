@@ -1,8 +1,9 @@
 import os 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import asyncio 
 import numpy as np 
 import string 
+from typing import List, Union  
 
 from app import schemas 
 from app.crud_records import create_records, delete_records
@@ -13,6 +14,7 @@ app = FastAPI()
 
 EMBEDDING_SIZE = int(os.environ.get('TEST_EMBEDDING_SIZE', 32))
 NUM_PARENTS = int(os.environ.get('TEST_NUM_PARENTS', 2))
+MAX_BATCH_SIZE = int(os.environ.get('TEST_BATCH_SIZE', 5))
 
 @contextmanager
 def record_management():
@@ -63,9 +65,14 @@ async def data_source(request: schemas.DataSourceRequest):
     await asyncio.sleep(0)
     return response 
 
-@app.post("/filter", response_model=schemas.FilterResponse)
-async def filter(request: schemas.ItemRequest):
-    response = {'valid' : True}
+@app.post("/filter", response_model=Union[schemas.FilterResponse, List[schemas.FilterResponse]])
+async def filter(request: Union[schemas.ItemRequest, List[schemas.ItemRequest]]):
+    if type(request) == list:
+        if len(request) > MAX_BATCH_SIZE:
+            raise HTTPException(status_code=422, detail=f"batch size limit")
+        response = [{'valid' : True} for i in request]
+    else:
+        response = {'valid' : True}
     await asyncio.sleep(0)
     return response 
 

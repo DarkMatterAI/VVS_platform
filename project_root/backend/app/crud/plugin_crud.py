@@ -5,7 +5,6 @@ from sqlalchemy import insert, delete, func, and_
 from fastapi import HTTPException
 from typing import List, Optional, Dict, Any 
 from pydantic import ValidationError 
-import asyncio
 
 from app import models, schemas, utils 
 
@@ -329,16 +328,21 @@ async def count_plugins_linked_to_embedding_class(db: AsyncSession, plugin_class
     return count
 
 async def execute_plugin(db_plugin, execute_request):
+    execution_type = db_plugin.execution_type.lower()
 
     try:
         print(f'validating plugin')
-        utils.validate_execute_request(db_plugin, execute_request)
+        if type(execute_request) == list:
+            utils.validate_execute_request(db_plugin, execute_request)
+            execution_function = utils.batch_execute_plugin_map.get(execution_type, None)
+        else:
+            utils.validate_execute_request(db_plugin, [execute_request])
+            execution_function = utils.execute_plugin_map.get(execution_type, None)
+
         print('validation successful')
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=str(e))
     
-    execution_type = db_plugin.execution_type.lower()
-    execution_function = utils.execute_plugin_map.get(execution_type, None)
     if execution_function is None:
         raise HTTPException(status_code=400, detail=f"Execute plugin of type {db_plugin['type']} not supported")
     else:
