@@ -1,20 +1,27 @@
 #!/bin/bash
 
 CONFIG_FILE="test_config.yaml"
+META_CONFIG_FILE="test_config_meta.yaml"
 INTEGRATION_EXECUTOR_DIR="./test_executor/src/"
 
 # Read unit test services
-unit_test_services=($(yq e '.services[] | select(.unit_test == True) | .service_name' "$CONFIG_FILE"))
-echo unit tests $unit_test_services
+unit_test_services=($(yq e '.services[] | select(.unit_test == True) | path | .[1]' "$CONFIG_FILE"))
+echo "unit tests: ${unit_test_services[@]}"
 
 # Check if any service has integration_test == true
-integration_test_present=($(yq e '.services[] | select(.integration_test == True) | .service_name' "$CONFIG_FILE"))
-echo integration tests $integration_test_present
+integration_test_present=($(yq e '.services[] | select(.integration_test == True) | path | .[1]' "$CONFIG_FILE"))
+echo "integration tests: ${integration_test_present[@]}"
 
 # Read temp services to start
-temp_services_to_start=($(yq e '.temp_services[] | select(.enabled == True) | .profile' "$CONFIG_FILE"))
-echo temp services $temp_services_to_start
-
+profiles=()  # Initialize empty array
+temp_services_to_start=($(yq e '.temp_services[] | select(.enabled == True) | path | .[1]' "$CONFIG_FILE"))
+for service in "${temp_services_to_start[@]}"; do
+    profile=$(yq e ".temp_services.$service.profile" "$META_CONFIG_FILE")
+    if [ ! -z "$profile" ]; then
+        profiles+=("$profile")
+    fi
+done
+echo "temp services: ${profiles[*]}"  # Use [*] for better output formatting
 
 # Run unit tests
 for service in "${unit_test_services[@]}"; do
@@ -22,16 +29,16 @@ for service in "${unit_test_services[@]}"; do
     docker compose exec -T "$service" tests/run_tests.sh
 done
 
-
 # Run integration tests if applicable
-if [ -n "$integration_test_present" ] || [ -n "$temp_services_to_start" ]; then
-    if [ -n "$temp_services_to_start" ]; then
+if [ ${#integration_test_present[@]} -gt 0 ] || [ ${#profiles[@]} -gt 0 ]; then
+    if [ ${#profiles[@]} -gt 0 ]; then
         echo "Starting temp services"
-        docker compose up -d ${temp_services_to_start[@]}
+        docker compose up -d "${profiles[@]}"
     fi
 
-    echo "Copying test_config.yaml to ./test_executor/src/"
+    echo "Copying config files to ./test_executor/src/"
     cp "$CONFIG_FILE" "$INTEGRATION_EXECUTOR_DIR"
+    cp "$META_CONFIG_FILE" "$INTEGRATION_EXECUTOR_DIR"
     
     echo "Starting integration test container..."
 
@@ -40,9 +47,12 @@ if [ -n "$integration_test_present" ] || [ -n "$temp_services_to_start" ]; then
 
     # Remove test_executor and temp services
     echo "Removing test_executor and temp services"
-    docker compose rm -sf test_executor ${temp_services_to_start[@]}
+    if [ ${#profiles[@]} -gt 0 ]; then
+        docker compose rm -sf test_executor "${profiles[@]}"
+    else
+        docker compose rm -sf test_executor
+    fi
 
 else
     echo "No integration tests to run"
 fi
-

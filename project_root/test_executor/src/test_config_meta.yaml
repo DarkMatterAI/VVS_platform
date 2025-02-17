@@ -1,0 +1,19 @@
+# static information - do not edit
+services:
+  backend:
+    service_name: backend
+  qdrant_plugin:
+    service_name: qdrant_plugin
+  tei_plugin:
+    service_name: tei_plugin
+  rdkit_plugin:
+    service_name: rdkit_plugin
+  triton_plugin:
+    service_name: triton_plugin
+temp_services:
+  test_consumer:
+    service_name: test_consumer
+    profile: test_consumer
+  test_server:
+    service_name: test_server
+    profile: test_server

@@ -8,6 +8,7 @@ todos
         fix issue where `unit_test: True` fails for cases with no unit tests
         add description to plugins?
     add batched requests and batch size to model 
+    issue where integration tests can run for services not in use
 
 use new embeddings to test multi-embedding backend 
 
