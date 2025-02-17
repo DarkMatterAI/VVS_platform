@@ -3,12 +3,12 @@ VVS V2
 
 todos
     rdkit plugin
-        add enamine smarts on launch 
         remove synt-on??
     general
         fix issue where `unit_test: True` fails for cases with no unit tests
         add description to plugins?
     add batched requests and batch size to model 
+    when to add uuids to reaction products? or concat parent ids?
 
 
 

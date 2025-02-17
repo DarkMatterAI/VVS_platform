@@ -26,6 +26,7 @@ async def post_and_validate(data, client, status_code=200):
     if status_code==200:
         data = response.json()
         assert data["type"] == "filter"
+        assert data["group_key"] == "rdkit_plugin"
         return data 
 
 @pytest.fixture(scope="function")

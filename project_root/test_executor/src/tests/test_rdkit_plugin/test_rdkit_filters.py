@@ -3,7 +3,7 @@ import pytest
 import uuid 
 import time 
 
-from tests.utils import publish_and_poll, get_request_id, delete_plugin
+from tests.utils import publish_and_poll, poll_backend, get_request_id, delete_plugin
 
 api_str = '/api/v1/rdkit_plugins'
 plugin_api_str = '/api/v1/plugins'
@@ -18,7 +18,7 @@ def rdkit_test_filter(backend_client):
                 "plugin_class" : "internal_rdkit",
                 "type": "filter",
                 "execution_type": "queue",
-                "group_key": "rdkit_plugin",
+                "group_key": "rdkit_plugin_filter",
                 "timeout": 30,
                 "max_concurrency": 5,
                 "max_retries": 1,
@@ -56,16 +56,9 @@ def test_rdkit_filter_backend_execution(backend_client, rdkit_test_filter):
     assert response.status_code == 200
     result_id = response.json()['result_id']
 
-    for i in range(20):
-        result = backend_client.get(f"/api/v1/execute/{result_id}")
-        assert response.status_code == 200
-        result = result.json()
-        if 'result_id' not in result:
-            break 
-        time.sleep(0.1)
+    result = poll_backend(backend_client, result_id, timeout=20)
+
     assert 'result_id' not in result 
     assert result['valid']
+    assert result['response_data']['valid']
     delete_plugin(filter_record, backend_client, plugin_api_str)
-
-
-

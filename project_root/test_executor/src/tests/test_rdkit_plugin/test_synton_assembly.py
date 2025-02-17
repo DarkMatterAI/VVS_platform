@@ -3,7 +3,7 @@ import pytest
 import uuid 
 import time 
 
-from tests.utils import publish_and_poll, get_request_id, delete_plugin
+from tests.utils import publish_and_poll, poll_backend, get_request_id, delete_plugin
 
 api_str = '/api/v1/rdkit_plugins'
 plugin_api_str = '/api/v1/plugins'
@@ -75,13 +75,8 @@ def test_synton_smarts_assembly_backend_execution(backend_client, synton_test_as
     assert response.status_code == 200
     result_id = response.json()['result_id']
 
-    for i in range(20):
-        result = backend_client.get(f"/api/v1/execute/{result_id}")
-        assert response.status_code == 200
-        result = result.json()
-        if 'result_id' not in result:
-            break 
-        time.sleep(0.1)
+    result = poll_backend(backend_client, result_id, timeout=20)
+
     assert 'result_id' not in result 
     delete_plugin(assembly_record, backend_client, plugin_api_str)
 

@@ -29,7 +29,7 @@ def dlx_callback(ch, method, properties, body):
     else:
         request_key = method.routing_key
         failure_reason = 'Alt Ex'
-        failure_detail = 'No valid consumers'
+        failure_detail = f'No valid consumers for routing key {method.routing_key}'
 
     redis_key = request_key.replace('.', ':').replace('request', 'response')
     date_print(f"{failure_reason} {request_key} -> {redis_key}")

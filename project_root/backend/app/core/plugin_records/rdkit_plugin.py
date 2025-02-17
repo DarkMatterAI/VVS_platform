@@ -1,5 +1,7 @@
+import os 
 from app.crud import plugin_crud as crud 
 from app import schemas
+from .enamine_smarts import ENAMINE_CREATE
 
 RDKIT_FILTERS = [
     {
@@ -9,8 +11,8 @@ RDKIT_FILTERS = [
         "execution_type": "queue",
         "group_key": "rdkit_plugin",
         "timeout": 600,
-        "max_concurrency": 64,
-        "max_retries": 2,
+        "max_concurrency": int(os.environ.get('RDKIT_CONCURRENCY', 64)),
+        "max_retries": 3,
         "config" : {
             "property_filters" : [
                 {"property_name" : "LogP", "Min_val" : None, "max_val" : 5.0},
@@ -25,9 +27,19 @@ RDKIT_FILTERS = [
 
 async def init_rdkit_records(db):
     for record in RDKIT_FILTERS:
+        print("Creating RDKit filters")
         current_record = await crud.get_plugins(db, filter_params={'name' : record['name']})
         if not current_record:
-            print(f"Creating RDKit record {record['name']}")
+            print(f"Creating RDKit filter record {record['name']}")
             record = schemas.FilterPluginCreate(**record)
+            response = await crud.create_plugin(db=db, plugin=record)
+            print(response)
+
+    for record in ENAMINE_CREATE:
+        print('Creating Enamine assemblies')
+        current_record = await crud.get_plugins(db, filter_params={'name' : record['name']})
+        if not current_record:
+            print(f"Creating RDKit assembly record {record['name']}")
+            record = schemas.AssemblyPluginCreate(**record)
             response = await crud.create_plugin(db=db, plugin=record)
             print(response)

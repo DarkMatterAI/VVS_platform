@@ -31,9 +31,11 @@ def smarts_to_rxn(rxn_smarts):
 
 def clean_reaction_product(product, requires_hs):
     try:
-        Chem.SanitizeMol(product)
+        # note there can be canonicalization issues if 
+        # sanitization happens before removing Hs
         if requires_hs:
             product = Chem.RemoveHs(product)
+        Chem.SanitizeMol(product)
             
         product_smile = to_smile(product)
         return product_smile

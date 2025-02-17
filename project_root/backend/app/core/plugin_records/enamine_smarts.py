@@ -1,3 +1,4 @@
+import os 
 
 REAL_REACTIONS = [
     {
@@ -97,3 +98,45 @@ REAL_REACTIONS = [
         'product' : '[O:4]=[C:2]([*:3])[O:1][*:5]'
     },
 ]
+
+for reaction in REAL_REACTIONS:
+    reaction['smarts'] = f"{reaction['reactants'][0]}.{reaction['reactants'][1]}>>{reaction['product']}"
+
+ENAMINE_CREATE = [
+    {
+        "name": f"Enamine Reaction {reaction['id']}",
+        "type": "assembly",
+        "plugin_class": "internal_rdkit",
+        "execution_type": "queue",
+        "group_key": "rdkit_plugin",
+        "timeout": 600,
+        "max_concurrency": int(os.environ.get('RDKIT_CONCURRENCY', 64)),
+        "max_retries": 3,
+        "num_parents": 2,
+        "config": {
+            "single_stage_reactions": [{'smarts' : reaction['smarts'], 'requires_hs' : True}],
+            "multi_stage_reactions": []
+        }
+    }
+    for reaction in REAL_REACTIONS
+]
+
+ENAMINE_CREATE += [
+    {
+        "name": f"Enamine Reaction All",
+        "type": "assembly",
+        "plugin_class": "internal_rdkit",
+        "execution_type": "queue",
+        "group_key": "rdkit_plugin",
+        "timeout": 600,
+        "max_concurrency": int(os.environ.get('RDKIT_CONCURRENCY', 64)),
+        "max_retries": 3,
+        "num_parents": 2,
+        "config": {
+            "single_stage_reactions": [{'smarts' : reaction['smarts'], 'requires_hs' : True}
+                                       for reaction in REAL_REACTIONS],
+            "multi_stage_reactions": []
+        }
+    }
+]
+

@@ -10,7 +10,8 @@ def test_api_plugins_created(backend_client):
     assert len(plugins) > 0, "No test API plugins found"
     type_counts = {}
     for plugin in plugins:
-        assert plugin['name'].startswith('mock_') and '_api_' in plugin['name'], f"Unexpected plugin name: {plugin['name']}"
+        assert plugin['name'].startswith('mock_'), f"Unexpected plugin name: {plugin['name']}"
+        assert '_api_' in plugin['name'], f"Unexpected plugin name: {plugin['name']}"
 
         type_counts[plugin['type']] = type_counts.get(plugin['type'], 0) + 1
 

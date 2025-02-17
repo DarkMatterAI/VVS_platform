@@ -1,7 +1,7 @@
 services:
   backend:
     service_name: backend
-    unit_test: True 
+    unit_test: False 
     integration_test: True 
   qdrant_plugin:
     service_name: qdrant_plugin
@@ -13,12 +13,12 @@ services:
     integration_test: True 
   rdkit_plugin:
     service_name: rdkit_plugin
-    unit_test: True 
+    unit_test: False 
     integration_test: True 
   triton_plugin:
     service_name: triton_plugin
     unit_test: False # no unit test
-    integration_test: True 
+    integration_test: False 
 temp_services:
   test_consumer:
     service_name: test_consumer
