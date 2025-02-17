@@ -26,8 +26,8 @@ RDKIT_FILTERS = [
 
 
 async def init_rdkit_records(db):
+    print("Creating RDKit filters")
     for record in RDKIT_FILTERS:
-        print("Creating RDKit filters")
         current_record = await crud.get_plugins(db, filter_params={'name' : record['name']})
         if not current_record:
             print(f"Creating RDKit filter record {record['name']}")
@@ -35,8 +35,8 @@ async def init_rdkit_records(db):
             response = await crud.create_plugin(db=db, plugin=record)
             print(response)
 
+    print('Creating Enamine assemblies')
     for record in ENAMINE_CREATE:
-        print('Creating Enamine assemblies')
         current_record = await crud.get_plugins(db, filter_params={'name' : record['name']})
         if not current_record:
             print(f"Creating RDKit assembly record {record['name']}")
