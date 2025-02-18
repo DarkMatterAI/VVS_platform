@@ -17,5 +17,19 @@ RUN pip install --no-cache-dir --upgrade -r /opt/app/requirements.txt
 
 COPY ./src/ /opt/app/
 
+COPY ./tests /opt/app/tests 
+
+RUN chmod +x /opt/app/tests/run_tests.sh
+
 CMD ["python", "./server.py"]
+
+
+
+# COPY ./src /code/src
+
+# COPY ./tests /code/tests 
+
+# RUN chmod +x /code/tests/run_tests.sh
+
+# CMD ["python", "-u", "-m", "src.main"]
 
