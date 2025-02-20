@@ -4,7 +4,7 @@ from typing import List, Union, Optional
 class EmbedRequest(BaseModel):
     request_id: str 
     id: Union[int, str] # internal unique item id
-    external_id: Union[int, str] # external id
+    external_id: Optional[Union[int, str]] # external id
     item: str 
 
 class EmbedResponse(BaseModel):
@@ -23,7 +23,7 @@ class DataSourceRequest(BaseModel):
     k: int 
 
 class DataSourceResponseItem(BaseModel):
-    external_id: Union[int, str] # external id from data source
+    external_id: Optional[Union[int, str]] # external id from data source
     item: str 
     embedding: List[float]
     distance: Optional[float]

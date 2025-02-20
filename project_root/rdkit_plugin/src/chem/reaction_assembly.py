@@ -3,6 +3,7 @@ from rdkit import Chem
 from .rdkit_utils import (to_mol, 
                           smarts_to_rxn, 
                           to_smile, 
+                          to_inchi_key,
                           get_unique_products,
                           parse_assembly_inputs, 
                           check_num_parents
@@ -142,9 +143,11 @@ def reaction_assembly(plugin_record, message_data):
         return {}, False, 'All reactions failed to parse' 
     
     products = reactions.react(parent_mols)
+    inchi_keys = [to_inchi_key(i) for i in products]
     
     result = {'valid' : bool(products), 
-              'result' : [{'item' : i, 'external_id' : None} for i in products]}
+              'result' : [{'item' : i, 'external_id' : j} for 
+                          (i,j) in zip(products, inchi_keys)]}
     
     return result, True, None
 

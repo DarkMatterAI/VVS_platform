@@ -6,7 +6,7 @@ from .plugin_crud_schemas import PluginType
 class EmbedRequest(BaseModel):
     # request_id: str 
     id: Union[int, str] # internal unique item id
-    external_id: Union[int, str] # external id
+    external_id: Optional[Union[int, str]] # external id
     item: str 
 
 class EmbedResponse(BaseModel):
@@ -25,7 +25,7 @@ class DataSourceRequest(BaseModel):
     k: int 
 
 class DataSourceResponseItem(BaseModel):
-    external_id: Union[int, str] # external id from data source
+    external_id: Optional[Union[int, str]] # external id from data source
     item: str 
     embedding: List[float]
     distance: Optional[float]
@@ -37,7 +37,7 @@ class DataSourceResponse(BaseModel):
 class ItemRequest(BaseModel):
     # request_id: str 
     id: Union[int, str]
-    external_id: Union[int, str]
+    external_id: Optional[Union[int, str]]
     item: str 
     embedding: List[NamedEmbedding]
         
@@ -61,7 +61,7 @@ class MapperResponse(BaseModel):
 class AssemblyItem(BaseModel):
     assembly_index: int 
     id: Union[int, str]
-    external_id: Union[int, str]
+    external_id: Optional[Union[int, str]]
     item: str 
 
 class AssemblyRequest(BaseModel):

@@ -8,7 +8,111 @@ todos
             standard
             mapper
             bb
-            
+
+make external ids required
+    user should supply for uploads / external data queries
+    assembly must return an external id 
+    rdkit assembly 
+        canonicalize and inchi key 
+
+
+thoughts on item data model
+    should assembly have an external id field?
+    all saved molecules should have an internal ID unrelated to user external IDs
+    an assembled molecule should be linked to parents by parent IDs
+
+    how much item saving do we really want to do?
+        scored results of course
+        current qdrant data has external id, item, embedding
+            move non-embedding to postgres?
+
+        say we want to link assembled molecules to parents by id
+            requires all parents to be in postgres with id
+            easy if qdrant upload and assembly are the only ways of molecules entering the system
+            harder to support user plugin data sources
+                ie every data query result will need to be checked into postgres 
+
+        lazy logging
+            store assembly parents as a json blob lol
+
+    what is the external id really for?
+        comparing results to user dataset?
+    when do we need an internal id?
+
+item table
+    id, item_id, timestamp
+
+external table
+    id (item table), external_id, source plugin id (data or assembly), timestamp
+
+assembly table
+    assembly_id, item_id (product item), assembly plugin id
+
+assembly components table
+    assembly_id, item_id (parent item), assembly index
+
+jobs table
+    job id, job json
+
+results
+    result id, job id, item_id, assembly id (optional)
+
+score table
+    item_id, score plugin id, score
+
+search iteration
+    iteration id, parent iteration id, json blob (query embedding, grad, etc)
+
+search iteration results
+    iteration id, item_id
+
+
+deletion concerns
+    all items in item table should have at least one external table entry
+    deleting a plugin should delete all records linked to that plugin
+
+    data source
+        delete plugin
+        delete external table refs
+        find hanging items, delete
+    
+    assembly delete
+        delete plugin
+        delete external table refs
+        delete assembly table refs
+        find hanging items, delete
+
+
+search iteration flow
+    start with query, gradient
+    check into search iteration table
+    generate gradient arc queries
+    run data queries
+    check results into postgres 
+    deduplicate results based on id
+    check into iteration results table
+        do before/after filter and score??
+    filter/remove
+    score results
+    check into score table
+    select update
+    compute grad
+    create next iteration
+
+assembly search iteration flow
+    query, grad
+    check into iteration table 
+    generate grad arc queries
+    run data query
+        split queries
+        check results into postgres
+        assemble
+        check results into postgres
+        embed 
+
+job things to remember
+    inference budget
+    time limit 
 
 
 check mapper result contains correct number of embeddings
@@ -32,6 +136,8 @@ plugin execution during job
         create hash keys
         check cache
         gather inputs
+        for score
+            check inference budget
     api
         acquire lock based on plugin concurrency
         make request 
@@ -47,6 +153,9 @@ plugin execution during job
     generic / after
         save to cache
         scatter 
+        for score
+            update inference budget (should be per item)
+        
 
 
 
@@ -86,4 +195,28 @@ standard
         no gradient
     iteration
         (embed, grad) pair
+
+
+saved data
+    results
+        item id, item, job id, filter results, score results
+    search iteration
+        query/gradient
+        num results, other metadata
+        result ids
+            link back to results table
+        parent id 
+        job id 
+
+iteration approach
+    dagster job is a single iteration
+        query
+            map/assemble as needed
+        filter/score
+        update
+        grad
+    stash on redis after job
+    next job reads from redis 
+    integrates with having a database for iterations 
+    one issue - need way of generating consistent IDs for assembled molecules 
 

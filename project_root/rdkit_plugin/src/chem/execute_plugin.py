@@ -17,7 +17,7 @@ class NamedEmbedding(BaseModel):
 class ItemRequest(BaseModel):
     request_id: str 
     id: Union[int, str]
-    external_id: Union[int, str]
+    external_id: Optional[Union[int, str]]
     item: str 
     embedding: Optional[List[NamedEmbedding]]=None
         
@@ -27,7 +27,7 @@ class FilterResponse(BaseModel):
 class AssemblyItem(BaseModel):
     assembly_index: int 
     id: Union[int, str]
-    external_id: Union[int, str]
+    external_id: Optional[Union[int, str]]
     item: str 
 
 class AssemblyRequest(BaseModel):

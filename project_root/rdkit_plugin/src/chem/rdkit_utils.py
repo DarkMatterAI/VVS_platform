@@ -29,6 +29,14 @@ def smarts_to_rxn(rxn_smarts):
         rxn = None 
     return rxn 
 
+def to_inchi_key(smile):
+    mol = to_mol(smile)
+    if mol is not None:
+        key = Chem.MolToInchiKey(mol)
+    else:
+        key = None
+    return key 
+
 def clean_reaction_product(product, requires_hs):
     try:
         # note there can be canonicalization issues if 
