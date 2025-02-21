@@ -1,3 +1,4 @@
+import os 
 import asyncio
 import pytest
 import itertools 
@@ -5,17 +6,20 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 from app.main import app
 from app.core.database import Base, get_db
 from app import models
 
-# Use an in-memory SQLite database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+POSTGRES_USER = os.getenv('POSTGRES_USER')
+POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+POSTGRES_DB_TEST = os.getenv('POSTGRES_DB_TEST')
 
-engine = create_async_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+DEFAULT_DB_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/postgres"
+TEST_DB_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/{POSTGRES_DB_TEST}"
+
+_item_counter = itertools.count(1)
+_embedding_counter = itertools.count(1)
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -24,36 +28,87 @@ def event_loop():
     loop.close()
 
 @pytest.fixture(scope="session")
-async def test_db():
-    async with engine.begin() as conn:
+async def test_engine():
+    # Connect to default postgres database
+    default_engine = create_async_engine(
+        DEFAULT_DB_URL,
+        isolation_level="AUTOCOMMIT",
+    )
+
+    # Create test database if it doesn't exist
+    async with default_engine.connect() as conn:
+        await conn.execute(
+            text(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{POSTGRES_DB_TEST}'")
+        )
+        await conn.execute(text(f"DROP DATABASE IF EXISTS {POSTGRES_DB_TEST}"))
+        await conn.execute(text(f"CREATE DATABASE {POSTGRES_DB_TEST}"))
+
+    await default_engine.dispose()
+
+    # Create test engine
+    test_engine = create_async_engine(TEST_DB_URL)
+    
+    async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+
+    yield test_engine
+
+    # Cleanup
+    await test_engine.dispose()
+    
+    default_engine = create_async_engine(
+        DEFAULT_DB_URL,
+        isolation_level="AUTOCOMMIT",
+    )
+    
+    async with default_engine.connect() as conn:
+        await conn.execute(
+            text(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{POSTGRES_DB_TEST}'")
+        )
+        await conn.execute(text(f"DROP DATABASE {POSTGRES_DB_TEST}"))
+    
+    await default_engine.dispose()
 
 @pytest.fixture(scope="function")
-async def db_session(test_db):
+async def db_session(test_engine):
+    TestingSessionLocal = sessionmaker(
+        bind=test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
+
     async with TestingSessionLocal() as session:
-        yield session
-        await session.rollback()
+        try:
+            yield session
+        finally:
+            await session.rollback()
+            await session.close()
 
 @pytest.fixture(scope="function")
 async def client(db_session):
     async def override_get_db():
-        yield db_session
+        try:
+            yield db_session
+        finally:
+            await db_session.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    
+    async with AsyncClient(
+        transport=ASGITransport(app=app), 
+        base_url="http://test"
+    ) as ac:
         yield ac
+    
     app.dependency_overrides.clear()
 
 @pytest.fixture(scope="function")
 def create_test_embedding(db_session):
-    counter = itertools.count(1)
-    
     async def _create_embedding(name=None, vector_length=128, distance_metric="Cosine"):
         embedding = models.EmbeddingPlugin(
-            name=name or f"Test Embedding {next(counter)}",
+            name=name or f"Test Embedding {next(_embedding_counter)}",
             plugin_class="generic",
             type="embedding",
             execution_type="queue",
@@ -70,3 +125,13 @@ def create_test_embedding(db_session):
         return embedding
 
     return _create_embedding
+
+@pytest.fixture(scope="function")
+def create_test_item(db_session):    
+    async def _create_item(name=None):
+        item = models.Item(item=name or f"Test Item {next(_item_counter)}")
+        db_session.add(item)
+        await db_session.commit()
+        return item
+
+    return _create_item

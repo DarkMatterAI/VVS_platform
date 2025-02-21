@@ -43,6 +43,13 @@ from app.schemas.plugin_execute_schemas import (
     BatchExecuteRequestUnion
 )
 
+from app.schemas.item_schemas import (
+    Item,
+    ItemSource,
+    ItemCheckinResponse,
+    NewItem
+)
+
 from app.schemas.qdrant_plugin_schemas import (
     QdrantDataSourceCreate,
     QdrantSnapshotData

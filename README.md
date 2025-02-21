@@ -9,11 +9,17 @@ todos
             mapper
             bb
 
-make external ids required
-    user should supply for uploads / external data queries
-    assembly must return an external id 
-    rdkit assembly 
-        canonicalize and inchi key 
+Database item checking
+    only on plugins that produce new items
+    data source
+        check in results 
+    score
+        check in request, results
+    assembly
+        check in product
+        check in components 
+
+
 
 
 thoughts on item data model
@@ -38,6 +44,14 @@ thoughts on item data model
     what is the external id really for?
         comparing results to user dataset?
     when do we need an internal id?
+
+how much logging
+    internal datasets
+        uploaded datasets
+    external datasets
+        job inputs
+        data source / assembly results
+
 
 item table
     id, item_id, timestamp

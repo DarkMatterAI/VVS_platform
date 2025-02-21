@@ -8,3 +8,4 @@ from app.models.plugin_models import (
     MapperPlugin,
     AssemblyPlugin
 )
+from app.models.item_models import Item, ItemSource

@@ -8,5 +8,5 @@ services:
       - vvs_v2_network
     # volumes:
     #    - ${POSTGRES_STORAGE}:/var/lib/postgresql/data
-    # ports:
-    #   - ${PGPORT}:${PGPORT}
+    ports:
+      - ${PGPORT}:${PGPORT}
