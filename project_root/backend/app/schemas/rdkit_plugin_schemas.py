@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel, RootModel, field_validator, model_validator, ValidationError
+from pydantic import BaseModel, RootModel, field_validator, model_validator
 from typing import List, Dict, Union, Optional
 
 from vvs_database.schemas import (FilterPluginCreate, 

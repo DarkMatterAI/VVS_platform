@@ -3,7 +3,6 @@ import logging
 
 from app import utils
 from app import crud 
-# from app.core.settings import settings 
 from vvs_database import settings 
 from app.core.database import get_db 
 from app.core.plugin_records.records_config import PLUGIN_CREATE_DICT

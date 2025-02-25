@@ -1,30 +1,15 @@
 from sqlalchemy.orm import class_mapper
-# from app import schemas 
 import httpx 
-# from fastapi import HTTPException
 import uuid 
 import pika
 import os 
 import json 
-# import yaml
-# import time 
 import asyncio
 
 from aioredis import Redis
-# from app.core.settings import settings 
 
-# from vvs_database.models import (Plugin, 
-#                                  EmbeddingPlugin, 
-                                #  DataSourcePlugin, 
-                                #  FilterPlugin, 
-                                #  ScorePlugin, 
-                                #  MapperPlugin, 
-#                                  AssemblyPlugin
-                                # )
 from vvs_database import schemas, models
 from vvs_database import settings 
-
-# from vvs_database.schemas.enums import PluginType, PluginClass
 
 # # Plugin type mapping for API layer
 plugin_type_map = {
@@ -65,11 +50,6 @@ plugin_type_map = {
         'execute_request_model' : schemas.AssemblyRequest
     }
 }
-
-# def read_config():
-#     """Read application configuration from YAML file."""
-#     with open('app/launch_config.yaml', 'r') as file:
-#         return yaml.safe_load(file)
 
 def object_as_dict(obj):
     """Convert SQLAlchemy model instance to dictionary."""
@@ -127,31 +107,6 @@ def get_request_key(plugin: models.Plugin, item_id=None):
 
     request_key = f"request.{group_key}.{plugin_type}.{plugin_id}.{item_id}.{request_id}"
     return request_key 
-
-# async def make_post_request(data, url, timeout, retries, retry_sleep=0):
-#     """Make HTTP POST request with retry logic."""
-#     async with httpx.AsyncClient() as client:
-#         for attempt in range(retries + 1):
-#             print(f"Post Request to {url} attempt {attempt+1}")
-#             try:
-#                 response = await client.post(url, json=data, timeout=timeout)
-#                 response.raise_for_status()
-#                 return response.json()
-#             except httpx.HTTPStatusError as e:
-#                 if attempt == retries:
-#                     raise HTTPException(status_code=e.response.status_code, detail=str(e))
-#             except httpx.RequestError as e:
-#                 if attempt == retries:
-#                     raise HTTPException(status_code=500, detail=f"An error occurred while requesting the API: {str(e)}")
-#             except Exception as e:
-#                 if attempt == retries:
-#                     raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-                
-#             if retry_sleep > 0:
-#                 print(f"Post request failed, sleeping")
-#                 time.sleep(retry_sleep)
-
-#     raise HTTPException(status_code=500, detail="Failed to execute API plugin after maximum retries")
 
 async def make_post_request(data, url, timeout, retries, retry_sleep=0):
     """Make HTTP POST request with retry logic."""

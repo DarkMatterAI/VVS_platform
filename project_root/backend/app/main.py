@@ -2,7 +2,6 @@ from fastapi import FastAPI
 
 from app.core.database import init_db
 from app.core.init_records import init_records
-# from app.core.settings import settings 
 from vvs_database import settings 
 from app.api.main import api_router
 

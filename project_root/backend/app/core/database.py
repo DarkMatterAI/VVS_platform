@@ -1,6 +1,5 @@
 from aioredis import Redis
 from vvs_database.core import get_engine, get_session_factory, create_all_tables
-# from app.core.settings import settings 
 from vvs_database import settings 
 
 engine = get_engine(settings.SQLALCHEMY_DATABASE_URL)

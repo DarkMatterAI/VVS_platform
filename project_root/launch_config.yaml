@@ -1,9 +1,9 @@
 plugins:
   qdrant_plugin:
-    enabled: False
+    enabled: True
   tei_plugin:
     enabled: True
   rdkit_plugin:
-    enabled: False
+    enabled: True
   triton_plugin:
-    enabled: False
+    enabled: True
