@@ -1,5 +1,5 @@
 from sqlalchemy.orm import class_mapper
-from app import models, schemas
+from app import schemas 
 import httpx 
 from fastapi import HTTPException
 import uuid 
@@ -11,7 +11,10 @@ import time
 import asyncio
 
 from aioredis import Redis
-from app.core.database import REDIS_URL
+# from app.core.database import REDIS_URL
+from app.core.settings import settings 
+
+from vvs_database import models 
 
 plugin_type_map = {
     schemas.PluginType.EMBEDDING : {
@@ -148,7 +151,7 @@ async def concurrency_wrapper(concurrency, func, iterable, kwargs):
     return results
     
 async def get_redis_result(result_id: str, delete: bool = True):
-    redis = Redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+    redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     redis_key = result_id.replace('.', ':')
     
     try:
@@ -174,7 +177,7 @@ async def get_redis_result(result_id: str, delete: bool = True):
         await redis.close()
 
 async def get_redis_result_batch(result_ids: list[dict], delete: bool = True):
-    redis = Redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+    redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     results = []
     
     try:

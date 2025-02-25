@@ -6,7 +6,8 @@ from fastapi import HTTPException
 from typing import List, Optional, Dict, Any 
 from pydantic import ValidationError 
 
-from app import models, schemas, utils 
+from app import schemas, utils 
+from vvs_database import models 
 
 async def get_embeddings(db: AsyncSession, embedding_ids: List[int]):
     stmt = select(models.EmbeddingPlugin).filter(models.EmbeddingPlugin.id.in_(embedding_ids))

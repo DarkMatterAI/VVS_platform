@@ -1,13 +1,11 @@
-import os 
-import time 
 from aioredis import Redis
 import logging 
 
-from app import schemas, utils
+from app import utils
 from app.crud import plugin_crud as crud 
-
-from .database import get_db, REDIS_URL
-from .plugin_records.records_config import PLUGIN_CREATE_DICT
+from app.core.settings import settings 
+from app.core.database import get_db 
+from app.core.plugin_records.records_config import PLUGIN_CREATE_DICT
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -38,7 +36,7 @@ async def _init_records(db):
             await PLUGIN_CREATE_DICT[plugin_name]['create_func'](db)
 
 async def init_records():
-    redis = Redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+    redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     lock = redis.lock("records_init_lock", timeout=60)
 
     try:

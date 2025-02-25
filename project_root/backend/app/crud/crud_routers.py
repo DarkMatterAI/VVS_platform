@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .plugin_crud import (create_plugin, 
+from app.crud.plugin_crud import (create_plugin, 
                           get_plugin, 
                           get_plugins,
                           update_plugin, 
@@ -9,8 +9,8 @@ from .plugin_crud import (create_plugin,
                           count_plugins_by_class,
                           count_plugins_linked_to_embedding_class
                           )
-from .plugin_crud import delete_plugin as delete_plugin_generic
-from .qdrant_crud import delete_qdrant
+from app.crud.plugin_crud import delete_plugin as delete_plugin_generic
+from app.crud.qdrant_crud import delete_qdrant
 
 async def delete_plugin(db: AsyncSession, plugin_id: int):
     db_plugin = await get_plugin(db, plugin_id)

@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from typing import Optional, Union, List, Dict, Tuple  
 
-from app import models
+from vvs_database import models 
 
 from pydantic import BaseModel 
 
