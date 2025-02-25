@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List, Optional
 
 from app import schemas, utils
-from app.crud import crud_routers as crud 
+from app import crud 
 from app.core.database import get_db 
 
 router = APIRouter()
@@ -57,6 +57,3 @@ async def delete_plugin(plugin_id: int, db: AsyncSession = Depends(get_db)):
     if db_plugin is None:
         raise HTTPException(status_code=404, detail="Plugin not found")
     return db_plugin
-
-
-

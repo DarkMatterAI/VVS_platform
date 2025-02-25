@@ -519,7 +519,7 @@ async def test_create_embedding_plugin_with_duplicate_embeddings(client, create_
             "embedding_ids": [embedding.id, embedding.id]
         }
     )
-    assert response.status_code == 400
+    assert response.status_code == 422
     assert "Duplicate embedding IDs are not allowed" in response.json()["detail"]
 
 @pytest.mark.asyncio
@@ -538,7 +538,7 @@ async def test_create_data_source_with_invalid_embedding_id(client):
             "embedding_ids": [999]  # Assuming 999 is an invalid ID
         }
     )
-    assert response.status_code == 400
+    assert response.status_code == 422
     assert "Invalid embedding IDs" in response.json()["detail"]
 
 @pytest.mark.asyncio

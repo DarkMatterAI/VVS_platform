@@ -11,97 +11,111 @@ import time
 import asyncio
 
 from aioredis import Redis
-# from app.core.database import REDIS_URL
 from app.core.settings import settings 
 
-from vvs_database import models 
+from vvs_database.models import (Plugin, 
+                                 EmbeddingPlugin, 
+                                 DataSourcePlugin, 
+                                 FilterPlugin, 
+                                 ScorePlugin, 
+                                 MapperPlugin, 
+                                 AssemblyPlugin
+                                )
 
+from vvs_database.schemas.enums import PluginType, PluginClass
+
+# Plugin type mapping for API layer
 plugin_type_map = {
-    schemas.PluginType.EMBEDDING : {
+    PluginType.EMBEDDING : {
         'create_model' : schemas.EmbeddingPluginCreate,
         'response_model' : schemas.EmbeddingPluginInDB,
-        'data_model' : models.EmbeddingPlugin,
+        'data_model' : EmbeddingPlugin,
         'execute_request_model' : schemas.EmbedRequest
     },
-    schemas.PluginType.DATA_SOURCE : {
+    PluginType.DATA_SOURCE : {
         'create_model' : schemas.DataSourcePluginCreate,
         'response_model' : schemas.DataSourcePluginInDB,
-        'data_model' : models.DataSourcePlugin,
+        'data_model' : DataSourcePlugin,
         'execute_request_model' : schemas.DataSourceRequest
     },
-    schemas.PluginType.FILTER : {
+    PluginType.FILTER : {
         'create_model' : schemas.FilterPluginCreate,
         'response_model' : schemas.FilterPluginInDB,
-        'data_model' : models.FilterPlugin,
+        'data_model' : FilterPlugin,
         'execute_request_model' : schemas.ItemRequest
     },
-    schemas.PluginType.SCORE : {
+    PluginType.SCORE : {
         'create_model' : schemas.ScorePluginCreate,
         'response_model' : schemas.ScorePluginInDB,
-        'data_model' : models.ScorePlugin,
+        'data_model' : ScorePlugin,
         'execute_request_model' : schemas.ItemRequest
     },
-    schemas.PluginType.MAPPER : {
+    PluginType.MAPPER : {
         'create_model' : schemas.MapperPluginCreate,
         'response_model' : schemas.MapperPluginInDB,
-        'data_model' : models.MapperPlugin,
+        'data_model' : MapperPlugin,
         'execute_request_model' : schemas.MapperRequest
     },
-    schemas.PluginType.ASSEMBLY : {
+    PluginType.ASSEMBLY : {
         'create_model' : schemas.AssemblyPluginCreate,
         'response_model' : schemas.AssemblyPluginInDB,
-        'data_model' : models.AssemblyPlugin,
+        'data_model' : AssemblyPlugin,
         'execute_request_model' : schemas.AssemblyRequest
     }
 }
 
 def read_config():
+    """Read application configuration from YAML file."""
     with open('app/launch_config.yaml', 'r') as file:
         return yaml.safe_load(file)
 
 def object_as_dict(obj):
+    """Convert SQLAlchemy model instance to dictionary."""
     output = {}
     for c in class_mapper(obj.__class__).columns:
         output[c.key] = getattr(obj, c.key)
     return output 
 
-def get_plugin_create(plugin_type: schemas.PluginType) -> schemas.PluginBase:
+def get_plugin_create(plugin_type: PluginType):
+    """Get the Pydantic model for creating a specific plugin type."""
     return plugin_type_map[plugin_type]['create_model']
 
-def get_plugin_data_model(plugin_type: schemas.PluginType) -> schemas.PluginBase:
+def get_plugin_data_model(plugin_type: PluginType):
+    """Get the SQLAlchemy model for a specific plugin type."""
     return plugin_type_map[plugin_type]['data_model']
 
-def remap_embeddings(plugin: models.Plugin, plugin_dict: dict) -> None:
-
-    if isinstance(plugin, models.DataSourcePlugin):
+def remap_embeddings(plugin: Plugin, plugin_dict: dict) -> None:
+    """Add embedding relationship data to plugin dictionary."""
+    if isinstance(plugin, DataSourcePlugin):
         plugin_dict['embedding_ids'] = [e.id for e in plugin.embeddings]
-    elif isinstance(plugin, (models.FilterPlugin, models.ScorePlugin)):
+    elif isinstance(plugin, (FilterPlugin, ScorePlugin)):
         plugin_dict['embedding_ids'] = [e.id for e in plugin.embeddings] if plugin.embeddings else None
-    elif isinstance(plugin, models.MapperPlugin):
-        print('remapping mapper embeddings')
+    elif isinstance(plugin, MapperPlugin):
         plugin_dict['input_embedding_id'] = plugin.input_embedding_id
         plugin_dict['embedding_ids'] = [e.id for e in plugin.embeddings]
 
-def get_plugin_response_model(plugin: models.Plugin) -> schemas.PluginInDBUnion:
+def get_plugin_response_model(plugin: Plugin):
+    """Convert SQLAlchemy plugin instance to Pydantic response model."""
     plugin_dict = object_as_dict(plugin)
     remap_embeddings(plugin, plugin_dict)
 
     return plugin_type_map[plugin.type]['response_model'].model_validate(plugin_dict)
 
-def validate_updates(plugin: models.Plugin, update_data: dict):
-
+def validate_updates(plugin: Plugin, update_data: dict):
+    """Validate that plugin updates are consistent with the model schema."""
     plugin_dict = object_as_dict(plugin)
     remap_embeddings(plugin, plugin_dict)
     plugin_dict.update(update_data)
     plugin_type_map[plugin.type]['response_model'].model_validate(plugin_dict)
 
-def validate_execute_request(plugin: models.Plugin, execute_request: list[dict]):
-    # print(f"Validating {execute_request}, {plugin.type}")
+def validate_execute_request(plugin: Plugin, execute_request: list[dict]):
+    """Validate that execution request matches plugin requirements."""
     request_model = plugin_type_map[plugin.type]['execute_request_model']
     for item in execute_request: 
         request_model.model_validate(item)
 
-def get_request_key(plugin: models.Plugin, item_id=None):
+def get_request_key(plugin: Plugin, item_id=None):
+    """Generate a unique request key for message queue."""
     group_key = plugin.group_key 
     plugin_type = plugin.type 
     plugin_id = plugin.id  
@@ -113,13 +127,13 @@ def get_request_key(plugin: models.Plugin, item_id=None):
     request_key = f"request.{group_key}.{plugin_type}.{plugin_id}.{item_id}.{request_id}"
     return request_key 
 
-# async def make_post_request(url, data, timeout, retries, retry_sleep=0):
 async def make_post_request(data, url, timeout, retries, retry_sleep=0):
+    """Make HTTP POST request with retry logic."""
     async with httpx.AsyncClient() as client:
         for attempt in range(retries + 1):
             print(f"Post Request to {url} attempt {attempt+1}")
             try:
-                response = await client.post(url, json=data, timeout=timeout )
+                response = await client.post(url, json=data, timeout=timeout)
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as e:
@@ -132,18 +146,20 @@ async def make_post_request(data, url, timeout, retries, retry_sleep=0):
                 if attempt == retries:
                     raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
                 
-            if retry_sleep>0:
+            if retry_sleep > 0:
                 print(f"Post request failed, sleeping")
                 time.sleep(retry_sleep)
 
     raise HTTPException(status_code=500, detail="Failed to execute API plugin after maximum retries")
 
 async def concurrency_bounded_func(semaphore, func, input, kwargs):
+    """Run function within concurrency limit."""
     async with semaphore:
         output = await func(input, **kwargs)
     return output
 
 async def concurrency_wrapper(concurrency, func, iterable, kwargs):
+    """Run multiple tasks with concurrency limit."""
     semaphore = asyncio.Semaphore(concurrency)
     
     tasks = [concurrency_bounded_func(semaphore, func, item, kwargs) for item in iterable]
@@ -151,6 +167,7 @@ async def concurrency_wrapper(concurrency, func, iterable, kwargs):
     return results
     
 async def get_redis_result(result_id: str, delete: bool = True):
+    """Get result from Redis by ID."""
     redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     redis_key = result_id.replace('.', ':')
     
@@ -166,8 +183,8 @@ async def get_redis_result(result_id: str, delete: bool = True):
             return parsed_result
         except json.JSONDecodeError as e:
             result = {
-                'valid' : False,
-                'response_data' : None,
+                'valid': False,
+                'response_data': None,
                 'failure_reason': 'Json decode error - Invalid JSON data in Redis result',
                 'failure_detail': str(e)
             }
@@ -177,6 +194,7 @@ async def get_redis_result(result_id: str, delete: bool = True):
         await redis.close()
 
 async def get_redis_result_batch(result_ids: list[dict], delete: bool = True):
+    """Get multiple results from Redis."""
     redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     results = []
     
@@ -216,18 +234,18 @@ async def get_redis_result_batch(result_ids: list[dict], delete: bool = True):
     finally:
         await redis.close()
         
-
-async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
+async def execute_api_plugin(plugin: Plugin, execute_request: dict):
+    """Execute plugin via API call."""
     url = plugin.endpoint_url
     timeout = plugin.timeout
     retries = plugin.max_retries
     execute_request = execute_request.model_dump()
     execute_request['request_id'] = get_request_key(plugin, execute_request.get('id', None))
-    # response = await make_post_request(url, execute_request, timeout, retries)
     response = await make_post_request(execute_request, url, timeout, retries)
     return response 
 
 def rabbitmq_publish(messages):
+    """Publish messages to RabbitMQ."""
     rabbitmq_params = pika.ConnectionParameters(
         host='rabbitmq',
         port=int(os.environ.get('RABBITMQ_PORT', 5672)),
@@ -256,28 +274,30 @@ def rabbitmq_publish(messages):
         if connection and connection.is_open:
             connection.close()
 
-async def execute_queue_plugin(plugin: models.Plugin, execute_request: dict):
-
+async def execute_queue_plugin(plugin: Plugin, execute_request: dict):
+    """Execute plugin via queue (RabbitMQ)."""
     execute_request = execute_request.model_dump()
     request_key = get_request_key(plugin, execute_request.get('id', None))
     execute_request['request_id'] = request_key
     rabbitmq_publish([execute_request])
     response_key = request_key.replace('request', 'response')
     await asyncio.sleep(0)
-    return {'result_id' : response_key}
+    return {'result_id': response_key}
 
+# Plugin execution function mappings
 execute_plugin_map = {
-    'api' : execute_api_plugin,
-    'queue' : execute_queue_plugin,
+    'api': execute_api_plugin,
+    'queue': execute_queue_plugin,
 }
 
-async def batch_execute_api_plugin(plugin: models.Plugin, execute_request: list[dict]):
+async def batch_execute_api_plugin(plugin: Plugin, execute_request: list[dict]):
+    """Execute plugin via API with batching capabilities."""
     batch_size = plugin.batch_size
 
     post_kwargs = {
-        'url' : plugin.endpoint_url,
-        'timeout' : plugin.timeout,
-        'retries' : plugin.max_retries
+        'url': plugin.endpoint_url,
+        'timeout': plugin.timeout,
+        'retries': plugin.max_retries
     }
 
     request_data = []
@@ -313,7 +333,8 @@ async def batch_execute_api_plugin(plugin: models.Plugin, execute_request: list[
     
     return response
 
-async def batch_execute_queue_plugin(plugin: models.Plugin, execute_request: list[dict]):
+async def batch_execute_queue_plugin(plugin: Plugin, execute_request: list[dict]):
+    """Execute plugin via queue with batching capabilities."""
     messages = []
     response = []
     for item in execute_request:
@@ -322,13 +343,14 @@ async def batch_execute_queue_plugin(plugin: models.Plugin, execute_request: lis
         item['request_id'] = request_key
         messages.append(item)
         response_key = request_key.replace('request', 'response')
-        response.append({'result_id' : response_key})
+        response.append({'result_id': response_key})
     rabbitmq_publish(messages)
     await asyncio.sleep(0)
     return response 
 
+# Batch execution function mappings
 batch_execute_plugin_map = {
-    'api' : batch_execute_api_plugin,
-    'queue' : batch_execute_queue_plugin,
+    'api': batch_execute_api_plugin,
+    'queue': batch_execute_queue_plugin,
 }
 

@@ -1,19 +1,6 @@
 from aioredis import Redis
 from vvs_database.core import get_engine, get_session_factory, create_all_tables
-# import os
 from app.core.settings import settings 
-
-# REDIS_HOST = os.getenv("REDIS_HOST", "redis")
-# REDIS_PORT = os.getenv("REDIS_PORT", "6379")
-# REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
-# REDIS_DB = os.getenv('REDIS_DB', '0')
-# REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-
-# POSTGRES_USER = os.getenv('POSTGRES_USER')
-# POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-# POSTGRES_DB = os.getenv('POSTGRES_DB')
-
-# SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/{POSTGRES_DB}"
 
 engine = get_engine(settings.SQLALCHEMY_DATABASE_URL)
 AsyncSessionLocal = get_session_factory(engine)

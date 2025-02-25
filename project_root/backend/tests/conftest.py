@@ -1,21 +1,14 @@
-import os 
 import asyncio
 import pytest
 import itertools 
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import text
 from app.main import app
 from app.core.database import get_db
-from vvs_database import models, Base
-
-POSTGRES_USER = os.getenv('POSTGRES_USER')
-POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-POSTGRES_DB_TEST = os.getenv('POSTGRES_DB_TEST')
-
-DEFAULT_DB_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/postgres"
-TEST_DB_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/{POSTGRES_DB_TEST}"
+from app.core.settings import settings
+from vvs_database import Base, schemas
+from vvs_database.testing import create_test_database_url, drop_test_database
 
 _embedding_counter = itertools.count(1)
 
@@ -27,24 +20,14 @@ def event_loop():
 
 @pytest.fixture(scope="session")
 async def test_engine():
-    # Connect to default postgres database
-    default_engine = create_async_engine(
-        DEFAULT_DB_URL,
-        isolation_level="AUTOCOMMIT",
+    # Create test database
+    test_db_url = await create_test_database_url(
+        settings.DEFAULT_DB_URL,
+        settings.POSTGRES_DB_TEST
     )
-
-    # Create test database if it doesn't exist
-    async with default_engine.connect() as conn:
-        await conn.execute(
-            text(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{POSTGRES_DB_TEST}'")
-        )
-        await conn.execute(text(f"DROP DATABASE IF EXISTS {POSTGRES_DB_TEST}"))
-        await conn.execute(text(f"CREATE DATABASE {POSTGRES_DB_TEST}"))
-
-    await default_engine.dispose()
-
+    
     # Create test engine
-    test_engine = create_async_engine(TEST_DB_URL)
+    test_engine = create_async_engine(test_db_url)
     
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -54,21 +37,15 @@ async def test_engine():
     # Cleanup
     await test_engine.dispose()
     
-    default_engine = create_async_engine(
-        DEFAULT_DB_URL,
-        isolation_level="AUTOCOMMIT",
+    # Drop test database
+    await drop_test_database(
+        settings.DEFAULT_DB_URL,
+        settings.POSTGRES_DB_TEST
     )
-    
-    async with default_engine.connect() as conn:
-        await conn.execute(
-            text(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{POSTGRES_DB_TEST}'")
-        )
-        await conn.execute(text(f"DROP DATABASE {POSTGRES_DB_TEST}"))
-    
-    await default_engine.dispose()
 
 @pytest.fixture(scope="function")
 async def db_session(test_engine):
+    # Keep your original session management
     TestingSessionLocal = sessionmaker(
         bind=test_engine,
         class_=AsyncSession,
@@ -86,6 +63,7 @@ async def db_session(test_engine):
 
 @pytest.fixture(scope="function")
 async def client(db_session):
+    # Keep your original client setup
     async def override_get_db():
         try:
             yield db_session
@@ -102,27 +80,30 @@ async def client(db_session):
     
     app.dependency_overrides.clear()
 
+
 @pytest.fixture(scope="function")
-def create_test_embedding(db_session):
+def create_test_embedding(client):
     async def _create_embedding(name=None, vector_length=128, distance_metric="Cosine"):
-        embedding = models.EmbeddingPlugin(
-            name=name or f"Test Embedding {next(_embedding_counter)}",
-            plugin_class="generic",
-            type="embedding",
-            execution_type="queue",
-            group_key="test",
-            timeout=30,
-            max_concurrency=5,
-            max_retries=1,
-            vector_length=vector_length,
-            distance_metric=distance_metric
+        response = await client.post(
+            f"/api/v1/plugins/",
+            json={
+                "name": name or f"Test Embedding {next(_embedding_counter)}",
+                "plugin_class": "generic",
+                "type": "embedding",
+                "execution_type": "queue",
+                "group_key": "test",
+                "timeout": 30,
+                "max_concurrency": 5,
+                "max_retries": 1,
+                "vector_length": vector_length,
+                "distance_metric": distance_metric
+            }
         )
-        db_session.add(embedding)
-        await db_session.commit()
-        await db_session.refresh(embedding)
-        return embedding
+        assert response.status_code == 200
+        return schemas.EmbeddingPluginInDB(**response.json())
 
     return _create_embedding
+
 
 
 # # _item_counter = itertools.count(1)
