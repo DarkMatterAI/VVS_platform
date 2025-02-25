@@ -10,9 +10,6 @@ todos
             bb
 
 database refactor
-    update plugin servers to pull from database lib
-        test server 
-        request id generation 
     update execution schemas
         use item_id for everything
         change mapper request id to `mapper_id` to indicate plugin 

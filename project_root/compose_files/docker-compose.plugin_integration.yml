@@ -1,8 +1,8 @@
 services:
   plugin_integration_server:
     build:
-      context: ../plugin_integration_server
-      dockerfile: plugin_integration_server.Dockerfile 
+      context: ../
+      dockerfile: plugin_integration_server/plugin_integration_server.Dockerfile 
     profiles: [plugin, plugin_integration_server]
     env_file:
       - ../.env

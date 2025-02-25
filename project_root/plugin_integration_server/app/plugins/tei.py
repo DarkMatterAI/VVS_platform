@@ -12,5 +12,4 @@ class TeiPlugin(BasePlugin):
             'truncation_direction': os.environ.get('TEI_TRUNCATION_DIRECTION', 'right')
         }
         response = await post_request(tei_data, PLUGIN_CONFIG['tei'])
-        print(response)
         return [{'embedding': i} for i in response]
