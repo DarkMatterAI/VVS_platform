@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Union, Optional
 
-# from .plugin_crud_schemas import PluginType
 from vvs_database.schemas import PluginType 
 
 class EmbedRequest(BaseModel):

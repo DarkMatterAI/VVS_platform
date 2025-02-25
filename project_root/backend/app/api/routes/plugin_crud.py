@@ -12,27 +12,6 @@ router = APIRouter()
 async def get_plugins_summary(db: AsyncSession = Depends(get_db)):
     return await crud.get_plugins_summary(db)
 
-# @router.get("/count_group/{group_key}")
-# async def count_by_group(group_key: str, db: AsyncSession = Depends(get_db)):
-#     return await crud.count_plugins_by_group_key(db, group_key)
-
-# @router.get("/count_group_linked/{embedding_group_key}")
-# async def count_by_group(embedding_group_key: str, db: AsyncSession = Depends(get_db)):
-#     return await crud.count_plugins_linked_to_embedding_group(db, embedding_group_key)
-
-# @router.get("/count_id_linked/{embedding_id}")
-# async def count_by_group(embedding_id: int, db: AsyncSession = Depends(get_db)):
-#     return await crud.count_plugins_linked_to_embedding_id(db, embedding_id)
-
-# @router.get("/count_class")
-# async def count_by_group(plugin_class: schemas.PluginClass, db: AsyncSession = Depends(get_db)):
-#     return await crud.count_plugins_by_class(db, plugin_class)
-
-# @router.get("/count_class_linked")
-# async def count_by_group(plugin_class: schemas.PluginClass, db: AsyncSession = Depends(get_db)):
-#     return await crud.count_plugins_linked_to_embedding_class(db, plugin_class)
-
-
 @router.post("/", response_model=schemas.PluginInDBUnion)
 async def create_plugin(plugin: schemas.PluginCreate, db: AsyncSession = Depends(get_db)):
     response = await crud.create_plugin(db=db, plugin=plugin.root)

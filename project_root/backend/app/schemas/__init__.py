@@ -23,31 +23,6 @@ from vvs_database.schemas import (
     PluginInDBUnion
 )
 
-# from app.schemas.plugin_crud_schemas import (
-#     PluginType,
-#     PluginClass,
-#     PluginExecutionType,
-#     DistanceMetric,
-#     PluginBase,
-#     EmbeddingPluginCreate,
-#     DataSourcePluginCreate,
-#     FilterPluginCreate,
-#     ScorePluginCreate,
-#     MapperPluginCreate,
-#     AssemblyPluginCreate,
-#     PluginCreateUnion,
-#     PluginCreate,
-#     PluginUpdate,
-#     PluginInDB,
-#     EmbeddingPluginInDB,
-#     DataSourcePluginInDB,
-#     FilterPluginInDB,
-#     ScorePluginInDB,
-#     MapperPluginInDB,
-#     AssemblyPluginInDB,
-#     PluginInDBUnion
-# )
-
 from app.schemas.plugin_execute_schemas import (
     EmbedRequest,
     EmbedResponse,
@@ -67,15 +42,6 @@ from app.schemas.plugin_execute_schemas import (
     ExecuteRequestUnion,
     BatchExecuteRequestUnion
 )
-
-# from app.schemas.item_schemas import (
-#     Item,
-#     ItemSource,
-#     ItemCheckinResponse,
-#     NewItem,
-#     ItemScore,
-#     NewScore
-# )
 
 from app.schemas.qdrant_plugin_schemas import (
     QdrantDataSourceCreate,

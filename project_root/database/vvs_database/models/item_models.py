@@ -80,3 +80,73 @@ class ItemScore(Base):
     __table_args__ = (
         UniqueConstraint('item_id', 'plugin_id', name='uix_item_score'),
     )
+
+
+# class Assembly(Base):
+#     __tablename__ = "assemblies"
+
+#     assembly_id = Column(Integer, primary_key=True, index=True)
+#     product_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False, index=True)
+#     plugin_id = Column(Integer, ForeignKey("plugins.id", ondelete="CASCADE"), nullable=False, index=True)
+#     assembly_key = Column(String, nullable=False, index=True)
+#     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+#     product = relationship("Item", passive_deletes=True)
+#     plugin = relationship("Plugin", passive_deletes=True)
+#     components = relationship("AssemblyComponent", 
+#                             back_populates="assembly",
+#                             cascade="all, delete-orphan",
+#                             passive_deletes=True)
+
+#     __table_args__ = (
+#         Index('idx_assembly_product_plugin', 'product_id', 'plugin_id'),
+#         UniqueConstraint('assembly_key', name='uix_assembly_key'),
+#     )
+
+#     @property
+#     def generate_assembly_key(self):
+#         """Generate assembly key from components and product"""
+#         component_ids = [c.component_id for c in sorted(self.components, key=lambda x: x.assembly_index)]
+#         return f"{self.plugin_id}_{'_'.join(map(str, component_ids))}_{self.product_id}"
+
+#     @classmethod
+#     async def get_or_create(cls, session: AsyncSession, product_id: int, plugin_id: int, component_ids: list[int]):
+#         """Get existing assembly or create new one"""
+#         # Create temporary instance to generate key
+#         temp_assembly = cls(product_id=product_id, plugin_id=plugin_id)
+#         temp_assembly.components = [
+#             AssemblyComponent(assembly_index=idx, component_id=comp_id)
+#             for idx, comp_id in enumerate(component_ids)
+#         ]
+#         assembly_key = temp_assembly.generate_assembly_key()
+        
+#         # Check if assembly exists
+#         stmt = select(cls).where(cls.assembly_key == assembly_key)
+#         result = await session.execute(stmt)
+#         existing = result.scalar_one_or_none()
+        
+#         if existing:
+#             return existing
+        
+#         # Create new assembly
+#         temp_assembly.assembly_key = assembly_key
+#         session.add(temp_assembly)
+#         await session.flush()  # Flush to get the assembly_id
+        
+#         return temp_assembly
+
+
+# class AssemblyComponent(Base):
+#     __tablename__ = "assembly_components"
+
+#     assembly_id = Column(Integer, ForeignKey("assemblies.assembly_id", ondelete="CASCADE"), primary_key=True)
+#     assembly_index = Column(Integer, primary_key=True)
+#     component_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
+    
+#     assembly = relationship("Assembly", back_populates="components", passive_deletes=True)
+#     component = relationship("Item", passive_deletes=True)
+
+#     __table_args__ = (
+#         UniqueConstraint('assembly_id', 'assembly_index', name='uix_assembly_component'),
+#     )
+
