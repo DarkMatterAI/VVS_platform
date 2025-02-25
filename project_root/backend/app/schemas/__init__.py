@@ -1,4 +1,4 @@
-from app.schemas.plugin_crud_schemas import (
+from vvs_database.schemas import (
     PluginType,
     PluginClass,
     PluginExecutionType,
@@ -22,6 +22,31 @@ from app.schemas.plugin_crud_schemas import (
     AssemblyPluginInDB,
     PluginInDBUnion
 )
+
+# from app.schemas.plugin_crud_schemas import (
+#     PluginType,
+#     PluginClass,
+#     PluginExecutionType,
+#     DistanceMetric,
+#     PluginBase,
+#     EmbeddingPluginCreate,
+#     DataSourcePluginCreate,
+#     FilterPluginCreate,
+#     ScorePluginCreate,
+#     MapperPluginCreate,
+#     AssemblyPluginCreate,
+#     PluginCreateUnion,
+#     PluginCreate,
+#     PluginUpdate,
+#     PluginInDB,
+#     EmbeddingPluginInDB,
+#     DataSourcePluginInDB,
+#     FilterPluginInDB,
+#     ScorePluginInDB,
+#     MapperPluginInDB,
+#     AssemblyPluginInDB,
+#     PluginInDBUnion
+# )
 
 from app.schemas.plugin_execute_schemas import (
     EmbedRequest,

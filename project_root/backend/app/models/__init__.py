@@ -1,4 +1,19 @@
-from app.models.plugin_models import (
+# from app.models.plugin_models import (
+#     plugin_embeddings,
+#     Plugin,
+#     EmbeddingPlugin,
+#     DataSourcePlugin,
+#     FilterPlugin,
+#     ScorePlugin,
+#     MapperPlugin,
+#     AssemblyPlugin
+# )
+# from app.models.item_models import (Item, 
+#                                     ItemSource,
+#                                     ItemScore
+#                                     )
+
+from vvs_database.models import (
     plugin_embeddings,
     Plugin,
     EmbeddingPlugin,
@@ -6,9 +21,8 @@ from app.models.plugin_models import (
     FilterPlugin,
     ScorePlugin,
     MapperPlugin,
-    AssemblyPlugin
+    AssemblyPlugin,
+    Item,
+    ItemSource,
+    ItemScore
 )
-from app.models.item_models import (Item, 
-                                    ItemSource,
-                                    ItemScore
-                                    )

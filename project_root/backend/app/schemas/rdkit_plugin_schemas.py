@@ -2,16 +2,27 @@ from enum import Enum
 from pydantic import BaseModel, RootModel, field_validator, model_validator, ValidationError
 from typing import List, Dict, Union, Optional
 
-from app.schemas.plugin_crud_schemas import (FilterPluginCreate, 
-                                             PluginUpdate, 
-                                             FilterPluginInDB,
-                                             PluginType,
-                                             PluginExecutionType,
-                                             PluginType,
-                                             PluginClass,
-                                             AssemblyPluginCreate,
-                                             PluginInDBUnion
-                                             )
+# from app.schemas.plugin_crud_schemas import (FilterPluginCreate, 
+#                                              PluginUpdate, 
+#                                              FilterPluginInDB,
+#                                              PluginType,
+#                                              PluginExecutionType,
+#                                              PluginType,
+#                                              PluginClass,
+#                                              AssemblyPluginCreate,
+#                                              PluginInDBUnion
+#                                              )
+
+from vvs_database.schemas import (FilterPluginCreate, 
+                                PluginUpdate, 
+                                FilterPluginInDB,
+                                PluginType,
+                                PluginExecutionType,
+                                PluginType,
+                                PluginClass,
+                                AssemblyPluginCreate,
+                                PluginInDBUnion
+                                )
 
 class PropertyName(str, Enum):
     NUM_COMPOUNDS = "Number of Compounds"

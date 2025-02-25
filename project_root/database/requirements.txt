@@ -1,0 +1,6 @@
+pydantic
+sqlalchemy[asyncio]
+asyncpg
+psycopg2-binary
+pytest
+pytest-asyncio
