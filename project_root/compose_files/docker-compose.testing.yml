@@ -1,8 +1,8 @@
 services:
   test_server:
     build:
-      context: ../test_server
-      dockerfile: test_server.Dockerfile 
+      context: ../
+      dockerfile: test_server/test_server.Dockerfile 
     container_name: test_server
     profiles: [testing, test_server]
     env_file:
@@ -42,8 +42,8 @@ services:
 
   test_executor:
     build:
-      context: ../test_executor 
-      dockerfile: test_executor.Dockerfile 
+      context: ../ 
+      dockerfile: test_executor/test_executor.Dockerfile 
     container_name: test_executor 
     profiles: [test_executor, integration_test]
     env_file:

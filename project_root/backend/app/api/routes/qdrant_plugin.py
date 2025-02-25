@@ -31,3 +31,13 @@ async def update_snapshot(plugin_id: int, snapshot_data: schemas.QdrantSnapshotD
     response = await crud.get_plugin(db, plugin_id=record_id, response_model=True)
     return response 
 
+@router.get("/orphan_collections")
+async def get_orphan_collections(db: AsyncSession = Depends(get_db)):
+    response = await crud.qdrant_utils.get_orphan_collections(db)
+    return response 
+
+@router.delete("/orphan_collections")
+async def delete_orphan_collections(db: AsyncSession = Depends(get_db)):
+    response = await crud.qdrant_utils.delete_orphan_collections(db)
+    return response 
+

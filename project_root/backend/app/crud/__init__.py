@@ -9,7 +9,7 @@ from vvs_database.crud import (
 )
 from vvs_database.utils import get_redis_result, get_redis_result_batch
 
-from app.crud import qdrant_crud
+from app.crud import qdrant_crud, qdrant_utils
 from app.crud.plugin_crud import (
     handle_db_exception,
     get_plugin,

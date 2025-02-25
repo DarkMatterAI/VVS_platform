@@ -1,7 +1,7 @@
 import os 
 import time 
 from qdrant_client import AsyncQdrantClient, models
-from fastapi import HTTPException
+from vvs_database.crud import get_plugins 
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import Union, Mapping, Optional
@@ -58,12 +58,10 @@ async def qdrant_create(db_record, qdrant_config):
         collection_info = await client.get_collection(collection_name)
         print('Qdrant create successful')
         return collection_info.model_dump()
-
-async def qdrant_delete(db_record):
+    
+async def qdrant_delete_collection(collection_name):
     async with get_qdrant_client() as client:
-        collection_name = f"data_source_{db_record.id}"
         print(f"Deleting qdrant collection {collection_name}")
-
         response = await client.delete_collection(collection_name)
         print(f"Delete collection {collection_name} response: {response}")
         if not response:
@@ -73,6 +71,12 @@ async def qdrant_delete(db_record):
             if collection_name not in collection_names:
                 print(f"Collection {collection_name} does not exist on qdrant, assuming already deleted")
                 response = True 
+        return response 
+    
+async def qdrant_delete(db_record):
+    async with get_qdrant_client() as client:
+        collection_name = f"data_source_{db_record.id}"
+        response = await qdrant_delete_collection(collection_name)
         return response 
 
 async def qdrant_get_collection(db_record):
@@ -103,6 +107,35 @@ async def restore_snapshot(db_record, snapshot_name):
         print(f"Recovering snapshot file {snapshot_location}")
         snapshot_response = await client.recover_snapshot(collection_name, snapshot_location)
         return snapshot_response
+
+async def get_orphan_collections(db):
+    collection_names = await get_collection_names(retries=10)
+    found_collections = set() 
+    skip = 0
+    limit = 100
+
+    while True:
+        records = await get_plugins(db, {'plugin_class' : 'internal_qdrant'}, skip, limit)
+
+        if not records:
+            break
+
+        found_collections.update([f"data_source_{record.id}" for record in records])
+
+        skip += limit 
+
+    orphan_collections = [i for i in collection_names if i not in found_collections]
+    return {'orphan_collections' : orphan_collections}
+
+async def delete_orphan_collections(db):
+    response = []
+    async with get_qdrant_client() as client:
+        collections = await get_orphan_collections(db)
+        for collection_name in collections['orphan_collections']:
+            res = await qdrant_delete_collection(collection_name)
+            response.append({'collection_name' : collection_name, 'deleted' : res})
+    return response 
+
 
 # async def qdrant_query(db_record, request):
 #     async with get_qdrant_client() as client:

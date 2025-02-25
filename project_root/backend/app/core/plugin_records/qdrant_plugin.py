@@ -4,7 +4,8 @@ from app import crud
 from app.crud.qdrant_utils import (get_collection_names, 
                                    qdrant_get_collection, 
                                    qdrant_create, 
-                                   restore_snapshot)
+                                   restore_snapshot,
+                                   qdrant_delete_collection)
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -68,3 +69,5 @@ async def init_qdrant_records(db):
     missing_collections = [i for i in collection_names if i not in found_collections]
     if missing_collections:
         print(f"Found {len(missing_collections)} collections in qdrant with no record: {missing_collections}")
+        # for collection_name in missing_collections:
+        #     response = await qdrant_delete_collection(collection_name)

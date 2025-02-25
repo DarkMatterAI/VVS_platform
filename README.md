@@ -11,7 +11,6 @@ todos
 
 database refactor
     update plugin servers to pull from database lib
-        execution schemas
         test server 
         request id generation 
     update execution schemas

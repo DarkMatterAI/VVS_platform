@@ -5,8 +5,9 @@ import numpy as np
 import string 
 from typing import List, Union  
 
-from app import schemas 
 from app.crud_records import create_records, delete_records
+
+from vvs_database import schemas 
 
 from contextlib import contextmanager
 
