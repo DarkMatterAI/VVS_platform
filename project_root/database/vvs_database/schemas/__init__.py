@@ -36,8 +36,32 @@ from vvs_database.schemas.item_schemas import (
     ItemSourceInDB,
     ItemScoreBase,
     ItemScoreCreate,
-    ItemScoreInDB
+    ItemScoreInDB,
+    NewItem,
+    NewScore
 )
+
+from vvs_database.schemas.execute_schemas import (
+    EmbedRequest,
+    EmbedResponse,
+    NamedEmbedding,
+    DataSourceRequest,
+    DataSourceResponseItem,
+    DataSourceResponse,
+    ItemRequest,
+    FilterResponse,
+    ScoreResponse,
+    MapperRequest,
+    MapperResponse,
+    AssemblyItem,
+    AssemblyRequest,
+    AssemblyResult,
+    AssemblyResponse,
+    RedisResult,
+    ExecuteRequestUnion,
+    BatchExecuteRequestUnion
+)
+
 
 __all__ = [
     # Enums
@@ -76,5 +100,27 @@ __all__ = [
     "ItemSourceInDB",
     "ItemScoreBase",
     "ItemScoreCreate",
-    "ItemScoreInDB"
+    "ItemScoreInDB",
+    "NewItem",
+    "NewScore",
+
+    # Execute schemas
+    "EmbedRequest",
+    "EmbedResponse",
+    "NamedEmbedding",
+    "DataSourceRequest",
+    "DataSourceResponseItem",
+    "DataSourceResponse",
+    "ItemRequest",
+    "FilterResponse",
+    "ScoreResponse",
+    "MapperRequest",
+    "MapperResponse",
+    "AssemblyItem",
+    "AssemblyRequest",
+    "AssemblyResult",
+    "AssemblyResponse",
+    "RedisResult",
+    "ExecuteRequestUnion",
+    "BatchExecuteRequestUnion"
 ]

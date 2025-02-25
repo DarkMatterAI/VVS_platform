@@ -1,6 +1,6 @@
 import pytest
 import itertools 
-from app.crud import item_crud 
+from vvs_database.crud import item_crud 
 
 plugin_api_str = '/api/v1/plugins'
 

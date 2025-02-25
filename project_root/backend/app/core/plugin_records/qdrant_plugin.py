@@ -1,6 +1,6 @@
 import logging 
 
-from app.crud import plugin_crud as crud 
+from app import crud 
 from app.crud.qdrant_utils import (get_collection_names, 
                                    qdrant_get_collection, 
                                    qdrant_create, 

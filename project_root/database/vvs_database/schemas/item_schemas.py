@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, Union
 from datetime import datetime
 
 class ItemBase(BaseModel):
@@ -51,3 +51,11 @@ class ItemScoreInDB(ItemScoreBase):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
+class NewItem(BaseModel):
+    external_id: Optional[Union[int, str]]
+    item: str
+
+class NewScore(BaseModel):
+    item_id: int 
+    score: float 

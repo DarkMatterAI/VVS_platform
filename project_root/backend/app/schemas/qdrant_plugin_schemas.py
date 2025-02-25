@@ -1,6 +1,6 @@
 from qdrant_client import models
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Union, Mapping
 
 class QdrantSnapshotData(BaseModel):

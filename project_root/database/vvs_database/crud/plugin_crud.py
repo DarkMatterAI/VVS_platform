@@ -2,14 +2,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, undefer_group, aliased
 from sqlalchemy import insert, delete, func, and_
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple, Union
 
+from vvs_database import utils 
 from vvs_database.exceptions import ValidationError, NotFoundError, ReferenceError
 from vvs_database.models import (
-    Plugin, EmbeddingPlugin, DataSourcePlugin, FilterPlugin, 
-    ScorePlugin, MapperPlugin, AssemblyPlugin, plugin_embeddings
+    Plugin, 
+    EmbeddingPlugin, 
+    DataSourcePlugin, 
+    FilterPlugin, 
+    ScorePlugin,
+    MapperPlugin, 
+    AssemblyPlugin, 
+    plugin_embeddings
 )
-from vvs_database.schemas.enums import PluginType, PluginClass
+from vvs_database.schemas import (
+    PluginType, 
+    PluginExecutionType,
+    PluginClass, 
+    PluginCreate,
+    MapperPluginCreate,
+    PluginUpdate,
+    ExecuteRequestUnion,
+    BatchExecuteRequestUnion
+)
 
 # Utility function
 def object_as_dict(obj):
@@ -37,7 +53,7 @@ async def validate_embedding_ids(db: AsyncSession, embedding_ids: List[int]) -> 
         invalid_ids = set(embedding_ids) - set(e.id for e in valid_embeddings)
         raise ValidationError(f"Invalid embedding IDs: {invalid_ids}")
 
-async def get_plugin(db: AsyncSession, plugin_id: int):
+async def get_plugin(db: AsyncSession, plugin_id: int, with_error: bool=True, response_model: bool =False):
     """Get a plugin by ID with all related data loaded."""
     stmt = (
         select(Plugin)
@@ -52,6 +68,12 @@ async def get_plugin(db: AsyncSession, plugin_id: int):
     
     if plugin:
         await db.refresh(plugin)
+
+    if with_error and (plugin is None):
+        raise NotFoundError(f"Plugin with ID {plugin_id} not found")
+    
+    if response_model:
+        plugin = utils.get_plugin_response_model(plugin)
     
     return plugin
 
@@ -75,7 +97,8 @@ async def get_plugins(
     db: AsyncSession, 
     filter_params: Dict[str, Any] = None,
     skip: int = 0, 
-    limit: int = 100
+    limit: int = 100,
+    response_model: bool = False
 ):
     """Get plugins with filtering, pagination and eager loading."""
     stmt = (
@@ -97,6 +120,9 @@ async def get_plugins(
     
     for plugin in plugins:
         await db.refresh(plugin)
+
+    if response_model:
+        plugins = [utils.get_plugin_response_model(i) for i in plugins]
     
     return plugins
 
@@ -106,26 +132,14 @@ def validate_output_order(output_order):
     if len(set(ids)) != len(ids):
         raise ValidationError(f"Duplicate index values in output order {ids}")
 
-def get_plugin_data_model(plugin_type: PluginType):
-    """Get the SQLAlchemy model class for a plugin type."""
-    plugin_type_map = {
-        PluginType.EMBEDDING: EmbeddingPlugin,
-        PluginType.DATA_SOURCE: DataSourcePlugin,
-        PluginType.FILTER: FilterPlugin,
-        PluginType.SCORE: ScorePlugin,
-        PluginType.MAPPER: MapperPlugin,
-        PluginType.ASSEMBLY: AssemblyPlugin
-    }
-    return plugin_type_map[plugin_type]
-
-async def create_plugin(
+async def create_plugin_db(
     db: AsyncSession, 
     plugin_type: PluginType,
     plugin_data: dict,
     embedding_ids: List[int] = None
 ):
     """Create a new plugin with the given data."""
-    plugin_model = get_plugin_data_model(plugin_type)
+    plugin_model = utils.get_plugin_data_model(plugin_type)
     
     # Handle mapper plugin special case
     if plugin_type == PluginType.MAPPER:
@@ -162,6 +176,28 @@ async def create_plugin(
     stmt = select(plugin_model).options(selectinload(plugin_model.embeddings)).filter_by(id=db_plugin.id)
     result = await db.execute(stmt)
     db_plugin = result.scalar_one()
+    return db_plugin
+
+async def create_plugin(db: AsyncSession, plugin: PluginCreate, response_model: bool=False):
+    plugin_data = plugin.model_dump(exclude={'embedding_ids', 'input_embedding_id'})
+        
+    embedding_ids = []
+    if isinstance(plugin, MapperPluginCreate):
+        embedding_order = [i.model_dump() for i in plugin.output_order]
+        plugin_data['output_order'] = embedding_order
+        plugin_data['input_embedding_id'] = plugin.input_embedding_id
+    elif hasattr(plugin, 'embedding_ids') and (plugin.embedding_ids is not None):
+        embedding_ids = plugin.embedding_ids
+        
+    db_plugin = await create_plugin_db(
+        db=db,
+        plugin_type=plugin.type,
+        plugin_data=plugin_data,
+        embedding_ids=embedding_ids
+    )
+    if response_model:
+        db_plugin = utils.get_plugin_response_model(db_plugin)
+
     return db_plugin
 
 def embedding_update(db_plugin, update_data):
@@ -221,7 +257,7 @@ async def mapper_update(db_plugin, update_data, db):
     await update_linked_embeddings(db_plugin, update_data, db, key='new_embedding_links')
     update_data.pop('new_embedding_links')
 
-async def update_plugin(db: AsyncSession, plugin_id: int, update_data: dict):
+async def update_plugin_db(db: AsyncSession, plugin_id: int, update_data: dict):
     """Update a plugin with the given data."""
     db_plugin = await get_plugin(db, plugin_id)
 
@@ -250,6 +286,20 @@ async def update_plugin(db: AsyncSession, plugin_id: int, update_data: dict):
 
     # Reload to get all association data
     db_plugin = await get_plugin(db, db_plugin.id)
+    return db_plugin
+
+async def update_plugin(db: AsyncSession, 
+                        plugin_id: int, 
+                        plugin: PluginUpdate, 
+                        response_model: bool=False):
+    update_data = plugin.model_dump(exclude_unset=True)
+    
+    db_plugin = await get_plugin(db, plugin_id)
+    utils.validate_updates(db_plugin, update_data)
+    db_plugin = await update_plugin_db(db, plugin_id, update_data)
+
+    if response_model:
+        db_plugin = utils.get_plugin_response_model(db_plugin)
     return db_plugin
 
 async def delete_plugin_from_model(db: AsyncSession, db_plugin: Plugin):
@@ -337,3 +387,30 @@ async def count_plugins_linked_to_embedding_class(db: AsyncSession, plugin_class
     result = await db.execute(query)
     count = result.scalar_one()
     return count
+
+async def execute_plugin_db(db_plugin: Plugin, 
+                            execute_request: Union[ExecuteRequestUnion, BatchExecuteRequestUnion]):
+    execution_type = db_plugin.execution_type.lower()
+    if execution_type not in [i for i in PluginExecutionType]:
+        raise ValidationError(f"Execution type {execution_type} not supported")
+    
+    plugin_type = db_plugin.type.lower()
+    if plugin_type not in [i for i in PluginType]:
+        raise ValidationError(f"Plugin type {plugin_type} execution not supported")
+
+    if type(execute_request) == list:
+        utils.validate_execute_request(db_plugin, execute_request)
+        execution_function = utils.batch_execute_plugin_map.get(execution_type, None)
+    else:
+        utils.validate_execute_request(db_plugin, [execute_request])
+        execution_function = utils.execute_plugin_map.get(execution_type, None)
+
+    response = await execution_function(db_plugin, execute_request)
+    return response 
+
+async def execute_plugin(db: AsyncSession, plugin_id: int, 
+                         execute_request: Union[ExecuteRequestUnion, BatchExecuteRequestUnion]):
+    db_plugin = await get_plugin(db, plugin_id)
+    response = await execute_plugin_db(db_plugin, execute_request)
+    return response 
+

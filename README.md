@@ -9,9 +9,25 @@ todos
             mapper
             bb
 
-cleaning the fuzz
-    standardize around "item_id" instead of "id"
-    roll checkin functions to execute code
+database refactor
+    move execution logic into database repo
+        execution schemas
+        execution code 
+    update plugin servers to pull from database lib
+        execution schemas
+        rdkit
+        test server 
+        request id generation 
+    update execution schemas
+        use item_id for everything
+        change mapper request id to `mapper_id` to indicate plugin 
+    test refactor
+        db tests in db lib
+        backend tests in backend 
+    finalize data models
+        assembly
+        roll checking logic into execution code 
+
 
 
 

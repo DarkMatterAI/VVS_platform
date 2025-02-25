@@ -1,5 +1,5 @@
 import os 
-from app.crud import plugin_crud as crud 
+from app import crud 
 from app import schemas
 from app.core.plugin_records.enamine_smarts import ENAMINE_CREATE
 

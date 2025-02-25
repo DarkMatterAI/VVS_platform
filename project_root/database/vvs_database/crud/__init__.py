@@ -10,7 +10,23 @@ from vvs_database.crud.plugin_crud import (
     get_plugins_summary,
     count_plugins_by_class,
     count_plugins_linked_to_embedding_id,
-    count_plugins_linked_to_embedding_class
+    count_plugins_linked_to_embedding_class,
+    execute_plugin
+)
+
+from vvs_database.crud.item_crud import (
+    create_item,
+    get_item,
+    delete_item,
+    create_item_source,
+    get_item_source,
+    delete_item_source,
+    create_item_score,
+    get_item_score,
+    delete_item_score,
+    cleanup_unreferenced_items,
+    item_checkin,
+    score_checkin,
 )
 
 __all__ = [
@@ -25,5 +41,19 @@ __all__ = [
     "get_plugins_summary",
     "count_plugins_by_class",
     "count_plugins_linked_to_embedding_id",
-    "count_plugins_linked_to_embedding_class"
+    "count_plugins_linked_to_embedding_class",
+    "execute_plugin",
+
+    "create_item",
+    "get_item",
+    "delete_item",
+    "create_item_source",
+    "get_item_source",
+    "delete_item_source",
+    "create_item_score",
+    "get_item_score",
+    "delete_item_score",
+    "cleanup_unreferenced_items",
+    "item_checkin",
+    "score_checkin",
 ]

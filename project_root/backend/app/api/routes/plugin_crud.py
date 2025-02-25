@@ -14,15 +14,15 @@ async def get_plugins_summary(db: AsyncSession = Depends(get_db)):
 
 @router.post("/", response_model=schemas.PluginInDBUnion)
 async def create_plugin(plugin: schemas.PluginCreate, db: AsyncSession = Depends(get_db)):
-    response = await crud.create_plugin(db=db, plugin=plugin.root)
-    return utils.get_plugin_response_model(response)
+    response = await crud.create_plugin(db=db, plugin=plugin.root, response_model=True)
+    return response 
+    # return utils.get_plugin_response_model(response)
 
 @router.get("/{plugin_id}", response_model=schemas.PluginInDBUnion)
 async def read_plugin(plugin_id: int, db: AsyncSession = Depends(get_db)):
-    db_plugin = await crud.get_plugin(db, plugin_id=plugin_id)
-    if db_plugin is None:
-        raise HTTPException(status_code=404, detail="Plugin not found")
-    return utils.get_plugin_response_model(db_plugin)
+    response = await crud.get_plugin(db, plugin_id=plugin_id, response_model=True)
+    return response 
+    # return utils.get_plugin_response_model(db_plugin)
 
 @router.get("/", response_model=List[schemas.PluginInDBUnion])
 async def scroll_plugins(plugin_type: Optional[schemas.PluginType]=None, 
@@ -41,19 +41,23 @@ async def scroll_plugins(plugin_type: Optional[schemas.PluginType]=None,
     }
     filter_params = {k: v for k, v in filter_params.items() if v is not None}
     
-    plugins = await crud.get_plugins(db, filter_params=filter_params, skip=skip, limit=limit)
-    return [utils.get_plugin_response_model(plugin) for plugin in plugins]
+    plugins = await crud.get_plugins(db, filter_params=filter_params, 
+                                     skip=skip, limit=limit, response_model=True)
+    return plugins 
+    # return [utils.get_plugin_response_model(plugin) for plugin in plugins]
 
 @router.put("/{plugin_id}", response_model=schemas.PluginInDBUnion)
 async def update_plugin(plugin_id: int, plugin: schemas.PluginUpdate, db: AsyncSession = Depends(get_db)):
-    db_plugin = await crud.update_plugin(db=db, plugin_id=plugin_id, plugin=plugin)
-    if db_plugin is None:
-        raise HTTPException(status_code=404, detail="Plugin not found")
-    return utils.get_plugin_response_model(db_plugin)
+    db_plugin = await crud.update_plugin(db=db, plugin_id=plugin_id, plugin=plugin, response_model=True)
+    return db_plugin
+    # db_plugin = await crud.update_plugin(db=db, plugin_id=plugin_id, plugin=plugin)
+    # if db_plugin is None:
+        # raise HTTPException(status_code=404, detail="Plugin not found")
+    # return utils.get_plugin_response_model(db_plugin)
 
 @router.delete("/{plugin_id}", response_model=schemas.PluginInDBUnion)
 async def delete_plugin(plugin_id: int, db: AsyncSession = Depends(get_db)):
     db_plugin = await crud.delete_plugin(db=db, plugin_id=plugin_id)
-    if db_plugin is None:
-        raise HTTPException(status_code=404, detail="Plugin not found")
+    # if db_plugin is None:
+        # raise HTTPException(status_code=404, detail="Plugin not found")
     return db_plugin

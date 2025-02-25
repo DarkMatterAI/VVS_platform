@@ -12,14 +12,13 @@ async def execute_plugin(plugin_id: int,
                          execute_request: schemas.ExecuteRequestUnion,
                          db: AsyncSession = Depends(get_db)
                          ):
-    print(f'getting record for plugin {plugin_id}')
-    db_plugin = await crud.get_plugin(db, plugin_id=plugin_id)
-    if db_plugin is None:
-        raise HTTPException(status_code=404, detail="Plugin not found")
-    
-    print(f'executing plugin {plugin_id}')
-    response = await crud.execute_plugin(db_plugin, execute_request)
+    response = await crud.execute_plugin(db, plugin_id, execute_request)
     return response 
+    # print(f'getting record for plugin {plugin_id}')
+    # db_plugin = await crud.get_plugin(db, plugin_id=plugin_id)
+    # print(f'executing plugin {plugin_id}')
+    # response = await crud.execute_plugin(db_plugin, execute_request)
+    # return response 
 
 @router.get("/{result_id}")
 async def get_result(result_id: str, delete: bool=True):
@@ -31,14 +30,13 @@ async def batch_execute_plugin(plugin_id: int,
                                execute_request: schemas.BatchExecuteRequestUnion,
                                db: AsyncSession = Depends(get_db)
                                ):
-    print(f'getting record for plugin {plugin_id}')
-    db_plugin = await crud.get_plugin(db, plugin_id=plugin_id)
-    if db_plugin is None:
-        raise HTTPException(status_code=404, detail="Plugin not found")
-    
-    print(f'batch executing plugin {plugin_id}')
-    response = await crud.execute_plugin(db_plugin, execute_request)
+    response = await crud.execute_plugin(db, plugin_id, execute_request)
     return response 
+    # print(f'getting record for plugin {plugin_id}')
+    # db_plugin = await crud.get_plugin(db, plugin_id=plugin_id)
+    # print(f'batch executing plugin {plugin_id}')
+    # response = await crud.execute_plugin(db_plugin, execute_request)
+    # return response 
 
 @router.post("/result_batch")
 async def get_result_batch(result_ids: list[schemas.RedisResult], delete: bool=True):

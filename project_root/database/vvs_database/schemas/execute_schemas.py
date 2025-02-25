@@ -1,31 +1,29 @@
 from pydantic import BaseModel
 from typing import List, Union, Optional
 
-from vvs_database.schemas import PluginType 
-
 class EmbedRequest(BaseModel):
-    # request_id: str 
-    id: Union[int, str] # internal unique item id
-    external_id: Optional[Union[int, str]] # external id
+    request_id: str 
+    id: Union[int, str]
+    external_id: Optional[Union[int, str]]
     item: str 
 
 class EmbedResponse(BaseModel):
     embedding: List[float]
 
 class NamedEmbedding(BaseModel):
-    embedding_id: int # internal id
+    embedding_id: int
     embedding_name: str
     embedding: List[float]
 
 class DataSourceRequest(BaseModel):
-    # request_id: str 
+    request_id: str 
     embedding_id: int 
     embedding_name: str 
     embedding: List[float]
     k: int 
 
 class DataSourceResponseItem(BaseModel):
-    external_id: Optional[Union[int, str]] # external id from data source
+    external_id: Optional[Union[int, str]]
     item: str 
     embedding: List[float]
     distance: Optional[float]
@@ -35,7 +33,7 @@ class DataSourceResponse(BaseModel):
     result: List[DataSourceResponseItem]
 
 class ItemRequest(BaseModel):
-    # request_id: str 
+    request_id: str 
     id: Union[int, str]
     external_id: Optional[Union[int, str]]
     item: str 
@@ -49,8 +47,8 @@ class ScoreResponse(BaseModel):
     score: float
 
 class MapperRequest(BaseModel):
-    # request_id: str 
-    id: int
+    request_id: str 
+    id: int # internal id
     name: str
     embedding: List[float]
         
@@ -65,7 +63,7 @@ class AssemblyItem(BaseModel):
     item: str 
 
 class AssemblyRequest(BaseModel):
-    # request_id: str 
+    request_id: str 
     parents: List[AssemblyItem]
 
 class AssemblyResult(BaseModel):
@@ -78,15 +76,6 @@ class AssemblyResponse(BaseModel):
 
 class RedisResult(BaseModel):
     result_id: str 
-
-request_type_mapping = {
-    PluginType.EMBEDDING : EmbedRequest,
-    PluginType.DATA_SOURCE : DataSourceRequest,
-    PluginType.FILTER : ItemRequest,
-    PluginType.SCORE : ItemRequest,
-    PluginType.MAPPER : MapperRequest,
-    PluginType.ASSEMBLY : AssemblyRequest,
-}
 
 ExecuteRequestUnion = Union[
     ItemRequest,

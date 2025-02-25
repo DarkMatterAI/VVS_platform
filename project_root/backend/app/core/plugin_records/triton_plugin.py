@@ -1,7 +1,7 @@
 import os 
 import logging 
 
-from app.crud import plugin_crud as crud 
+from app import crud 
 from app import schemas 
 
 logging.basicConfig(level=logging.WARNING)

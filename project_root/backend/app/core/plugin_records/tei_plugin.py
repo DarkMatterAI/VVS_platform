@@ -1,7 +1,7 @@
 import os 
 import logging 
 
-from app.crud import plugin_crud as crud 
+from app import crud 
 from app import schemas, utils 
 
 logging.basicConfig(level=logging.WARNING)
@@ -50,7 +50,7 @@ async def init_tei_records(db):
 
     print("Checking TEI vector size")    
     try:
-        response = await utils.make_post_request({'id' : 1, 'external_id' : '1', 'item' : '.', 'request_id' : ''},
+        response = await utils.fastapi_post_request({'id' : 1, 'external_id' : '1', 'item' : '.', 'request_id' : ''},
                                                  TEI_EMBEDDING['endpoint_url'],
                                                  timeout=10, retries=20, retry_sleep=1)
     except:
