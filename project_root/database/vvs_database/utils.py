@@ -250,10 +250,10 @@ def rabbitmq_publish(messages):
     """Publish messages to RabbitMQ."""
     rabbitmq_params = pika.ConnectionParameters(
         host='rabbitmq',
-        port=int(os.environ.get('RABBITMQ_PORT', 5672)),
+        port=settings.RABBITMQ_PORT,
         credentials=pika.PlainCredentials(
-            os.environ['RABBITMQ_DEFAULT_USER'],
-            os.environ['RABBITMQ_DEFAULT_PASS']
+            settings.RABBITMQ_DEFAULT_USER,
+            settings.RABBITMQ_DEFAULT_PASS
         )
     )
 
@@ -263,7 +263,7 @@ def rabbitmq_publish(messages):
         
         for message in messages:
             channel.basic_publish(
-                exchange=os.environ['RABBITMQ_EXCHANGE_NAME'],
+                exchange=settings.RABBITMQ_EXCHANGE_NAME,
                 routing_key=message['request_id'],
                 body=json.dumps(message)
             )

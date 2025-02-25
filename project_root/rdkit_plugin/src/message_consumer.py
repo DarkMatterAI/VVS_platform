@@ -1,4 +1,3 @@
-# import time 
 import pika
 import json
 from sqlalchemy import create_engine

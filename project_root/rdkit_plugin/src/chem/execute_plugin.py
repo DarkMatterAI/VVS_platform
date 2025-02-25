@@ -1,6 +1,4 @@
-from pydantic import BaseModel 
-from typing import Union, List, Optional 
-from datetime import datetime
+from vvs_database.schemas import ItemRequest, AssemblyRequest
 
 from .property_filter import property_filter
 from .reaction_assembly import reaction_assembly
@@ -8,39 +6,6 @@ from .synton_assembly import synton_assembly
 
 from ..utils import date_print
 from ..connections import get_plugin_from_routing_key
-
-class NamedEmbedding(BaseModel):
-    embedding_id: int # internal id
-    embedding_name: str
-    embedding: List[float]
-
-class ItemRequest(BaseModel):
-    request_id: str 
-    id: Union[int, str]
-    external_id: Optional[Union[int, str]]
-    item: str 
-    embedding: Optional[List[NamedEmbedding]]=None
-        
-class FilterResponse(BaseModel):
-    valid: bool
-
-class AssemblyItem(BaseModel):
-    assembly_index: int 
-    id: Union[int, str]
-    external_id: Optional[Union[int, str]]
-    item: str 
-
-class AssemblyRequest(BaseModel):
-    request_id: str 
-    parents: List[AssemblyItem]
-
-class AssemblyResult(BaseModel):
-    item: str 
-    external_id: Optional[Union[int, str]]
-        
-class AssemblyResponse(BaseModel):
-    valid: bool
-    result: List[AssemblyResult]
 
 class_map = {
     'property_filter' : {'schema' : ItemRequest, 'func' : property_filter},

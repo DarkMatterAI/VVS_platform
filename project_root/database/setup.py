@@ -8,9 +8,13 @@ setup(
     packages=find_packages(),
     install_requires=[
         "pydantic",
+        "pydantic-settings",
         "sqlalchemy[asyncio]",
         "asyncpg",
         "psycopg2-binary",
+        "httpx",
+        "aioredis",
+        "pika"
     ],
     extras_require={
         "test": [

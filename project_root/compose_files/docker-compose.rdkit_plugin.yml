@@ -1,8 +1,8 @@
 services:
   rdkit_plugin:
     build:
-      context: ../rdkit_plugin 
-      dockerfile: rdkit_plugin.Dockerfile 
+      context: ../ 
+      dockerfile: rdkit_plugin/rdkit_plugin.Dockerfile 
     profiles: [plugin, rdkit_plugin]
     env_file:
       - ../.env

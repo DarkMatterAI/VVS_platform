@@ -12,15 +12,12 @@ def worker():
 
     def cleanup():
         date_print('Cleaning up RabbitMQ message consumer')
-        # print(f"{str(datetime.now())} - RDKit Plugin Worker: Cleaning up message consumer")
         if channel:
             try:
                 date_print('Closing RabbitMQ channel')
-                # print(f"{str(datetime.now())} - RDKit Plugin Worker: Closing rabbitmq channel")
                 channel.stop_consuming()
             except Exception as e:
                 date_print('Error stopping RabbitMQ channel: {e}')
-                # print(f"{str(datetime.now())} - Error stopping consumption: {e}")
         if connection:
             try:
                 date_print('Closing RabbitMQ connection')

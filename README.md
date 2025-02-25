@@ -10,12 +10,8 @@ todos
             bb
 
 database refactor
-    move execution logic into database repo
-        execution schemas
-        execution code 
     update plugin servers to pull from database lib
         execution schemas
-        rdkit
         test server 
         request id generation 
     update execution schemas
@@ -27,6 +23,8 @@ database refactor
     finalize data models
         assembly
         roll checking logic into execution code 
+    do proper execution
+        acquire redis lock, etc 
 
 
 
