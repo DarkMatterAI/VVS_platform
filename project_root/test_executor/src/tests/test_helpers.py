@@ -1,6 +1,28 @@
 import time
 from tests.utils import type_to_request_func, poll_backend, get_request_id, publish_and_poll
-from tests.schemas import schema_mapping
+
+from vvs_database.schemas import (
+    EmbedRequest, 
+    EmbedResponse,
+    DataSourceRequest,
+    DataSourceResponse,
+    ItemRequest,
+    FilterResponse,
+    ScoreResponse,
+    MapperRequest,
+    MapperResponse,
+    AssemblyRequest,
+    AssemblyResponse
+)
+
+schema_mapping = {
+    'embedding': {'request': EmbedRequest, 'response': EmbedResponse},
+    'data_source': {'request': DataSourceRequest, 'response': DataSourceResponse},
+    'filter': {'request': ItemRequest, 'response': FilterResponse},
+    'score': {'request': ItemRequest, 'response': ScoreResponse},
+    'mapper': {'request': MapperRequest, 'response': MapperResponse},
+    'assembly': {'request': AssemblyRequest, 'response': AssemblyResponse},
+}
 
 def plugin_creation_helper(backend_client, plugin_pattern, plugin_type_counts):
     """Test if plugins are properly created with expected counts by type."""
@@ -20,47 +42,6 @@ def plugin_creation_helper(backend_client, plugin_pattern, plugin_type_counts):
         assert type_counts.get(k, 0) == v, f"Expected {v} plugins of type {k}, got {type_counts.get(k, 0)}"
     
     return plugins
-
-# def execute_plugin_helper(backend_client, plugins, plugin_type, 
-#                               batched=False, batch_endpoint=None, 
-#                               timeout=4, batch_size=1):
-#     """Test plugin execution via backend client."""
-#     plugin = next((p for p in plugins if p['type'] == plugin_type), None)
-#     assert plugin is not None, f"No plugin of type {plugin_type} found"
-    
-#     request_data = type_to_request_func[plugin_type](plugin)
-    
-#     if batched:
-#         endpoint = f"/api/v1/execute/{plugin['id']}/batch" if not batch_endpoint else batch_endpoint
-#         request_payload = [request_data] * batch_size
-#         response = backend_client.post(endpoint, json=request_payload)
-#     else:
-#         endpoint = f"/api/v1/execute/{plugin['id']}"
-#         response = backend_client.post(endpoint, json=request_data)
-    
-#     assert response.status_code == 200
-    
-#     # For batched execution, poll for results
-#     if batched and timeout > 0:
-#         result_ids = response.json()
-#         start = time.time()
-        
-#         while (time.time() - start < timeout) and any('result_id' in item for item in result_ids):
-#             batch_result = backend_client.post(f"/api/v1/execute/result_batch", json=result_ids)
-#             assert batch_result.status_code == 200
-#             result_ids = [i for i in batch_result.json() if 'valid' not in i]
-#             if not result_ids:
-#                 break
-#             time.sleep(0.1)
-        
-#         return result_ids
-    
-#     # For non-batched execution with timeout, poll until result is ready
-#     if timeout > 0 and 'result_id' in response.json():
-#         result = poll_backend(backend_client, response.json()['result_id'], timeout=timeout)
-#         return result
-    
-#     return response.json()
 
 def execute_plugin_helper(backend_client, plugins, plugin_type, 
                               batched=False, batch_endpoint=None, 
