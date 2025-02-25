@@ -9,16 +9,9 @@ todos
             mapper
             bb
 
-Database item checking
-    only on plugins that produce new items
-    data source
-        check in results 
-    score
-        check in request, results
-    assembly
-        check in product
-        check in components 
-
+cleaning the fuzz
+    standardize around "item_id" instead of "id"
+    roll checkin functions to execute code
 
 
 

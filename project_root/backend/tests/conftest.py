@@ -2,7 +2,6 @@ import os
 import asyncio
 import pytest
 import itertools 
-from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -18,7 +17,6 @@ POSTGRES_DB_TEST = os.getenv('POSTGRES_DB_TEST')
 DEFAULT_DB_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/postgres"
 TEST_DB_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/{POSTGRES_DB_TEST}"
 
-_item_counter = itertools.count(1)
 _embedding_counter = itertools.count(1)
 
 @pytest.fixture(scope="session")
@@ -126,12 +124,53 @@ def create_test_embedding(db_session):
 
     return _create_embedding
 
-@pytest.fixture(scope="function")
-def create_test_item(db_session):    
-    async def _create_item(name=None):
-        item = models.Item(item=name or f"Test Item {next(_item_counter)}")
-        db_session.add(item)
-        await db_session.commit()
-        return item
 
-    return _create_item
+
+
+
+
+
+
+
+
+
+# _item_counter = itertools.count(1)
+
+# @pytest.fixture(scope="function")
+# def create_test_item(db_session):    
+#     async def _create_item(name=None):
+#         item = models.Item(item=name or f"Test Item {next(_item_counter)}")
+#         db_session.add(item)
+#         await db_session.commit()
+#         return item
+
+#     return _create_item
+
+# @pytest.fixture(scope="function")
+# def create_test_item_source(db_session):    
+#     async def _create_item_source(item, plugin, external_id=None):
+#         source = models.ItemSource(
+#             item_id=item.id,
+#             plugin_id=plugin.id,
+#             external_id=external_id
+#         )
+#         db_session.add(source)
+#         await db_session.commit()
+#         return source
+
+#     return _create_item_source
+
+# @pytest.fixture(scope="function")
+# def create_test_score(db_session):    
+#     async def _create_score(item, plugin, score):
+#         score = models.ItemScore(
+#             item_id=item.id,
+#             plugin_id=plugin.id,
+#             score=score
+#         )
+#         db_session.add(score)
+#         await db_session.commit()
+#         return score
+
+#     return _create_score
+

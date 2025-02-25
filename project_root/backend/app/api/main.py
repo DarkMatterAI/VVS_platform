@@ -5,7 +5,7 @@ from app.api.routes import plugin_crud, plugin_execute, item_crud, core
 api_router = APIRouter()
 api_router.include_router(plugin_crud.router, prefix="/plugins", tags=["plugins"])
 api_router.include_router(plugin_execute.router, prefix="/execute", tags=["execute"])
-api_router.include_router(item_crud.router, prefix="/item", tags=["item"])
+# api_router.include_router(item_crud.router, prefix="/item", tags=["item"])
 api_router.include_router(core.router)
 
 config = utils.read_config()['plugins']
