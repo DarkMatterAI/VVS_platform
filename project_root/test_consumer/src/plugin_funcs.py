@@ -6,7 +6,6 @@ EMBEDDING_SIZE = int(os.environ.get('TEST_SERVER_EMBEDDING_SIZE', 32))
 NUM_PARENTS = int(os.environ.get('TEST_NUM_PARENTS', 2))
 
 def embed(request):
-    # response = {'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()}
     response = {'valid' : True, 'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()}
     return response
 
@@ -28,24 +27,6 @@ def data_source(request):
         })
 
     return response 
-
-    # query_embedding = np.array(request['embedding'])
-    # response = {
-    #     'valid' : True,
-    #     'result' : []
-    # }
-
-    # for i in range(request['k']):
-    #     embedding = np.random.randn(EMBEDDING_SIZE)
-    #     distance = ((query_embedding - embedding)**2).sum()**0.5
-    #     response['result'].append({
-    #         'external_id' : np.random.randint(1e8),
-    #         'item' : ''.join(np.random.choice([i for i in string.ascii_lowercase], 16)),
-    #         'embedding' : embedding.tolist(),
-    #         'distance' : float(distance)
-    #     })
-
-    # return response 
 
 def filter_op(request):
     return {'valid' : True}

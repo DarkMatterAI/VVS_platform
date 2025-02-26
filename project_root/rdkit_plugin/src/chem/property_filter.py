@@ -61,20 +61,3 @@ def property_filter(plugin_record, message_data):
             return ({}, False, reason) if reason else ({'valid': False}, True, None)
 
     return {'valid': True}, True, None
-
-# def property_filter(plugin_record, message_data):
-#     mol = to_mol(message_data['item'])
-#     if mol is None:
-#         return {'valid': False}, True, None
-
-#     config = plugin_record['config']
-
-#     filter_funcs = [process_property_filters, process_catalog_filters, process_smarts_filters]
-#     config_key = ['property_filters', 'catalog_filters', 'smarts_filters']
-
-#     for i in range(len(filter_funcs)):
-#         valid, reason = filter_funcs[i](config.get(config_key[i], []), mol)
-#         if not valid:
-#             return ({}, False, reason) if reason else ({'valid': False}, True, None)
-
-#     return {'valid': True}, True, None

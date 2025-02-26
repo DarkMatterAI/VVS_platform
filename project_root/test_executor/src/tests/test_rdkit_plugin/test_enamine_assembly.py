@@ -31,7 +31,6 @@ def get_reaction_inputs(plugin_record, reaction_id):
             {'assembly_index': 1, 'item_id': 2, 'external_id': '2', 'item': r2}
         ]
     }
-    # request_data['request_id'] = get_request_id(plugin_record)
     request_data['request_data'] = get_request_data(plugin_record)
     return request_data 
 

@@ -10,7 +10,6 @@ from vvs_database.schemas import (
     MapperPluginCreate,
     PluginUpdate,
     PluginInDBUnion,
-    # EmbedRequest,
     DataSourceRequest,
     ItemRequest,
     MapperRequest,

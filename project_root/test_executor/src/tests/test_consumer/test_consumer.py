@@ -38,22 +38,6 @@ def test_response_consumer(redis_connection, rabbitmq_connection, backend_client
     )
     assert response_data['valid'] == True, response_data
 
-# def test_response_consumer(redis_connection, rabbitmq_connection, backend_client):
-#     plugins = fetch_test_consumer_plugins(backend_client)
-#     plugin = plugins[0]
-#     request_data = type_to_request_func[plugin['type']](plugin)
-
-#     # send directly to response consumer 
-#     request_data['request_id'] = request_data['request_id'].replace('request', 'response')
-
-#     response_data = publish_and_poll(
-#         redis_connection, 
-#         rabbitmq_connection, 
-#         request_data['request_id'], 
-#         request_data
-#     )
-#     assert response_data['valid'] == True
-
 def test_request_response_loop(redis_connection, rabbitmq_connection, backend_client):
     plugins = fetch_test_consumer_plugins(backend_client)
     plugin = plugins[0]
@@ -66,19 +50,6 @@ def test_request_response_loop(redis_connection, rabbitmq_connection, backend_cl
         request_data
     )
     assert response_data['valid'] == True
-
-# def test_request_response_loop(redis_connection, rabbitmq_connection, backend_client):
-#     plugins = fetch_test_consumer_plugins(backend_client)
-#     plugin = plugins[0]
-#     request_data = type_to_request_func[plugin['type']](plugin)
-
-#     response_data = publish_and_poll(
-#         redis_connection, 
-#         rabbitmq_connection, 
-#         request_data['request_id'], 
-#         request_data
-#     )
-#     assert response_data['valid'] == True
 
 def test_alt_queue(redis_connection, rabbitmq_connection, backend_client):
     plugins = fetch_test_consumer_plugins(backend_client)
@@ -99,23 +70,6 @@ def test_alt_queue(redis_connection, rabbitmq_connection, backend_client):
     assert response_data['valid'] == False 
     assert response_data['failure_reason'] == 'Alt Ex'
 
-# def test_alt_queue(redis_connection, rabbitmq_connection, backend_client):
-#     plugins = fetch_test_consumer_plugins(backend_client)
-#     plugin = plugins[0]
-#     request_data = type_to_request_func[plugin['type']](plugin)
-
-#     # send to alt exchange
-#     request_data['request_id'] = request_data['request_id'].replace('request', 'blah')
-
-#     response_data = publish_and_poll(
-#         redis_connection, 
-#         rabbitmq_connection, 
-#         request_data['request_id'], 
-#         request_data
-#     )
-#     assert response_data['valid'] == False 
-#     assert response_data['failure_reason'] == 'Alt Ex'
-
 def test_dlx_queue(redis_connection, rabbitmq_connection, backend_client):
     plugins = fetch_test_consumer_plugins(backend_client)
     plugin = plugins[0]
@@ -134,23 +88,6 @@ def test_dlx_queue(redis_connection, rabbitmq_connection, backend_client):
     )
     assert response_data['valid'] == False 
     assert response_data['failure_reason'] == 'Dead Letter'
-
-# def test_dlx_queue(redis_connection, rabbitmq_connection, backend_client):
-#     plugins = fetch_test_consumer_plugins(backend_client)
-#     plugin = plugins[0]
-#     request_data = type_to_request_func[plugin['type']](plugin)
-
-#     # send to dead letter 
-#     request_data['request_id'] = request_data['request_id'].replace(plugin['type'], 'dlx_test')
-
-#     response_data = publish_and_poll(
-#         redis_connection, 
-#         rabbitmq_connection, 
-#         request_data['request_id'], 
-#         request_data
-#     )
-#     assert response_data['valid'] == False 
-#     assert response_data['failure_reason'] == 'Dead Letter'
 
 # Plugin type specific tests using the helpers
 def test_embedding_consumer(redis_connection, rabbitmq_connection, backend_client):

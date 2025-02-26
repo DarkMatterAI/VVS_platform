@@ -2,7 +2,6 @@ from sqlalchemy.orm import class_mapper
 import httpx 
 import uuid 
 import pika
-import os 
 import json 
 import asyncio
 
@@ -18,7 +17,6 @@ plugin_type_map = {
         'response_model' : schemas.EmbeddingPluginInDB,
         'data_model' : models.EmbeddingPlugin,
         'execute_request_model' : schemas.ItemRequest
-        # 'execute_request_model' : schemas.EmbedRequest
     },
     schemas.PluginType.DATA_SOURCE : {
         'create_model' : schemas.DataSourcePluginCreate,
@@ -241,16 +239,6 @@ async def get_redis_result_batch(result_ids: list[dict], delete: bool = True):
         
     finally:
         await redis.close()
-        
-# async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
-#     """Execute plugin via API call."""
-#     url = plugin.endpoint_url
-#     timeout = plugin.timeout
-#     retries = plugin.max_retries
-#     execute_request = execute_request.model_dump()
-#     execute_request['request_id'] = get_request_key(plugin, execute_request.get('id', None))
-#     response = await make_post_request(execute_request, url, timeout, retries)
-#     return response 
 
 async def execute_api_plugin(plugin: models.Plugin, execute_request: dict):
     """Execute plugin via API call."""
@@ -282,11 +270,9 @@ def rabbitmq_publish(messages):
             channel.basic_publish(
                 exchange=settings.RABBITMQ_EXCHANGE_NAME,
                 routing_key=request_id,
-                # routing_key=message['request_id'],
                 body=json.dumps(message)
             )
             print(f"Message published to {request_id}")
-            # print(f"Message published to {message['request_id']}")
     except pika.exceptions.AMQPError as e:
         print(f"Error publishing message: {e}")
     finally:
@@ -294,16 +280,6 @@ def rabbitmq_publish(messages):
             channel.close()
         if connection and connection.is_open:
             connection.close()
-
-# async def execute_queue_plugin(plugin: models.Plugin, execute_request: dict):
-#     """Execute plugin via queue (RabbitMQ)."""
-#     execute_request = execute_request.model_dump()
-#     request_key = get_request_key(plugin, execute_request.get('id', None))
-#     execute_request['request_id'] = request_key
-#     rabbitmq_publish([execute_request])
-#     response_key = request_key.replace('request', 'response')
-#     await asyncio.sleep(0)
-#     return {'result_id': response_key}
 
 async def execute_queue_plugin(plugin: models.Plugin, execute_request: dict):
     """Execute plugin via queue (RabbitMQ)."""
@@ -335,7 +311,6 @@ async def batch_execute_api_plugin(plugin: models.Plugin, execute_request: list[
     for item in execute_request:
         item = item.model_dump()
         item = populate_request_id(plugin, item)
-        # item['request_id'] = get_request_key(plugin, item.get('id', None))
         request_data.append(item)
 
     if len(request_data) <= batch_size:
@@ -367,8 +342,6 @@ async def batch_execute_queue_plugin(plugin: models.Plugin, execute_request: lis
         item = item.model_dump()
         item = populate_request_id(plugin, item)
         request_key = item['request_data']['request_id']
-        # request_key = get_request_key(plugin, item.get('id', None))
-        # item['request_id'] = request_key
         messages.append(item)
         response_key = request_key.replace('request', 'response')
         response.append({'result_id': response_key})

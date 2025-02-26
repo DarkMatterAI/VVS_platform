@@ -6,7 +6,6 @@ from ..config import PLUGIN_CONFIG
 class TeiPlugin(BasePlugin):
     async def _process(self, request):
         tei_data = {
-            # 'inputs': [i.item for i in request],
             'inputs': [i.item_data.item for i in request],
             'normalize': False if os.environ.get('TEI_NORMALIZE', 'false')=='false' else True,
             'truncate': False if os.environ.get('TEI_TRUNCATE', 'false')=='false' else True,

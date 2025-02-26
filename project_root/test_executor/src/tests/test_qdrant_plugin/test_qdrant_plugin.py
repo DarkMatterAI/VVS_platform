@@ -1,4 +1,3 @@
-# test_qdrant.py
 import os 
 from qdrant_client import QdrantClient, models 
 import pytest

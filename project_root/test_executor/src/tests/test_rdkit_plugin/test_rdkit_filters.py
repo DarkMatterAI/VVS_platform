@@ -32,16 +32,6 @@ def rdkit_test_filter(backend_client):
 
     return _create_filter
 
-# def get_request_data(plugin_record):
-#     request_data = {
-#         'id': str(uuid.uuid4()),
-#         'external_id': str(uuid.uuid4()),
-#         'item': 'CC(C)c1cc(C(=O)NC[C@@H](O)c2ccccn2)n(C)n1',
-#         'embedding': []
-#     }
-#     request_data['request_id'] = get_request_id(plugin_record)
-#     return request_data 
-
 def get_filter_request_data(plugin_record):
     request_data = {
         'request_data' : {},

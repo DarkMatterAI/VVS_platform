@@ -40,11 +40,5 @@ def test_backend_mapper_execution(backend_client):
             'embedding' : np.random.rand(vector_length).tolist()
         } 
     }
-    # request_data = {
-    #     'request_id' : '',
-    #     'id' : source_embedding_id,
-    #     'name' : embedding_record['name'],
-    #     'embedding' : np.random.rand(vector_length).tolist()
-    # }
     response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
     assert response.status_code == 200

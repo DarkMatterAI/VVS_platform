@@ -91,30 +91,6 @@ def direct_request_helper(api_client, backend_client, plugins, plugin_type,
     
     return response.json()
 
-# def queue_request_helper(redis_connection, rabbitmq_connection, backend_client, 
-#                              plugins, plugin_type, interval=0.1, timeout=5):
-#     """Test message queue based plugin execution."""
-#     schemas = schema_mapping[plugin_type]
-#     plugin = next((p for p in plugins if p['type'] == plugin_type), None)
-#     assert plugin is not None, f"No plugin of type {plugin_type} found"
-    
-#     request_data = type_to_request_func[plugin_type](plugin)
-#     schemas['request'].model_validate(request_data)
-    
-#     response_data = publish_and_poll(
-#         redis_connection, 
-#         rabbitmq_connection,
-#         request_data['request_id'], 
-#         request_data, 
-#         interval, 
-#         timeout
-#     )
-    
-#     assert response_data['valid'] == True
-#     schemas['response'].model_validate(response_data['response_data'])
-    
-#     return response_data
-
 def queue_request_helper(redis_connection, rabbitmq_connection, backend_client, 
                              plugins, plugin_type, interval=0.1, timeout=5):
     """Test message queue based plugin execution."""

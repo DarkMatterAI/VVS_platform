@@ -1,6 +1,5 @@
 from typing import Union, List 
 from vvs_database.schemas import (
-    # EmbedRequest, 
     ItemRequest,
     EmbedResponse,
     DataSourceRequest,
@@ -10,7 +9,6 @@ from vvs_database.schemas import (
 )
 
 
-# EmbedRequestUnion = Union[EmbedRequest, List[EmbedRequest]]
 EmbedRequestUnion = Union[ItemRequest, List[ItemRequest]]
 EmbedResponseUnion = Union[EmbedResponse, List[EmbedResponse]]
 

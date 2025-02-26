@@ -38,39 +38,11 @@ def shutdown_event():
 async def read_root():
     return {"Hello": "World"}
 
-# @app.post("/embedding", response_model=schemas.EmbedResponse)
-# async def embed(request: schemas.EmbedRequest):
-#     response = {'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()}
-#     await asyncio.sleep(0)
-#     return response 
-
 @app.post("/embedding", response_model=schemas.EmbedResponse)
 async def embed(request: schemas.ItemRequest):
     response = {'valid' : True, 'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()}
     await asyncio.sleep(0)
     return response 
-
-# @app.post("/data_source", response_model=schemas.DataSourceResponse)
-# async def data_source(request: schemas.DataSourceRequest):
-
-#     query_embedding = np.array(request.embedding)
-#     response = {
-#         'valid' : True,
-#         'result' : []
-#     }
-
-#     for i in range(request.k):
-#         embedding = np.random.randn(EMBEDDING_SIZE)
-#         distance = ((query_embedding - embedding)**2).sum()**0.5
-#         response['result'].append({
-#             'external_id' : np.random.randint(1e8),
-#             'item' : ''.join(np.random.choice([i for i in string.ascii_lowercase], 16)),
-#             'embedding' : embedding.tolist(),
-#             'distance' : float(distance)
-#         })
-
-#     await asyncio.sleep(0)
-#     return response 
 
 @app.post("/data_source", response_model=schemas.DataSourceResponse)
 async def data_source(request: schemas.DataSourceRequest):
@@ -116,15 +88,6 @@ async def mapper(request: schemas.MapperRequest):
     response = {'valid' : True, 'embedding' : [np.random.rand(EMBEDDING_SIZE).tolist() for i in range(NUM_PARENTS)]}
     await asyncio.sleep(0)
     return response 
-
-# @app.post("/assembly", response_model=schemas.AssemblyResponse)
-# async def assemble(request: schemas.AssemblyRequest):
-#     response = {
-#         'valid' : True,
-#         'result' : [{'item' : ''.join([i.item for i in request.parents]), 'external_id' : None}]
-#     }
-#     await asyncio.sleep(0)
-#     return response 
 
 @app.post("/assembly", response_model=schemas.AssemblyResponse)
 async def assemble(request: schemas.AssemblyRequest):

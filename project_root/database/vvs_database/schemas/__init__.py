@@ -42,9 +42,7 @@ from vvs_database.schemas.item_schemas import (
 )
 
 from vvs_database.schemas.execute_schemas import (
-    # EmbedRequest,
     EmbedResponse,
-    # NamedEmbedding,
     DataSourceRequest,
     DataSourceResponseItem,
     DataSourceResponse,
@@ -106,9 +104,7 @@ __all__ = [
     "NewScore",
 
     # Execute schemas
-    # "EmbedRequest",
     "EmbedResponse",
-    # "NamedEmbedding",
     "DataSourceRequest",
     "DataSourceResponseItem",
     "DataSourceResponse",
