@@ -128,11 +128,24 @@ def test_assembly_backend_execution(backend_client):
     assert result is not None
 
 def test_backend_execution_invalid_plugin_id(backend_client):
+    # execute_data = {
+    #     "request_id":"request.api.embedding.1.1.1",
+    #     "id":1,
+    #     "external_id":"1",
+    #     "item":"item"
+    # }
     execute_data = {
-        "request_id":"request.api.embedding.1.1.1",
-        "id":1,
-        "external_id":"1",
-        "item":"item"
+        'request_data' : {
+            'request_id' : "request.api.embedding.1.1.1",
+            'plugin_id' : 1234567890,
+            'plugin_name' : ''
+        },
+        'item_data' : {
+            'item_id' : 1,
+            'external_id' : '1',
+            'item' : 'item',
+            'embedding' : None 
+        }
     }
     response = backend_client.post(f"/api/v1/execute/1234567890", json=execute_data)
     assert response.status_code == 404

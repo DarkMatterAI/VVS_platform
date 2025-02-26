@@ -166,11 +166,48 @@ def test_qdrant_execute(backend_client, qdrant_client, test_embedding, test_data
     
     # Use helper for plugin execution
     plugins = [data_record]
-    result = execute_plugin_helper(backend_client, plugins, PluginType.DATA_SOURCE, timeout=20)
+    request_func = type_to_request_func[PluginType.DATA_SOURCE]
+    data_request = request_func(data_record, embedding_index=embedding_record['id'])
+    result = execute_plugin_helper(backend_client, plugins, PluginType.DATA_SOURCE, 
+                                   timeout=20, custom_request=data_request)
     assert result is not None
 
     delete_plugin(data_record, backend_client, plugin_api_str)
     delete_plugin(embedding_record, backend_client, plugin_api_str)
+
+def test_qdrant_wrong_embedding(backend_client, qdrant_client, test_embedding, test_data_source):
+    _ = qdrant_client.get_collections()
+    embedding_record = test_embedding()
+    data_record = test_data_source([embedding_record])
+
+    collection_name = f"data_source_{data_record['id']}"
+    embedding_name = f"embedding_{embedding_record['id']}"
+
+    n_points = 32
+    qdrant_client.upsert(
+        collection_name=collection_name,
+        points=models.Batch(
+            ids=[i+1 for i in range(n_points)],
+            payloads=[{'item': f"item_{i}", 'external_id': i} for i in range(n_points)],
+            vectors={embedding_name: np.random.rand(n_points, 32).tolist()}
+        )
+    )
+
+    alt_embedding_record = test_embedding()
+    
+    # Use helper for plugin execution
+    plugins = [data_record]
+    request_func = type_to_request_func[PluginType.DATA_SOURCE]
+    data_request = request_func(data_record, embedding_index=alt_embedding_record['id'])
+
+    endpoint = f"/api/v1/execute/{data_record['id']}"
+    response = backend_client.post(endpoint, json=data_request)
+    assert response.status_code == 500
+
+    delete_plugin(data_record, backend_client, plugin_api_str)
+    delete_plugin(embedding_record, backend_client, plugin_api_str)
+    delete_plugin(alt_embedding_record, backend_client, plugin_api_str)
+
 
 def test_qdrant_crud_two_embeddings_execute(backend_client, qdrant_client, test_embedding, test_data_source):
     _ = qdrant_client.get_collections()
@@ -199,7 +236,7 @@ def test_qdrant_crud_two_embeddings_execute(backend_client, qdrant_client, test_
     request_func = type_to_request_func[PluginType.DATA_SOURCE]
     
     # Using direct API calls because we need to test each embedding specifically
-    data_request_1 = request_func(data_record, embedding_index=0)
+    data_request_1 = request_func(data_record, embedding_index=embedding_record1['id'])
     response_1 = backend_client.post(
         f"/api/v1/execute/{data_record['id']}", 
         json=data_request_1, 
@@ -207,7 +244,7 @@ def test_qdrant_crud_two_embeddings_execute(backend_client, qdrant_client, test_
     )
     assert response_1.status_code == 200    
 
-    data_request_2 = request_func(data_record, embedding_index=1)
+    data_request_2 = request_func(data_record, embedding_index=embedding_record2['id'])
     response_2 = backend_client.post(
         f"/api/v1/execute/{data_record['id']}", 
         json=data_request_2, 

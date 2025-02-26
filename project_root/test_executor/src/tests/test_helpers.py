@@ -1,28 +1,7 @@
 import time
-from tests.utils import type_to_request_func, poll_backend, get_request_id, publish_and_poll
+from tests.utils import type_to_request_func, poll_backend, publish_and_poll
 
-from vvs_database.schemas import (
-    EmbedRequest, 
-    EmbedResponse,
-    DataSourceRequest,
-    DataSourceResponse,
-    ItemRequest,
-    FilterResponse,
-    ScoreResponse,
-    MapperRequest,
-    MapperResponse,
-    AssemblyRequest,
-    AssemblyResponse
-)
-
-schema_mapping = {
-    'embedding': {'request': EmbedRequest, 'response': EmbedResponse},
-    'data_source': {'request': DataSourceRequest, 'response': DataSourceResponse},
-    'filter': {'request': ItemRequest, 'response': FilterResponse},
-    'score': {'request': ItemRequest, 'response': ScoreResponse},
-    'mapper': {'request': MapperRequest, 'response': MapperResponse},
-    'assembly': {'request': AssemblyRequest, 'response': AssemblyResponse},
-}
+from vvs_database.schemas import request_response_schema_mapping as schema_mapping
 
 def plugin_creation_helper(backend_client, plugin_pattern, plugin_type_counts):
     """Test if plugins are properly created with expected counts by type."""
@@ -112,6 +91,30 @@ def direct_request_helper(api_client, backend_client, plugins, plugin_type,
     
     return response.json()
 
+# def queue_request_helper(redis_connection, rabbitmq_connection, backend_client, 
+#                              plugins, plugin_type, interval=0.1, timeout=5):
+#     """Test message queue based plugin execution."""
+#     schemas = schema_mapping[plugin_type]
+#     plugin = next((p for p in plugins if p['type'] == plugin_type), None)
+#     assert plugin is not None, f"No plugin of type {plugin_type} found"
+    
+#     request_data = type_to_request_func[plugin_type](plugin)
+#     schemas['request'].model_validate(request_data)
+    
+#     response_data = publish_and_poll(
+#         redis_connection, 
+#         rabbitmq_connection,
+#         request_data['request_id'], 
+#         request_data, 
+#         interval, 
+#         timeout
+#     )
+    
+#     assert response_data['valid'] == True
+#     schemas['response'].model_validate(response_data['response_data'])
+    
+#     return response_data
+
 def queue_request_helper(redis_connection, rabbitmq_connection, backend_client, 
                              plugins, plugin_type, interval=0.1, timeout=5):
     """Test message queue based plugin execution."""
@@ -125,13 +128,13 @@ def queue_request_helper(redis_connection, rabbitmq_connection, backend_client,
     response_data = publish_and_poll(
         redis_connection, 
         rabbitmq_connection,
-        request_data['request_id'], 
+        request_data['request_data']['request_id'], 
         request_data, 
         interval, 
         timeout
     )
     
     assert response_data['valid'] == True
-    schemas['response'].model_validate(response_data['response_data'])
+    schemas['response'].model_validate(response_data['response_data']), response_data['response_data']
     
     return response_data

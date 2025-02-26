@@ -42,9 +42,9 @@ from vvs_database.schemas.item_schemas import (
 )
 
 from vvs_database.schemas.execute_schemas import (
-    EmbedRequest,
+    # EmbedRequest,
     EmbedResponse,
-    NamedEmbedding,
+    # NamedEmbedding,
     DataSourceRequest,
     DataSourceResponseItem,
     DataSourceResponse,
@@ -59,7 +59,8 @@ from vvs_database.schemas.execute_schemas import (
     AssemblyResponse,
     RedisResult,
     ExecuteRequestUnion,
-    BatchExecuteRequestUnion
+    BatchExecuteRequestUnion,
+    request_response_schema_mapping
 )
 
 
@@ -105,9 +106,9 @@ __all__ = [
     "NewScore",
 
     # Execute schemas
-    "EmbedRequest",
+    # "EmbedRequest",
     "EmbedResponse",
-    "NamedEmbedding",
+    # "NamedEmbedding",
     "DataSourceRequest",
     "DataSourceResponseItem",
     "DataSourceResponse",
@@ -122,5 +123,6 @@ __all__ = [
     "AssemblyResponse",
     "RedisResult",
     "ExecuteRequestUnion",
-    "BatchExecuteRequestUnion"
+    "BatchExecuteRequestUnion",
+    "request_response_schema_mapping"
 ]

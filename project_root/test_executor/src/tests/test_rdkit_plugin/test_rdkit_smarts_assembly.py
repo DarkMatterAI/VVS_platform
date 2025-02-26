@@ -1,7 +1,7 @@
 import itertools 
 import pytest 
 
-from tests.utils import publish_and_poll, get_request_id, delete_plugin
+from tests.utils import publish_and_poll, get_request_data, delete_plugin
 from tests.test_helpers import execute_plugin_helper
 from vvs_database.schemas import PluginType
 
@@ -34,25 +34,25 @@ def rdkit_test_assembly(backend_client):
 
     return _create_assembly
 
-def get_request_data(plugin_record):
+def get_assembly_request_data(plugin_record):
     request_data = {
-        'request_id': None,
+        'request_data': None,
         'parents': [
-            {'assembly_index': 0, 'id': 1, 'external_id': '1', 'item': 'C'},
-            {'assembly_index': 1, 'id': 2, 'external_id': '2', 'item': 'N'}
+            {'assembly_index': 0, 'item_id': 1, 'external_id': '1', 'item': 'C'},
+            {'assembly_index': 1, 'item_id': 2, 'external_id': '2', 'item': 'N'}
         ]
     }
-    request_data['request_id'] = get_request_id(plugin_record)
+    request_data['request_data'] = get_request_data(plugin_record)
     return request_data 
 
 def test_rdkit_smarts_assembly_consumer(redis_connection, rabbitmq_connection, rdkit_test_assembly, backend_client):
     assembly_record = rdkit_test_assembly()
-    request_data = get_request_data(assembly_record)
+    request_data = get_assembly_request_data(assembly_record)
 
     response_data = publish_and_poll(
         redis_connection, 
         rabbitmq_connection, 
-        request_data['request_id'], 
+        request_data['request_data']['request_id'], 
         request_data
     )
     assert response_data['valid'] == True
@@ -60,7 +60,7 @@ def test_rdkit_smarts_assembly_consumer(redis_connection, rabbitmq_connection, r
 
 def test_rdkit_smarts_assembly_backend_execution(backend_client, rdkit_test_assembly):
     assembly_record = rdkit_test_assembly()
-    request_data = get_request_data(assembly_record)
+    request_data = get_assembly_request_data(assembly_record)
     
     # Use helper with custom request data
     result = execute_plugin_helper(

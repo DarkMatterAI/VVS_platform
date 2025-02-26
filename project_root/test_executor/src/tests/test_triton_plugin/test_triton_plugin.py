@@ -29,10 +29,22 @@ def test_backend_mapper_execution(backend_client):
 
     vector_length = embedding_record['vector_length']
     request_data = {
-        'request_id' : '',
-        'id' : source_embedding_id,
-        'name' : embedding_record['name'],
-        'embedding' : np.random.rand(vector_length).tolist()
+        'request_data' : {
+            'request_id' : '',
+            'plugin_id' : plugin['id'],
+            'plugin_name' : plugin['name']
+        },
+        'embedding' : {
+            'plugin_id' : embedding_record['id'],
+            'plugin_name' : embedding_record['name'],
+            'embedding' : np.random.rand(vector_length).tolist()
+        } 
     }
+    # request_data = {
+    #     'request_id' : '',
+    #     'id' : source_embedding_id,
+    #     'name' : embedding_record['name'],
+    #     'embedding' : np.random.rand(vector_length).tolist()
+    # }
     response = backend_client.post(f"/api/v1/execute/{plugin['id']}", json=request_data)
     assert response.status_code == 200

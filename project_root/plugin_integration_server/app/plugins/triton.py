@@ -29,18 +29,21 @@ class TritonPlugin(BasePlugin):
                     'name' : 'sequence',
                     'shape' : [len(request), 1],
                     'datatype' : 'BYTES',
-                    'data' : [i.item for i in request]
+                    'data' : [i.item_data.item for i in request]
+                    # 'data' : [i.item for i in request]
                 }
             ]
         }
         response = await post_request(request_data, self.request_configs[model_name])
         data = response['outputs'][0]['data']
         n_out, d_out = response['outputs'][0]['shape']
-        output = [{'embedding' : data[i*d_out:(i+1)*d_out]} for i in range(n_out)]
+        # output = [{'embedding' : data[i*d_out:(i+1)*d_out]} for i in range(n_out)]
+        output = [{'embedding' : data[i*d_out:(i+1)*d_out], 'valid' : True} for i in range(n_out)]
         return output
     
     async def process_mapper(self, request, model_name):
-        embeddings = [i.embedding for i in request]
+        # embeddings = [i.embedding for i in request]
+        embeddings = [i.embedding.embedding for i in request]
         mapper_data = {
             "inputs": [
                 {

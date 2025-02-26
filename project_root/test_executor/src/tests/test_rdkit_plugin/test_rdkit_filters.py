@@ -1,8 +1,9 @@
 import itertools 
 import pytest 
 import uuid 
+import numpy as np 
 
-from tests.utils import publish_and_poll, get_request_id, delete_plugin
+from tests.utils import publish_and_poll, get_request_data, delete_plugin
 from tests.test_helpers import execute_plugin_helper
 from vvs_database.schemas import PluginType
 
@@ -31,24 +32,38 @@ def rdkit_test_filter(backend_client):
 
     return _create_filter
 
-def get_request_data(plugin_record):
+# def get_request_data(plugin_record):
+#     request_data = {
+#         'id': str(uuid.uuid4()),
+#         'external_id': str(uuid.uuid4()),
+#         'item': 'CC(C)c1cc(C(=O)NC[C@@H](O)c2ccccn2)n(C)n1',
+#         'embedding': []
+#     }
+#     request_data['request_id'] = get_request_id(plugin_record)
+#     return request_data 
+
+def get_filter_request_data(plugin_record):
     request_data = {
-        'id': str(uuid.uuid4()),
-        'external_id': str(uuid.uuid4()),
-        'item': 'CC(C)c1cc(C(=O)NC[C@@H](O)c2ccccn2)n(C)n1',
-        'embedding': []
+        'request_data' : {},
+        'item_data' : {
+            'item_id' : np.random.randint(0, 10000),
+            'external_id': str(uuid.uuid4()),
+            'item' : 'CC(C)c1cc(C(=O)NC[C@@H](O)c2ccccn2)n(C)n1',
+            'embedding' : []
+        }
     }
-    request_data['request_id'] = get_request_id(plugin_record)
+    request_data['request_data'] = get_request_data(plugin_record, 
+                                                    item_id=request_data['item_data']['item_id'])
     return request_data 
 
 def test_rdkit_filter_consumer(redis_connection, rabbitmq_connection, rdkit_test_filter, backend_client):
     filter_record = rdkit_test_filter()
-    request_data = get_request_data(filter_record)
+    request_data = get_filter_request_data(filter_record)
 
     response_data = publish_and_poll(
         redis_connection, 
         rabbitmq_connection, 
-        request_data['request_id'], 
+        request_data['request_data']['request_id'], 
         request_data
     )
     assert response_data['valid'] == True
@@ -57,7 +72,7 @@ def test_rdkit_filter_consumer(redis_connection, rabbitmq_connection, rdkit_test
 def test_rdkit_filter_backend_execution(backend_client, rdkit_test_filter):
     filter_record = rdkit_test_filter()
     
-    request_data = get_request_data(filter_record)
+    request_data = get_filter_request_data(filter_record)
     
     plugin_result = execute_plugin_helper(
         backend_client, 

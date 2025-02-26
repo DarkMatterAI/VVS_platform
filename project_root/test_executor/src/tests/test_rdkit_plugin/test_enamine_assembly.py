@@ -1,6 +1,6 @@
 import pytest
 from vvs_database.schemas import PluginClass, PluginType
-from tests.utils import fetch_plugins_by_filter, get_request_id, publish_and_poll, poll_backend
+from tests.utils import fetch_plugins_by_filter, get_request_data, publish_and_poll, poll_backend
 
 # Test data for different reactions
 reaction_data = [
@@ -25,13 +25,14 @@ def get_reaction_inputs(plugin_record, reaction_id):
     reaction_inputs = reaction_dict[reaction_id]
     r1, r2 = reaction_inputs['r1'], reaction_inputs['r2']
     request_data = {
-        'request_id': None,
+        'request_data': None,
         'parents': [
-            {'assembly_index': 0, 'id': 1, 'external_id': '1', 'item': r1},
-            {'assembly_index': 1, 'id': 2, 'external_id': '2', 'item': r2}
+            {'assembly_index': 0, 'item_id': 1, 'external_id': '1', 'item': r1},
+            {'assembly_index': 1, 'item_id': 2, 'external_id': '2', 'item': r2}
         ]
     }
-    request_data['request_id'] = get_request_id(plugin_record)
+    # request_data['request_id'] = get_request_id(plugin_record)
+    request_data['request_data'] = get_request_data(plugin_record)
     return request_data 
 
 def get_reaction_plugin(backend_client, reaction_id):
@@ -69,7 +70,7 @@ def test_backend_enamine_reaction(backend_client, reaction_id):
 
     result = poll_backend(backend_client, result_id, timeout=20)
     assert 'result_id' not in result 
-    assert result['valid']
+    assert result['valid'], result
     assert result['response_data']['valid']
     assert len(result['response_data']['result']) > 0
 
@@ -83,12 +84,12 @@ def test_consumer_enamine_reaction(backend_client, redis_connection, rabbitmq_co
     response_data = publish_and_poll(
         redis_connection, 
         rabbitmq_connection, 
-        request_data['request_id'], 
+        request_data['request_data']['request_id'], 
         request_data,
         timeout=20
     )
     
-    assert response_data['valid'] == True
+    assert response_data['valid'] == True, response_data
     assert response_data['response_data']['valid'] == True
     assert len(response_data['response_data']['result']) > 0
 

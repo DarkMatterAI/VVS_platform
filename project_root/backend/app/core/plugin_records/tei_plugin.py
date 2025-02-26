@@ -50,9 +50,25 @@ async def init_tei_records(db):
 
     print("Checking TEI vector size")    
     try:
-        response = await utils.fastapi_post_request({'id' : 1, 'external_id' : '1', 'item' : '.', 'request_id' : ''},
+        request_data = {
+            'request_data' : {
+                'request_id' : '',
+                'plugin_id' : 1,
+                'plugin_name' : ''
+            },
+            'item_data' : {
+                'item_id' : 1,
+                'external_id' : '1',
+                'item' : '.',
+                'embedding' : None 
+            }
+        }
+        response = await utils.fastapi_post_request(request_data,
                                                  TEI_EMBEDDING['endpoint_url'],
                                                  timeout=10, retries=20, retry_sleep=1)
+        # response = await utils.fastapi_post_request({'id' : 1, 'external_id' : '1', 'item' : '.', 'request_id' : ''},
+        #                                          TEI_EMBEDDING['endpoint_url'],
+        #                                          timeout=10, retries=20, retry_sleep=1)
     except:
         logger.warning(f"Request to TEI server failed - aborting")
         return 
