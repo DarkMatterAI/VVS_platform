@@ -53,7 +53,7 @@ async def validate_embedding_ids(db: AsyncSession, embedding_ids: List[int]) -> 
         invalid_ids = set(embedding_ids) - set(e.id for e in valid_embeddings)
         raise ValidationError(f"Invalid embedding IDs: {invalid_ids}")
 
-async def get_plugin(db: AsyncSession, plugin_id: int, with_error: bool=True, response_model: bool =False):
+async def get_plugin(db: AsyncSession, plugin_id: int, with_error: bool=True, response_model: bool=False):
     """Get a plugin by ID with all related data loaded."""
     stmt = (
         select(Plugin)
@@ -68,6 +68,9 @@ async def get_plugin(db: AsyncSession, plugin_id: int, with_error: bool=True, re
     
     if plugin:
         await db.refresh(plugin)
+
+        if isinstance(plugin, (DataSourcePlugin, FilterPlugin, ScorePlugin, MapperPlugin)):
+            await db.refresh(plugin, ["embeddings"])
 
     if with_error and (plugin is None):
         raise NotFoundError(f"Plugin with ID {plugin_id} not found")
@@ -169,13 +172,16 @@ async def create_plugin_db(
                 for embedding_id in embedding_ids
             ])
         )
+
+    await db.flush()
     
-    await db.commit()
+    # await db.commit()
     
     # Reload with relationships
     stmt = select(plugin_model).options(selectinload(plugin_model.embeddings)).filter_by(id=db_plugin.id)
     result = await db.execute(stmt)
     db_plugin = result.scalar_one()
+    await db.commit()
     return db_plugin
 
 async def create_plugin(db: AsyncSession, plugin: PluginCreate, response_model: bool=False):
@@ -295,8 +301,18 @@ async def update_plugin(db: AsyncSession,
     update_data = plugin.model_dump(exclude_unset=True)
     
     db_plugin = await get_plugin(db, plugin_id)
+    # print(db_plugin)
+
+    # if isinstance(db_plugin, (DataSourcePlugin, FilterPlugin, ScorePlugin, MapperPlugin)):
+    #     await db.refresh(db_plugin, ["embeddings"])
+    
+    # print(db_plugin)
+
     utils.validate_updates(db_plugin, update_data)
     db_plugin = await update_plugin_db(db, plugin_id, update_data)
+
+    # if isinstance(db_plugin, (DataSourcePlugin, FilterPlugin, ScorePlugin, MapperPlugin)):
+    #     await db.refresh(db_plugin, ["embeddings"])
 
     if response_model:
         db_plugin = utils.get_plugin_response_model(db_plugin)

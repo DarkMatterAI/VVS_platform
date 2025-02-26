@@ -10,9 +10,6 @@ todos
             bb
 
 database refactor
-    update execution schemas
-        use item_id for everything
-        change mapper request id to `mapper_id` to indicate plugin 
     test refactor
         db tests in db lib
         backend tests in backend 

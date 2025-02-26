@@ -1,10 +1,8 @@
 import pytest
 import sqlalchemy
 
-plugin_api_str = '/api/v1/plugins'
-
 @pytest.mark.asyncio
-async def test_item_source_create(client, create_item, create_test_embedding, create_item_source):
+async def test_item_source_create(create_item, create_test_embedding, create_item_source):
     item = await create_item()
     plugin = await create_test_embedding()
     item_source = await create_item_source(item.id, plugin.id, external_id='test')
@@ -13,12 +11,12 @@ async def test_item_source_create(client, create_item, create_test_embedding, cr
     assert item_source.plugin_id == plugin.id 
 
 @pytest.mark.asyncio
-async def test_item_source_create_fails_invalid_ids(client, create_item_source):
+async def test_item_source_create_fails_invalid_ids(create_item_source):
     with pytest.raises(sqlalchemy.exc.IntegrityError):
         item_source = await create_item_source(10000000, 20000000, external_id='test')
 
 @pytest.mark.asyncio
-async def test_item_source_get(client, get_item_source, create_item_plugin_source):
+async def test_item_source_get(get_item_source, create_item_plugin_source):
     item_source = await get_item_source(999999999, 9999999)
     assert item_source is None 
 
@@ -30,7 +28,7 @@ async def test_item_source_get(client, get_item_source, create_item_plugin_sourc
     assert item_source_get.external_id==external_id
 
 @pytest.mark.asyncio
-async def test_item_source_delete(client, create_item_plugin_source, get_item_source, delete_item_source):
+async def test_item_source_delete(create_item_plugin_source, get_item_source, delete_item_source):
     item, plugin, item_source = await create_item_plugin_source()
 
     _ = await delete_item_source(item_source)
@@ -39,7 +37,7 @@ async def test_item_source_delete(client, create_item_plugin_source, get_item_so
     assert item_source_get is None 
 
 @pytest.mark.asyncio
-async def test_cleanup_items(client, create_item_plugin_source, create_item, 
+async def test_cleanup_items(create_item_plugin_source, create_item, 
                              cleanup_items, get_item, get_item_source):
     item1, plugin1, item_source1 = await create_item_plugin_source()
     item2 = await create_item()
@@ -56,9 +54,8 @@ async def test_cleanup_items(client, create_item_plugin_source, create_item,
     item2_get = await get_item(item2.id)
     assert item2_get is None 
 
-
 @pytest.mark.asyncio
-async def test_item_checkin(client, item_checkin, create_test_embedding):
+async def test_item_checkin(item_checkin, create_test_embedding):
     plugin = await create_test_embedding()
 
     items_data = [
@@ -69,7 +66,7 @@ async def test_item_checkin(client, item_checkin, create_test_embedding):
     results = await item_checkin(items_data, plugin.id)
 
 @pytest.mark.asyncio
-async def test_item_checkin_duplicates(client, item_checkin, create_test_embedding):
+async def test_item_checkin_duplicates(item_checkin, create_test_embedding):
     plugin = await create_test_embedding()
 
     items_data = [
@@ -81,7 +78,7 @@ async def test_item_checkin_duplicates(client, item_checkin, create_test_embeddi
     results = await item_checkin(items_data, plugin.id)
 
 @pytest.mark.asyncio
-async def test_item_checkin_conflict(client, item_checkin, create_item_plugin_source):
+async def test_item_checkin_conflict(item_checkin, create_item_plugin_source):
     item, plugin, item_source = await create_item_plugin_source()
 
     items_data = [
@@ -93,8 +90,8 @@ async def test_item_checkin_conflict(client, item_checkin, create_item_plugin_so
     results = await item_checkin(items_data, plugin.id)
 
 @pytest.mark.asyncio
-async def test_item_delete_source_propagation(client, create_item_plugin_source, delete_item,
-                                              get_item_source):
+async def test_item_delete_source_propagation(create_item_plugin_source, delete_item,
+                                              get_item_source, get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
 
     # delete item
@@ -105,21 +102,21 @@ async def test_item_delete_source_propagation(client, create_item_plugin_source,
     assert item_source is None 
 
     # check plugin still exists
-    response = await client.get(f"{plugin_api_str}/{plugin.id}")
-    assert response.status_code == 200
+    response = await get_plugin(plugin.id)
+    assert response is not None 
 
 @pytest.mark.asyncio
-async def test_plugin_delete_source_propagation(client, create_item_plugin_source,
-                                              get_item_source, get_item, cleanup_items):
+async def test_plugin_delete_source_propagation(create_item_plugin_source,
+                                              get_item_source, get_item, 
+                                              cleanup_items, get_plugin, delete_plugin):
     item, plugin, item_source = await create_item_plugin_source()
 
     # delete plugin
-    response = await client.delete(f"{plugin_api_str}/{plugin.id}")
-    assert response.status_code == 200
+    response = await delete_plugin(plugin.id)
 
     # check plugin deleted 
-    response = await client.get(f"{plugin_api_str}/{plugin.id}")
-    assert response.status_code == 404
+    response = await get_plugin(plugin.id, with_error=False)
+    assert response is None 
 
     # check propagated to source
     item_source = await get_item_source(item.id, plugin.id)

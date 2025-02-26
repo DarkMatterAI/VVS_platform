@@ -4,9 +4,10 @@ import itertools
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+
 from app.main import app
 from app.core.database import get_db
-# from app.core.settings import settings
+
 from vvs_database import settings 
 from vvs_database import Base, schemas
 from vvs_database.testing import create_test_database_url, drop_test_database

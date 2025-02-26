@@ -2,10 +2,8 @@ import pytest
 import sqlalchemy
 import random 
 
-plugin_api_str = '/api/v1/plugins'
-
 @pytest.mark.asyncio
-async def test_item_score_create(client, create_item, create_test_embedding, create_item_score):
+async def test_item_score_create(create_item, create_test_embedding, create_item_score):
     item = await create_item()
     plugin = await create_test_embedding()
     score = 3.82
@@ -15,12 +13,12 @@ async def test_item_score_create(client, create_item, create_test_embedding, cre
     assert item_score.plugin_id == plugin.id 
 
 @pytest.mark.asyncio
-async def test_item_score_create_fails_invalid_ids(client, create_item_score):
+async def test_item_score_create_fails_invalid_ids(create_item_score):
     with pytest.raises(sqlalchemy.exc.IntegrityError):
         item_score = await create_item_score(10000000, 20000000, score=5.01)
 
 @pytest.mark.asyncio
-async def test_item_score_get(client, get_item_source, create_item_plugin_source, 
+async def test_item_score_get(create_item_plugin_source, 
                               create_item_score, get_item_score):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
@@ -30,9 +28,8 @@ async def test_item_score_get(client, get_item_source, create_item_plugin_source
     assert item_score_get is not None
     assert item_score_get.score == item_score.score
 
-
 @pytest.mark.asyncio
-async def test_item_score_delete(client, create_item_plugin_source, create_item_score,
+async def test_item_score_delete(create_item_plugin_source, create_item_score,
                                  get_item_score, delete_item_score):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
@@ -43,10 +40,8 @@ async def test_item_score_delete(client, create_item_plugin_source, create_item_
     item_score_get = await get_item_score(item.id, plugin.id)
     assert item_score_get is None 
 
-
-
 @pytest.mark.asyncio
-async def test_score_checkin(client, item_checkin, score_checkin, create_test_embedding):
+async def test_score_checkin(item_checkin, score_checkin, create_test_embedding):
     plugin = await create_test_embedding()
 
     items_data = [
@@ -61,7 +56,7 @@ async def test_score_checkin(client, item_checkin, score_checkin, create_test_em
     score_records = await score_checkin(score_data, plugin.id)
 
 @pytest.mark.asyncio
-async def test_score_checkin_duplicates(client, item_checkin, score_checkin, create_test_embedding):
+async def test_score_checkin_duplicates(item_checkin, score_checkin, create_test_embedding):
     plugin = await create_test_embedding()
 
     items_data = [
@@ -78,7 +73,7 @@ async def test_score_checkin_duplicates(client, item_checkin, score_checkin, cre
     score_records = await score_checkin(score_data, plugin.id)
 
 @pytest.mark.asyncio
-async def test_score_checkin_conflict(client, score_checkin, create_item,
+async def test_score_checkin_conflict(score_checkin, create_item,
                                       create_item_score, create_item_plugin_source):
     item1, plugin, item_source = await create_item_plugin_source()
     score = 9.42
@@ -94,11 +89,10 @@ async def test_score_checkin_conflict(client, score_checkin, create_item,
 
     score_records = await score_checkin(score_data, plugin.id)
 
-
-
 @pytest.mark.asyncio
-async def test_item_delete_score_propagation(client, create_item_plugin_source, create_item_score,
-                                             delete_item, get_item_score, get_item_source):
+async def test_item_delete_score_propagation(create_item_plugin_source, create_item_score,
+                                             delete_item, get_item_score, get_item_source,
+                                             get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_score = await create_item_score(item.id, plugin.id, score=score)
@@ -115,24 +109,24 @@ async def test_item_delete_score_propagation(client, create_item_plugin_source, 
     assert item_source is None 
 
     # check plugin still exists
-    response = await client.get(f"{plugin_api_str}/{plugin.id}")
-    assert response.status_code == 200
+    response = await get_plugin(plugin.id)
+    assert response is not None 
 
 
 @pytest.mark.asyncio
-async def test_plugin_delete_score_propagation(client, create_item_plugin_source, create_item_score,
-                                               get_item_source, get_item_score, get_item, cleanup_items):
+async def test_plugin_delete_score_propagation(create_item_plugin_source, create_item_score,
+                                               get_item_source, get_item_score, get_item, cleanup_items,
+                                               get_plugin, delete_plugin):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_score = await create_item_score(item.id, plugin.id, score=score)
 
     # delete plugin
-    response = await client.delete(f"{plugin_api_str}/{plugin.id}")
-    assert response.status_code == 200
+    response = await delete_plugin(plugin.id)
 
     # check plugin deleted 
-    response = await client.get(f"{plugin_api_str}/{plugin.id}")
-    assert response.status_code == 404
+    response = await get_plugin(plugin.id, with_error=False)
+    assert response is None 
 
     # check propagated to source
     item_source = await get_item_source(item.id, plugin.id)

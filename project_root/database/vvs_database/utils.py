@@ -80,6 +80,7 @@ def get_plugin_response_model(plugin: models.Plugin):
 def validate_updates(plugin: models.Plugin, update_data: dict):
     """Validate that plugin updates are consistent with the model schema."""
     plugin_dict = object_as_dict(plugin)
+    print(plugin_dict)
     remap_embeddings(plugin, plugin_dict)
     plugin_dict.update(update_data)
     plugin_type_map[plugin.type]['response_model'].model_validate(plugin_dict)
