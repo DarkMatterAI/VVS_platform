@@ -12,7 +12,9 @@ from vvs_database.models.plugin_models import (
 from vvs_database.models.item_models import (
     Item,
     ItemSource,
-    ItemResult
+    ItemResult,
+    Assembly,
+    AssemblyComponent
 )
 
 __all__ = [
@@ -26,5 +28,7 @@ __all__ = [
     "plugin_embeddings",
     "Item",
     "ItemSource",
-    "ItemResult"
+    "ItemResult",
+    "Assembly",
+    "AssemblyComponent"
 ]

@@ -32,6 +32,14 @@ from vvs_database.crud.item_checkin import (
     result_checkin,
 )
 
+from vvs_database.crud.assembly_crud import (
+    create_assembly,
+    get_assembly_by_id,
+    get_assembly_by_product_plugin,
+    get_assemblies_by_component,
+    delete_assembly
+)
+
 __all__ = [
     # plugin crud 
     "get_embeddings",
@@ -59,6 +67,13 @@ __all__ = [
     "get_item_result",
     "delete_item_result",
     "cleanup_unreferenced_items",
+
+    # assembly crud
+    "create_assembly",
+    "get_assembly_by_id",
+    "get_assembly_by_product_plugin",
+    "get_assemblies_by_component",
+    "delete_assembly",
 
     # item checkin 
     "item_checkin",

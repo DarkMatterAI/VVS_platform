@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from typing import List, Dict
 
-from vvs_database.models import Item, ItemSource, ItemResult # ItemScore
+from vvs_database.models import Item, ItemSource, ItemResult
 from vvs_database import schemas 
 
 async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugin_id: int) -> Dict:

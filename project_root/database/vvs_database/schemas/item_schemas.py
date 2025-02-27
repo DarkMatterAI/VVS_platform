@@ -64,3 +64,39 @@ class NewResult(BaseModel):
     score: Optional[float] = None
     embedding: Optional[List[float]] = None
 
+# class AssemblyParent(BaseModel):
+#     item_id: int 
+#     assembly_index: int 
+
+# class NewAssembly(BaseModel):
+#     external_id: Optional[Union[int, str]]
+#     item: str
+#     parents: List[AssemblyParent]
+
+
+# class RequestData(BaseModel):
+#     """Data for plugin making a request"""
+#     request_id: Optional[str]
+#     plugin_id: int 
+#     plugin_name: str 
+        
+# class ItemData(BaseModel):
+#     """Data for item in a request"""
+#     item_id: int
+#     external_id: Optional[Union[int, str]]
+#     item: str 
+
+# class AssemblyItem(ItemData):
+#     assembly_index: int 
+
+# class AssemblyRequest(BaseModel):
+#     request_data: RequestData
+#     parents: List[AssemblyItem]
+
+# class AssemblyResult(BaseModel):
+#     item: str 
+#     external_id: Optional[Union[int, str]]
+        
+# class AssemblyResponse(BaseModel):
+#     valid: bool
+#     result: List[AssemblyResult]

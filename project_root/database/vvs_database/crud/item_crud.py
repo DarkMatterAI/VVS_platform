@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional, List, Dict
+from typing import Optional, List
 
-from vvs_database.models import Item, ItemSource, ItemResult # ItemScore
+from vvs_database.models import Item, ItemSource, ItemResult
 
 async def create_item(db: AsyncSession, item: str) -> Item:
     """Create a new item."""

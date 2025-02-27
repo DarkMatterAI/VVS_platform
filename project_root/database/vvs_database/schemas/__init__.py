@@ -61,6 +61,14 @@ from vvs_database.schemas.execute_schemas import (
     request_response_schema_mapping
 )
 
+from vvs_database.schemas.assembly_schemas import (
+    AssemblyComponentBase,
+    AssemblyComponentCreate,
+    AssemblyComponentInDB,
+    AssemblyBase,
+    AssemblyCreate,
+    AssemblyInDB
+)
 
 __all__ = [
     # Enums
@@ -102,6 +110,14 @@ __all__ = [
     "ItemResultInDB",
     "NewItem",
     "NewResult",
+
+    # assembly schemas
+    "AssemblyComponentBase",
+    "AssemblyComponentCreate",
+    "AssemblyComponentInDB",
+    "AssemblyBase",
+    "AssemblyCreate",
+    "AssemblyInDB",
 
     # Execute schemas
     "EmbedResponse",
