@@ -25,11 +25,15 @@ from vvs_database.crud.item_crud import (
     get_item_score,
     delete_item_score,
     cleanup_unreferenced_items,
+)
+
+from vvs_database.crud.item_checkin import (
     item_checkin,
     score_checkin,
 )
 
 __all__ = [
+    # plugin crud 
     "get_embeddings",
     "validate_embedding_ids",
     "get_plugin",
@@ -44,6 +48,7 @@ __all__ = [
     "count_plugins_linked_to_embedding_class",
     "execute_plugin",
 
+    # item crud 
     "create_item",
     "get_item",
     "delete_item",
@@ -54,6 +59,8 @@ __all__ = [
     "get_item_score",
     "delete_item_score",
     "cleanup_unreferenced_items",
+
+    # item checkin 
     "item_checkin",
     "score_checkin",
 ]

@@ -10,16 +10,11 @@ todos
             bb
 
 database refactor
-    test refactor
-        db tests in db lib
-        backend tests in backend 
     finalize data models
         assembly
         roll checking logic into execution code 
     do proper execution
         acquire redis lock, etc 
-
-
 
 
 thoughts on item data model
@@ -59,26 +54,108 @@ item table
 external table
     id (item table), external_id, source plugin id (data or assembly), timestamp
 
+score table
+    item_id, score plugin id, score
+
 assembly table
     assembly_id, item_id (product item), assembly plugin id
 
 assembly components table
     assembly_id, item_id (parent item), assembly index
 
+
+plugin results table
+    item_id, plugin_id, valid, score, embedding (json)
+
+
+
+
 jobs table
-    job id, job json
+    job id, job json, status
 
 results
     result id, job id, item_id, assembly id (optional)
 
-score table
-    item_id, score plugin id, score
-
 search iteration
-    iteration id, parent iteration id, json blob (query embedding, grad, etc)
+    (iteration id, parent iteration id, iteration (int), inference count, time,
+    json blob (query embedding, grad, etc), status)
+        status to indicate queue, running, fail, complete, etc
+        failure notes
+            inference/time runout, no valid results, etc
 
 search iteration results
     iteration id, item_id
+
+
+search iteration
+    init - embedding, gradient
+    do data queries
+        check in results
+        store to search iteration results table
+    filter
+    score
+        check in results
+    update
+    compute grad 
+
+assembly search iteration
+    init - embedding, gradient
+    do data queries
+        de-concat
+        data query
+        check in results
+    do assembly
+        check in results
+        store to search iteration results table
+    filter
+    score
+        check in results
+    update
+    compute grad
+
+
+locks/control of plugins/jobs
+    inference budget
+    time limit
+    concurrency         
+
+
+plugin execution flow
+    gather unique queries
+    create cache keys
+        filter/score/embedding
+            item id + plugin id
+        assembly
+            parent ids + plugin id
+        data/mapper
+            no cache
+    hit cache, gather uncached inputs
+    check cache miss against database 
+        filter/score/embedding
+            plugin results table
+        assembly
+            assembly components table
+        data source/mapper
+            no database check
+    execute plugin
+        break into batches
+        queue
+            post messages such that # of outstanding is never over concurrency
+        api
+            concurrent post requests gates by concurrency
+    check in results
+        data source
+            item checkin
+        score
+            score checkin
+        assembly
+            assembly checkin
+        filter/embed/mapper
+            no checkin
+    scatter to unique queries
+    scatter to inputs
+
+
 
 
 deletion concerns
@@ -233,4 +310,7 @@ iteration approach
     next job reads from redis 
     integrates with having a database for iterations 
     one issue - need way of generating consistent IDs for assembled molecules 
+
+
+
 
