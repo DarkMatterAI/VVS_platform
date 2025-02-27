@@ -67,7 +67,9 @@ from vvs_database.schemas.assembly_schemas import (
     AssemblyComponentInDB,
     AssemblyBase,
     AssemblyCreate,
-    AssemblyInDB
+    AssemblyInDB,
+    AssemblyComponent,
+    NewAssembly
 )
 
 __all__ = [
@@ -118,6 +120,8 @@ __all__ = [
     "AssemblyBase",
     "AssemblyCreate",
     "AssemblyInDB",
+    "AssemblyComponent",
+    "NewAssembly",
 
     # Execute schemas
     "EmbedResponse",

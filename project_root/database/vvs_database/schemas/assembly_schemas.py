@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional, Union 
 from datetime import datetime
 
 class AssemblyComponentBase(BaseModel):
@@ -35,3 +35,12 @@ class AssemblyInDB(AssemblyBase):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
+class AssemblyComponent(BaseModel):
+    item_id: int 
+    assembly_index: int 
+
+class NewAssembly(BaseModel):
+    external_id: Optional[Union[int, str]]
+    item: str
+    components: List[AssemblyComponent]

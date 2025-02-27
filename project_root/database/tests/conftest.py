@@ -314,3 +314,24 @@ async def result_checkin(db_session):
         return result 
 
     return _result_checkin
+
+@pytest_asyncio.fixture(scope="function")
+async def assembly_checkin(db_session):    
+    async def _assembly_checkin(new_assemblies, plugin_id):
+        new_assemblies = [schemas.NewAssembly(**a) for a in new_assemblies]
+        result = await crud.assembly_checkin(db_session, new_assemblies, plugin_id)
+
+        # Verify essentials of the returned data
+        assert "items" in result
+        assert "item_sources" in result
+        assert "assemblies" in result
+        assert len(result["items"]) == len(new_assemblies)
+        assert len(result["assemblies"]) == len(new_assemblies)
+
+        # Check that the items match the input
+        for i, assembly in enumerate(new_assemblies):
+            assert result["items"][i].item == assembly.item
+
+        return result 
+
+    return _assembly_checkin

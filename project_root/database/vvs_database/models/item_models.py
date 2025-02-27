@@ -50,30 +50,6 @@ class Item(Base):
         
         return len(deleted_rows)
 
-    # @classmethod
-    # async def cleanup_unreferenced(cls, session: AsyncSession):
-    #     """
-    #     Delete items that aren't referenced in item_sources, item_scores, 
-    #     assemblies (as products), or assembly_components (as components) tables.
-    #     Returns number of items deleted.
-    #     """
-    #     delete_stmt = delete(cls).where(
-    #         and_(
-    #             ~exists().where(ItemSource.item_id == cls.id),
-    #             ~exists().where(ItemResult.item_id == cls.id),
-    #             ~exists().where(Assembly.product_id == cls.id),
-    #             ~exists().where(AssemblyComponent.component_id == cls.id)
-    #         )
-    #     ).returning(cls.id)
-
-    #     result = await session.execute(delete_stmt)
-    #     deleted_rows = result.scalars().all()
-        
-    #     await session.commit()
-        
-    #     return len(deleted_rows)
-
-
 class ItemSource(Base):
     __tablename__ = "item_sources"
 
@@ -134,7 +110,12 @@ class Assembly(Base):
         return f"{self.plugin_id}_{'_'.join(map(str, component_ids))}_{self.product_id}"
 
     @classmethod
-    async def get_or_create(cls, session: AsyncSession, product_id: int, plugin_id: int, component_ids: list[int]):
+    async def get_or_create(cls, 
+                            session: AsyncSession, 
+                            product_id: int, 
+                            plugin_id: int, 
+                            component_ids: list[int],
+                            ):
         """Get existing assembly or create new one"""
         # Create temporary instance to generate key
         temp_assembly = cls(product_id=product_id, plugin_id=plugin_id)

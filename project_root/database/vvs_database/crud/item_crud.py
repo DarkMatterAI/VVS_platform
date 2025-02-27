@@ -16,6 +16,11 @@ async def get_item(db: AsyncSession, item_id: int) -> Optional[Item]:
     result = await db.execute(select(Item).filter(Item.id == item_id))
     return result.scalar_one_or_none()
 
+async def get_item_by_name(db: AsyncSession, item: str) -> Optional[Item]:
+    """Get an item by ID."""
+    result = await db.execute(select(Item).filter(Item.item == item))
+    return result.scalar_one_or_none()
+
 async def delete_item(db: AsyncSession, item: Item) -> Item:
     """Delete an item."""
     await db.delete(item)

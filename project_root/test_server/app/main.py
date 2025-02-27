@@ -1,11 +1,9 @@
 import os 
-from fastapi import FastAPI, HTTPException
-import asyncio 
-import numpy as np 
-import string 
+from fastapi import FastAPI
 from typing import List, Union  
 
 from app.crud_records import create_records, delete_records
+from app.execute_data import get_response
 
 from vvs_database import schemas 
 
@@ -38,62 +36,32 @@ def shutdown_event():
 async def read_root():
     return {"Hello": "World"}
 
-@app.post("/embedding", response_model=schemas.EmbedResponse)
-async def embed(request: schemas.ItemRequest):
-    response = {'valid' : True, 'embedding' : np.random.randn(EMBEDDING_SIZE).tolist()}
-    await asyncio.sleep(0)
+@app.post("/embedding", response_model=Union[schemas.EmbedResponse, List[schemas.EmbedResponse]])
+async def embed(request: Union[schemas.ItemRequest, List[schemas.ItemRequest]]):
+    response = await get_response('embedding', request)
     return response 
 
-@app.post("/data_source", response_model=schemas.DataSourceResponse)
-async def data_source(request: schemas.DataSourceRequest):
-
-    query_embedding = np.array(request.embedding.embedding)
-    response = {
-        'valid' : True,
-        'result' : []
-    }
-
-    for i in range(request.k):
-        embedding = np.random.randn(EMBEDDING_SIZE)
-        distance = ((query_embedding - embedding)**2).sum()**0.5
-        response['result'].append({
-            'item' : ''.join(np.random.choice([i for i in string.ascii_lowercase], 16)),
-            'external_id' : np.random.randint(1e8),
-            'embedding' : embedding.tolist(),
-            'distance' : float(distance)
-        })
-
-    await asyncio.sleep(0)
+@app.post("/data_source", response_model=Union[schemas.DataSourceResponse, List[schemas.DataSourceResponse]])
+async def data_source(request: Union[schemas.DataSourceRequest, List[schemas.DataSourceRequest]]):
+    response = await get_response('data_source', request)
     return response 
 
 @app.post("/filter", response_model=Union[schemas.FilterResponse, List[schemas.FilterResponse]])
 async def filter(request: Union[schemas.ItemRequest, List[schemas.ItemRequest]]):
-    if type(request) == list:
-        if len(request) > MAX_BATCH_SIZE:
-            raise HTTPException(status_code=422, detail=f"batch size limit")
-        response = [{'valid' : True} for i in request]
-    else:
-        response = {'valid' : True}
-    await asyncio.sleep(0)
+    response = await get_response('filter', request)
     return response 
 
-@app.post("/score", response_model=schemas.ScoreResponse)
-async def score(request: schemas.ItemRequest):
-    response = {'valid' : True, 'score' : 10*np.random.rand()}
-    await asyncio.sleep(0)
+@app.post("/score", response_model=Union[schemas.ScoreResponse, List[schemas.ScoreResponse]])
+async def score(request: Union[schemas.ItemRequest, List[schemas.ItemRequest]]):
+    response = await get_response('score', request)
     return response 
 
-@app.post("/mapper", response_model=schemas.MapperResponse)
-async def mapper(request: schemas.MapperRequest):
-    response = {'valid' : True, 'embedding' : [np.random.rand(EMBEDDING_SIZE).tolist() for i in range(NUM_PARENTS)]}
-    await asyncio.sleep(0)
+@app.post("/mapper", response_model=Union[schemas.MapperResponse, List[schemas.MapperResponse]])
+async def mapper(request: Union[schemas.MapperRequest, List[schemas.MapperRequest]]):
+    response = await get_response('mapper', request)
     return response 
 
-@app.post("/assembly", response_model=schemas.AssemblyResponse)
-async def assemble(request: schemas.AssemblyRequest):
-    response = {
-        'valid' : True,
-        'result' : [{'item' : ''.join([i.item for i in request.parents]), 'external_id' : None}]
-    }
-    await asyncio.sleep(0)
+@app.post("/assembly", response_model=Union[schemas.AssemblyResponse, List[schemas.AssemblyResponse]])
+async def assemble(request: Union[schemas.AssemblyRequest, List[schemas.AssemblyResponse]]):
+    response = await get_response('assembly', request)
     return response 

@@ -17,6 +17,7 @@ from vvs_database.crud.plugin_crud import (
 from vvs_database.crud.item_crud import (
     create_item,
     get_item,
+    get_item_by_name,
     delete_item,
     create_item_source,
     get_item_source,
@@ -30,6 +31,7 @@ from vvs_database.crud.item_crud import (
 from vvs_database.crud.item_checkin import (
     item_checkin,
     result_checkin,
+    assembly_checkin,
 )
 
 from vvs_database.crud.assembly_crud import (
@@ -59,6 +61,7 @@ __all__ = [
     # item crud 
     "create_item",
     "get_item",
+    "get_item_by_name",
     "delete_item",
     "create_item_source",
     "get_item_source",
@@ -77,5 +80,6 @@ __all__ = [
 
     # item checkin 
     "item_checkin",
-    "result_checkin"
+    "result_checkin",
+    "assembly_checkin"
 ]

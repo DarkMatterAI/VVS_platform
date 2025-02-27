@@ -24,7 +24,8 @@ def plugin_creation_helper(backend_client, plugin_pattern, plugin_type_counts):
 
 def execute_plugin_helper(backend_client, plugins, plugin_type, 
                               batched=False, batch_endpoint=None, 
-                              timeout=4, batch_size=1, custom_request=None):
+                              timeout=4, batch_size=1, custom_request=None,
+                              checkin_result=False):
     """Test plugin execution via backend client."""
     plugin = next((p for p in plugins if p['type'] == plugin_type), None)
     assert plugin is not None, f"No plugin of type {plugin_type} found"
@@ -34,16 +35,20 @@ def execute_plugin_helper(backend_client, plugins, plugin_type,
         request_data = custom_request
     else:
         request_data = type_to_request_func[plugin_type](plugin)
+
+    print(request_data)
     
     if batched:
         endpoint = f"/api/v1/execute/{plugin['id']}/batch" if not batch_endpoint else batch_endpoint
         request_payload = [request_data] * batch_size
-        response = backend_client.post(endpoint, json=request_payload)
+        response = backend_client.post(endpoint, json=request_payload, 
+                                       params={"checkin_result": checkin_result})
     else:
         endpoint = f"/api/v1/execute/{plugin['id']}"
-        response = backend_client.post(endpoint, json=request_data)
+        response = backend_client.post(endpoint, json=request_data, 
+                                       params={"checkin_result": checkin_result})
     
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     
     # For batched execution, poll for results
     if batched and timeout > 0:

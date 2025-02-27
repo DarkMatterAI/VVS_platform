@@ -9,6 +9,7 @@ from aioredis import Redis
 
 from vvs_database import schemas, models
 from vvs_database import settings 
+from vvs_database.crud.item_checkin import item_checkin, result_checkin, assembly_checkin
 
 # # Plugin type mapping for API layer
 plugin_type_map = {
@@ -16,39 +17,46 @@ plugin_type_map = {
         'create_model' : schemas.EmbeddingPluginCreate,
         'response_model' : schemas.EmbeddingPluginInDB,
         'data_model' : models.EmbeddingPlugin,
-        'execute_request_model' : schemas.ItemRequest
+        'execute_request_model' : schemas.ItemRequest,
+        'execute_response_model' : schemas.EmbedResponse,
     },
     schemas.PluginType.DATA_SOURCE : {
         'create_model' : schemas.DataSourcePluginCreate,
         'response_model' : schemas.DataSourcePluginInDB,
         'data_model' : models.DataSourcePlugin,
-        'execute_request_model' : schemas.DataSourceRequest
+        'execute_request_model' : schemas.DataSourceRequest,
+        'execute_response_model' : schemas.DataSourceResponse,
     },
     schemas.PluginType.FILTER : {
         'create_model' : schemas.FilterPluginCreate,
         'response_model' : schemas.FilterPluginInDB,
         'data_model' : models.FilterPlugin,
-        'execute_request_model' : schemas.ItemRequest
+        'execute_request_model' : schemas.ItemRequest,
+        'execute_response_model' : schemas.FilterResponse,
     },
     schemas.PluginType.SCORE : {
         'create_model' : schemas.ScorePluginCreate,
         'response_model' : schemas.ScorePluginInDB,
         'data_model' : models.ScorePlugin,
-        'execute_request_model' : schemas.ItemRequest
+        'execute_request_model' : schemas.ItemRequest,
+        'execute_response_model' : schemas.ScoreResponse,
     },
     schemas.PluginType.MAPPER : {
         'create_model' : schemas.MapperPluginCreate,
         'response_model' : schemas.MapperPluginInDB,
         'data_model' : models.MapperPlugin,
-        'execute_request_model' : schemas.MapperRequest
+        'execute_request_model' : schemas.MapperRequest,
+        'execute_response_model' : schemas.MapperResponse,
     },
     schemas.PluginType.ASSEMBLY : {
         'create_model' : schemas.AssemblyPluginCreate,
         'response_model' : schemas.AssemblyPluginInDB,
         'data_model' : models.AssemblyPlugin,
-        'execute_request_model' : schemas.AssemblyRequest
+        'execute_request_model' : schemas.AssemblyRequest,
+        'execute_response_model' : schemas.AssemblyResponse,
     }
 }
+
 
 def object_as_dict(obj):
     """Convert SQLAlchemy model instance to dictionary."""
