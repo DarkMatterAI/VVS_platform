@@ -34,15 +34,6 @@ async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugi
             "external_id": external_id,
             "plugin_id": plugin_id,
         })
-
-    # item_source_data = [
-    #     {
-    #         "item_id": item.id,
-    #         "external_id": str(unique_items[item.item]),
-    #         "plugin_id": plugin_id,
-    #     }
-    #     for item in item_records
-    # ]
     
     # Similarly, create the insert instance for the ItemSource table
     ins_stmt_source = pg_insert(ItemSource)

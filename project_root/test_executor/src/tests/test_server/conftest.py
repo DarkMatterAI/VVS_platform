@@ -44,10 +44,15 @@ async def db_session(test_engine):
 
 @pytest_asyncio.fixture(scope="function")
 async def create_test_item(db_session):
-    async def _create_item(name=None):
+    async def _create_item(name=None, add_key=True):
         from vvs_database import crud
-        item_key = ''.join(np.random.choice([i for i in string.ascii_lowercase], 16))
-        name = name or f"Test Item {next(_item_counter)} {item_key}"
+
+        name = name or f"Test Item {next(_item_counter)}"
+
+        if add_key:
+            item_key = ''.join(np.random.choice([i for i in string.ascii_lowercase], 16))
+            name = f"{name} {item_key}"
+
         item = await crud.create_item(db_session, name)
         return item
     return _create_item
@@ -82,3 +87,12 @@ async def get_item_by_name(db_session):
 
     return _get_item_by_name
 
+@pytest_asyncio.fixture(scope="function")
+async def get_assembly_by_product_plugin(db_session):
+    async def _get_assembly_by_product_plugin(product_id, plugin_id):
+        from vvs_database import crud
+        async with db_session.begin():
+            result = await crud.get_assembly_by_product_plugin(db_session, product_id, plugin_id)
+        return result
+
+    return _get_assembly_by_product_plugin

@@ -40,7 +40,11 @@ def execute_plugin_helper(backend_client, plugins, plugin_type,
     
     if batched:
         endpoint = f"/api/v1/execute/{plugin['id']}/batch" if not batch_endpoint else batch_endpoint
-        request_payload = [request_data] * batch_size
+
+        if type(request_data) != list:
+            request_payload = [request_data] * batch_size
+        else:
+            request_payload = request_data
         response = backend_client.post(endpoint, json=request_payload, 
                                        params={"checkin_result": checkin_result})
     else:

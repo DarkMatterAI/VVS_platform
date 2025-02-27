@@ -7,6 +7,12 @@ from app.core.database import get_db
 
 router = APIRouter()
 
+@router.get("/item_cleanup")
+async def item_cleanup(db: AsyncSession = Depends(get_db)):
+    await crud.cleanup_unreferenced_items(db)
+    response = {'success' : True}
+    return response
+
 @router.post("/{plugin_id:int}")
 async def execute_plugin(plugin_id: int, 
                          execute_request: schemas.ExecuteRequestUnion,

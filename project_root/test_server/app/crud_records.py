@@ -79,4 +79,7 @@ def delete_records(records):
             response = httpx.delete(f"{backend_url}/api/v1/plugins/{record_id['id']}")
             assert response.status_code == 200
 
+    response = httpx.get(f"{backend_url}/api/v1/execute/item_cleanup")
+    assert response.status_code == 200 
+
 

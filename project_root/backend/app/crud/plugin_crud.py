@@ -53,11 +53,9 @@ async def execute_plugin(db: AsyncSession, plugin_id: int,
     except Exception as e:
         handle_db_exception(e)
 
-# async def execute_plugin(db: AsyncSession, plugin_id: int,
-#                          execute_request: Union[schemas.ExecuteRequestUnion, 
-#                                                 schemas.BatchExecuteRequestUnion],
-#                          checkin_result: bool=False):
-#     response = await crud.execute_plugin(db, plugin_id, execute_request, checkin_result)
-#     return response 
-
+async def cleanup_unreferenced_items(db: AsyncSession):
+    try:
+        await crud.cleanup_unreferenced_items(db)
+    except Exception as e:
+        handle_db_exception(e)
 

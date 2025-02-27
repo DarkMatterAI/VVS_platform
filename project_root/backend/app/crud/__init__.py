@@ -15,7 +15,8 @@ from app.crud.plugin_crud import (
     get_plugin,
     create_plugin,
     update_plugin,
-    execute_plugin
+    execute_plugin,
+    cleanup_unreferenced_items
 )
 
 __all__ = [
@@ -27,6 +28,7 @@ __all__ = [
     "create_plugin",
     "update_plugin",
     "execute_plugin",
+    "cleanup_unreferenced_items",
     "delete_plugin",
     "get_redis_result",
     "get_redis_result_batch"

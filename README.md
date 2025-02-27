@@ -10,9 +10,6 @@ todos
             bb
 
 database refactor
-    finalize data models
-        assembly
-        roll checking logic into execution code 
     do proper execution
         acquire redis lock, etc 
 
