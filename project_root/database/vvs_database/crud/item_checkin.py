@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from typing import List, Dict
 
-from vvs_database.models import Item, ItemSource, ItemScore
+from vvs_database.models import Item, ItemSource, ItemResult # ItemScore
 from vvs_database import schemas 
 
 async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugin_id: int) -> Dict:
@@ -61,43 +61,49 @@ async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugi
         "item_sources": item_source_records_response
     }
 
-async def score_checkin(
+async def result_checkin(
     db: AsyncSession, 
-    new_scores: List[schemas.NewScore], 
+    new_results: List[schemas.NewResult], 
     plugin_id: int
-) -> List[ItemScore]:
-    """Check in multiple scores, creating or updating them as needed."""
-    unique_scores = {ns.item_id: ns for ns in new_scores}
+) -> List[ItemResult]:
+    """Check in multiple results, creating or updating them as needed."""
+    unique_results = {nr.item_id: nr for nr in new_results}
 
     values = [
         {
-            "item_id": score.item_id,
+            "item_id": result.item_id,
             "plugin_id": plugin_id,
-            "score": score.score,
+            "valid": result.valid,
+            "score": result.score,
+            "embedding": result.embedding,
         }
-        for score in unique_scores.values()
+        for result in unique_results.values()
     ]
     
-    stmt = pg_insert(ItemScore).values(values)
+    stmt = pg_insert(ItemResult).values(values)
     stmt = stmt.on_conflict_do_update(
-        index_elements=[ItemScore.item_id, ItemScore.plugin_id],
+        index_elements=[ItemResult.item_id, ItemResult.plugin_id],
         set_={
+            'valid': stmt.excluded.valid,
             'score': stmt.excluded.score,
+            'embedding': stmt.excluded.embedding,
             'created_at': func.now()
         }
     ).returning(
-        ItemScore.item_id,
-        ItemScore.plugin_id,
-        ItemScore.score,
-        ItemScore.created_at
+        ItemResult.item_id,
+        ItemResult.plugin_id,
+        ItemResult.valid,
+        ItemResult.score,
+        ItemResult.embedding,
+        ItemResult.created_at
     )
     
     result = await db.execute(stmt)
-    score_records = result.fetchall()
+    result_records = result.fetchall()
     await db.commit()
 
-    result_dict = {i.item_id: i for i in score_records}
-    result = [result_dict[ns.item_id] for ns in new_scores]
+    result_dict = {i.item_id: i for i in result_records}
+    result = [result_dict[nr.item_id] for nr in new_results]
 
     return result
 

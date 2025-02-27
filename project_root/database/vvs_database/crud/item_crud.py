@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, List, Dict
 
-from vvs_database.models import Item, ItemSource, ItemScore
+from vvs_database.models import Item, ItemSource, ItemResult # ItemScore
 
 async def create_item(db: AsyncSession, item: str) -> Item:
     """Create a new item."""
@@ -55,38 +55,46 @@ async def delete_item_source(db: AsyncSession, item_source: ItemSource) -> ItemS
     await db.commit()
     return item_source 
 
-async def create_item_score(
+async def create_item_result(
     db: AsyncSession,
     item_id: int, 
     plugin_id: int, 
-    score: float
-) -> ItemScore:
-    """Create a new item score."""
-    item_score = ItemScore(item_id=item_id, plugin_id=plugin_id, score=score)
-    db.add(item_score)
+    valid: bool,
+    score: Optional[float] = None,
+    embedding: Optional[List[float]] = None
+) -> ItemResult:
+    """Create a new item result."""
+    item_result = ItemResult(
+        item_id=item_id, 
+        plugin_id=plugin_id, 
+        valid=valid,
+        score=score,
+        embedding=embedding
+    )
+    db.add(item_result)
     await db.commit()
-    return item_score
+    return item_result
 
-async def get_item_score(
+async def get_item_result(
     db: AsyncSession, 
     item_id: int, 
     plugin_id: int
-) -> Optional[ItemScore]:
-    """Get an item score by item ID and plugin ID."""
+) -> Optional[ItemResult]:
+    """Get an item result by item ID and plugin ID."""
     result = await db.execute(
-        select(ItemScore)
+        select(ItemResult)
         .filter(
-            ItemScore.item_id == item_id,
-            ItemScore.plugin_id == plugin_id
+            ItemResult.item_id == item_id,
+            ItemResult.plugin_id == plugin_id
         )
     )
     return result.scalar_one_or_none()
 
-async def delete_item_score(db: AsyncSession, item_score: ItemScore) -> ItemScore:
-    """Delete an item score."""
-    await db.delete(item_score)
+async def delete_item_result(db: AsyncSession, item_result: ItemResult) -> ItemResult:
+    """Delete an item result."""
+    await db.delete(item_result)
     await db.commit()
-    return item_score 
+    return item_result
 
 async def cleanup_unreferenced_items(db: AsyncSession) -> int:
     """Delete items that aren't referenced in other tables."""

@@ -21,15 +21,15 @@ from vvs_database.crud.item_crud import (
     create_item_source,
     get_item_source,
     delete_item_source,
-    create_item_score,
-    get_item_score,
-    delete_item_score,
+    create_item_result,
+    get_item_result,
+    delete_item_result,
     cleanup_unreferenced_items,
 )
 
 from vvs_database.crud.item_checkin import (
     item_checkin,
-    score_checkin,
+    result_checkin,
 )
 
 __all__ = [
@@ -55,12 +55,12 @@ __all__ = [
     "create_item_source",
     "get_item_source",
     "delete_item_source",
-    "create_item_score",
-    "get_item_score",
-    "delete_item_score",
+    "create_item_result",
+    "get_item_result",
+    "delete_item_result",
     "cleanup_unreferenced_items",
 
     # item checkin 
     "item_checkin",
-    "score_checkin",
+    "result_checkin"
 ]

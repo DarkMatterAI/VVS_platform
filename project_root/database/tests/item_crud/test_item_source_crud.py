@@ -54,41 +54,6 @@ async def test_cleanup_items(create_item_plugin_source, create_item,
     item2_get = await get_item(item2.id)
     assert item2_get is None 
 
-# @pytest.mark.asyncio
-# async def test_item_checkin(item_checkin, create_test_embedding):
-#     plugin = await create_test_embedding()
-
-#     items_data = [
-#         {"item": "bulk item 1", "external_id": "ext1"},
-#         {"item": "bulk item 2", "external_id": "ext2"}
-#     ]
-
-#     results = await item_checkin(items_data, plugin.id)
-
-# @pytest.mark.asyncio
-# async def test_item_checkin_duplicates(item_checkin, create_test_embedding):
-#     plugin = await create_test_embedding()
-
-#     items_data = [
-#         {"item": "bulk item 1", "external_id": "ext1"},
-#         {"item": "bulk item 2", "external_id": "ext2"},
-#         {"item": "bulk item 1", "external_id": "ext1"},
-#     ]
-
-#     results = await item_checkin(items_data, plugin.id)
-
-# @pytest.mark.asyncio
-# async def test_item_checkin_conflict(item_checkin, create_item_plugin_source):
-#     item, plugin, item_source = await create_item_plugin_source()
-
-#     items_data = [
-#         {"item": "bulk item 1", "external_id": "ext1"},
-#         {"item": "bulk item 2", "external_id": "ext2"},
-#         {"item": item.item, "external_id": item_source.external_id},
-#     ]
-
-#     results = await item_checkin(items_data, plugin.id)
-
 @pytest.mark.asyncio
 async def test_item_delete_source_propagation(create_item_plugin_source, delete_item,
                                               get_item_source, get_plugin):

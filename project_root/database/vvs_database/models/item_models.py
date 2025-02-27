@@ -3,6 +3,7 @@ from sqlalchemy import (
     Integer, 
     String, 
     Float,
+    Boolean,
     ForeignKey, 
     UniqueConstraint,
     DateTime,
@@ -15,6 +16,7 @@ from sqlalchemy import (
     delete,
     func
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import relationship
 
@@ -37,7 +39,7 @@ class Item(Base):
         delete_stmt = delete(cls).where(
             and_(
                 ~exists().where(ItemSource.item_id == cls.id),
-                ~exists().where(ItemScore.item_id == cls.id),
+                ~exists().where(ItemResult.item_id == cls.id),
                 # ~exists().where(Assembly.product_id == cls.id),
                 # ~exists().where(AssemblyComponent.component_id == cls.id)
             )
@@ -66,19 +68,21 @@ class ItemSource(Base):
         UniqueConstraint('item_id', 'plugin_id', name='uix_item_source'),
     )
 
-class ItemScore(Base):
-    __tablename__ = "item_scores"
+class ItemResult(Base):
+    __tablename__ = "item_results"
 
     item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), primary_key=True)
     plugin_id = Column(Integer, ForeignKey("plugins.id", ondelete="CASCADE"), primary_key=True)
-    score = Column(Float, nullable=False)
+    valid = Column(Boolean, nullable=False)
+    score = Column(Float, nullable=True)
+    embedding = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     item = relationship("Item", passive_deletes=True)
     plugin = relationship("Plugin", passive_deletes=True)
 
     __table_args__ = (
-        UniqueConstraint('item_id', 'plugin_id', name='uix_item_score'),
+        UniqueConstraint('item_id', 'plugin_id', name='uix_item_result'),
     )
 
 

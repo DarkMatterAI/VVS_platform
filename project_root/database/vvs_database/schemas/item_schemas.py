@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import datetime
 
 class ItemBase(BaseModel):
@@ -35,14 +35,16 @@ class ItemSourceInDB(ItemSourceBase):
             datetime: lambda v: v.isoformat()
         }
 
-class ItemScoreBase(BaseModel):
+class ItemResultBase(BaseModel):
     plugin_id: int
-    score: float
+    valid: bool
+    score: Optional[float] = None
+    embedding: Optional[List[float]] = None
 
-class ItemScoreCreate(ItemScoreBase):
+class ItemResultCreate(ItemResultBase):
     pass
 
-class ItemScoreInDB(ItemScoreBase):
+class ItemResultInDB(ItemResultBase):
     item_id: int
     created_at: datetime
 
@@ -56,6 +58,9 @@ class NewItem(BaseModel):
     external_id: Optional[Union[int, str]]
     item: str
 
-class NewScore(BaseModel):
+class NewResult(BaseModel):
     item_id: int 
-    score: float 
+    valid: bool
+    score: Optional[float] = None
+    embedding: Optional[List[float]] = None
+

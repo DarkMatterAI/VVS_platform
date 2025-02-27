@@ -12,7 +12,7 @@ from vvs_database.models.plugin_models import (
 from vvs_database.models.item_models import (
     Item,
     ItemSource,
-    ItemScore
+    ItemResult
 )
 
 __all__ = [
@@ -26,5 +26,5 @@ __all__ = [
     "plugin_embeddings",
     "Item",
     "ItemSource",
-    "ItemScore"
+    "ItemResult"
 ]

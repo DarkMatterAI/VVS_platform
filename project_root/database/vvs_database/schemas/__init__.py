@@ -34,11 +34,11 @@ from vvs_database.schemas.item_schemas import (
     ItemSourceBase,
     ItemSourceCreate,
     ItemSourceInDB,
-    ItemScoreBase,
-    ItemScoreCreate,
-    ItemScoreInDB,
+    ItemResultBase,
+    ItemResultCreate,
+    ItemResultInDB,
     NewItem,
-    NewScore
+    NewResult
 )
 
 from vvs_database.schemas.execute_schemas import (
@@ -97,11 +97,11 @@ __all__ = [
     "ItemSourceBase",
     "ItemSourceCreate",
     "ItemSourceInDB",
-    "ItemScoreBase",
-    "ItemScoreCreate",
-    "ItemScoreInDB",
+    "ItemResultBase",
+    "ItemResultCreate",
+    "ItemResultInDB",
     "NewItem",
-    "NewScore",
+    "NewResult",
 
     # Execute schemas
     "EmbedResponse",

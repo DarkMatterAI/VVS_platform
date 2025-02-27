@@ -178,29 +178,31 @@ async def cleanup_items(db_session):
     return _cleanup_items
 
 @pytest_asyncio.fixture(scope="function")
-async def create_item_score(db_session):    
-    async def _create_item_score(item_id, plugin_id, score):
-        item_score = await crud.create_item_score(db_session, item_id, plugin_id, score)
-        return item_score
+async def create_item_result(db_session):    
+    async def _create_item_result(item_id, plugin_id, valid, score=None, embedding=None):
+        item_result = await crud.create_item_result(
+            db_session, item_id, plugin_id, valid, score, embedding
+        )
+        return item_result
 
-    return _create_item_score
+    return _create_item_result
 
 @pytest_asyncio.fixture(scope="function")
-def get_item_score(db_session):    
-    async def _get_item_score(item_id, plugin_id):
+def get_item_result(db_session):    
+    async def _get_item_result(item_id, plugin_id):
         async with db_session.begin():
-            result = await crud.get_item_score(db_session, item_id, plugin_id)
+            result = await crud.get_item_result(db_session, item_id, plugin_id)
             return result
 
-    return _get_item_score
+    return _get_item_result
 
 @pytest_asyncio.fixture(scope="function")
-async def delete_item_score(db_session):    
-    async def _delete_item_score(item_score):
-        result = await crud.delete_item_score(db_session, item_score)
+async def delete_item_result(db_session):    
+    async def _delete_item_result(item_result):
+        result = await crud.delete_item_result(db_session, item_result)
         return result 
 
-    return _delete_item_score
+    return _delete_item_result
 
 @pytest_asyncio.fixture(scope="function")
 async def item_checkin(db_session):    
@@ -223,18 +225,23 @@ async def item_checkin(db_session):
     return _item_checkin
 
 @pytest_asyncio.fixture(scope="function")
-async def score_checkin(db_session):    
-    async def _score_checkin(new_scores, plugin_id):
-        new_scores = [schemas.NewScore(**i) for i in new_scores]
-        result = await crud.score_checkin(db_session, new_scores, plugin_id)
+async def result_checkin(db_session):    
+    async def _result_checkin(new_results, plugin_id):
+        new_results = [schemas.NewResult(**i) for i in new_results]
+        result = await crud.result_checkin(db_session, new_results, plugin_id)
 
-        assert len(result) == len(new_scores)
+        assert len(result) == len(new_results)
 
-        for i in range(len(new_scores)):
-            assert result[i].item_id == new_scores[i].item_id
-            assert result[i].score == new_scores[i].score
+        for i in range(len(new_results)):
+            assert result[i].item_id == new_results[i].item_id
+            assert result[i].valid == new_results[i].valid
+            assert result[i].score == new_results[i].score
+            # For embeddings, we either both have them or neither has them
+            if new_results[i].embedding is None:
+                assert result[i].embedding is None
+            else:
+                assert result[i].embedding == new_results[i].embedding
 
         return result 
 
-
-    return _score_checkin
+    return _result_checkin
