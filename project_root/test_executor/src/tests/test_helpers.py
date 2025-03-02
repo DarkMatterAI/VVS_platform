@@ -1,7 +1,7 @@
 import time
 from tests.utils import type_to_request_func, poll_backend, publish_and_poll
 
-from vvs_database.schemas import request_response_schema_mapping as schema_mapping
+from vvs_database.utils import plugin_type_map
 
 def plugin_creation_helper(backend_client, plugin_pattern, plugin_type_counts):
     """Test if plugins are properly created with expected counts by type."""
@@ -79,12 +79,12 @@ def execute_plugin_helper(backend_client, plugins, plugin_type,
 def direct_request_helper(api_client, backend_client, plugins, plugin_type, 
                              endpoint, batched=False, batch_size=1, status_code=200):
     """Test direct API requests to plugin service."""
-    schemas = schema_mapping[plugin_type]
+    schemas = plugin_type_map[plugin_type]
     plugin = next((p for p in plugins if p['type'] == plugin_type), None)
     assert plugin is not None, f"No plugin of type {plugin_type} found"
     
     request_data = type_to_request_func[plugin_type](plugin)
-    schemas['request'].model_validate(request_data)
+    schemas['execute_request_model'].model_validate(request_data)
 
     if batched:
         request_data = [request_data for i in range(batch_size)]
@@ -94,21 +94,21 @@ def direct_request_helper(api_client, backend_client, plugins, plugin_type,
 
     if status_code == 200:
         if batched:
-            [schemas['response'].model_validate(i) for i in response.json()]
+            [schemas['execute_response_model'].model_validate(i) for i in response.json()]
         else:
-            schemas['response'].model_validate(response.json())
+            schemas['execute_response_model'].model_validate(response.json())
     
     return response.json()
 
 def queue_request_helper(redis_connection, rabbitmq_connection, backend_client, 
                              plugins, plugin_type, interval=0.1, timeout=5):
     """Test message queue based plugin execution."""
-    schemas = schema_mapping[plugin_type]
+    schemas = plugin_type_map[plugin_type]
     plugin = next((p for p in plugins if p['type'] == plugin_type), None)
     assert plugin is not None, f"No plugin of type {plugin_type} found"
     
     request_data = type_to_request_func[plugin_type](plugin)
-    schemas['request'].model_validate(request_data)
+    schemas['execute_request_model'].model_validate(request_data)
     
     response_data = publish_and_poll(
         redis_connection, 
@@ -120,6 +120,7 @@ def queue_request_helper(redis_connection, rabbitmq_connection, backend_client,
     )
     
     assert response_data['valid'] == True
-    schemas['response'].model_validate(response_data['response_data']), response_data['response_data']
+    schemas['execute_response_model'].model_validate(
+        response_data['response_data']), response_data['response_data']
     
     return response_data

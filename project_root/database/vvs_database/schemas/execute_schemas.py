@@ -43,14 +43,14 @@ class DataSourceResponseItem(BaseModel):
         
 class DataSourceResponse(BaseModel):
     valid: bool
-    result: List[DataSourceResponseItem]
+    result: Optional[List[DataSourceResponseItem]]
         
 class FilterResponse(BaseModel):
     valid: bool
         
 class ScoreResponse(BaseModel):
     valid: bool
-    score: float
+    score: Optional[float]
         
 class MapperRequest(BaseModel):
     request_data: RequestData
@@ -58,7 +58,7 @@ class MapperRequest(BaseModel):
         
 class MapperResponse(BaseModel):
     valid: bool
-    embedding: List[List[float]]
+    embedding: Optional[List[List[float]]]
 
 class AssemblyItem(ItemData):
     assembly_index: int 
@@ -73,7 +73,7 @@ class AssemblyResult(BaseModel):
         
 class AssemblyResponse(BaseModel):
     valid: bool
-    result: List[AssemblyResult]
+    result: Optional[List[AssemblyResult]]
 
 class RedisResult(BaseModel):
     result_id: str 
@@ -92,11 +92,3 @@ BatchExecuteRequestUnion = Union[
     List[MapperRequest]
 ]
 
-request_response_schema_mapping = {
-    'embedding': {'request': ItemRequest, 'response': EmbedResponse},
-    'data_source': {'request': DataSourceRequest, 'response': DataSourceResponse},
-    'filter': {'request': ItemRequest, 'response': FilterResponse},
-    'score': {'request': ItemRequest, 'response': ScoreResponse},
-    'mapper': {'request': MapperRequest, 'response': MapperResponse},
-    'assembly': {'request': AssemblyRequest, 'response': AssemblyResponse},
-}

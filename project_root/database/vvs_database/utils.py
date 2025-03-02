@@ -11,7 +11,6 @@ from vvs_database import schemas, models
 from vvs_database import settings 
 from vvs_database.crud.item_checkin import item_checkin, result_checkin, assembly_checkin
 
-# # Plugin type mapping for API layer
 plugin_type_map = {
     schemas.PluginType.EMBEDDING : {
         'create_model' : schemas.EmbeddingPluginCreate,

@@ -58,7 +58,6 @@ from vvs_database.schemas.execute_schemas import (
     RedisResult,
     ExecuteRequestUnion,
     BatchExecuteRequestUnion,
-    request_response_schema_mapping
 )
 
 from vvs_database.schemas.assembly_schemas import (
@@ -140,5 +139,4 @@ __all__ = [
     "RedisResult",
     "ExecuteRequestUnion",
     "BatchExecuteRequestUnion",
-    "request_response_schema_mapping"
 ]

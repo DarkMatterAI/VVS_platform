@@ -13,6 +13,8 @@ database refactor
     do proper execution
         acquire redis lock, etc 
 
+add cache flag to plugins 
+
 
 thoughts on item data model
     should assembly have an external id field?

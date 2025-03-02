@@ -16,16 +16,6 @@ from vvs_database.models import (
     AssemblyPlugin, 
     plugin_embeddings
 )
-# from vvs_database.schemas import (
-#     PluginType, 
-#     PluginExecutionType,
-#     PluginClass, 
-#     PluginCreate,
-#     MapperPluginCreate,
-#     PluginUpdate,
-#     ExecuteRequestUnion,
-#     BatchExecuteRequestUnion
-# )
 
 from vvs_database.crud.item_checkin import result_checkin, item_checkin, assembly_checkin
 
@@ -417,12 +407,6 @@ async def execute_plugin_db(db_plugin: Plugin,
 
     response = await execution_function(db_plugin, execute_request)
     return response 
-
-# async def execute_plugin(db: AsyncSession, plugin_id: int, 
-#                          execute_request: Union[ExecuteRequestUnion, BatchExecuteRequestUnion]):
-#     db_plugin = await get_plugin(db, plugin_id)
-#     response = await execute_plugin_db(db_plugin, execute_request)
-#     return response 
 
 async def execute_plugin(db: AsyncSession, plugin_id: int, 
                          execute_request: Union[schemas.ExecuteRequestUnion, 
