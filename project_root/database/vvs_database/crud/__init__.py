@@ -39,6 +39,7 @@ from vvs_database.crud.assembly_crud import (
     get_assembly_by_id,
     get_assembly_by_product_plugin,
     get_assemblies_by_component,
+    get_assemblies_by_component_key,
     delete_assembly
 )
 
@@ -76,6 +77,7 @@ __all__ = [
     "get_assembly_by_id",
     "get_assembly_by_product_plugin",
     "get_assemblies_by_component",
+    "get_assemblies_by_component_key",
     "delete_assembly",
 
     # item checkin 

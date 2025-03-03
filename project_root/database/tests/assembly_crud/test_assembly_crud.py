@@ -120,6 +120,37 @@ async def test_assembly_get_by_component(create_item, create_test_assembly_plugi
     assert assemblies2[0].assembly_id == assembly.assembly_id
 
 @pytest.mark.asyncio
+async def test_assembly_get_by_component_key(create_item, create_test_assembly_plugin, 
+                                     create_assembly, get_assemblies_by_component_key):
+    # Create components and product
+    component1 = await create_item()
+    component2 = await create_item()
+    product1 = await create_item()
+    product2 = await create_item()
+    
+    # Create assembly plugin
+    plugin = await create_test_assembly_plugin()
+
+    # Create component data
+    component_data = [
+        {"assembly_index": 0, "component_id": component1.id},
+        {"assembly_index": 1, "component_id": component2.id}
+    ]
+    component_key = f"{plugin.id}_{component1.id}_{component2.id}"
+
+    # create assembly
+    assembly_ids = []
+    for product in [product1, product2]:
+        assembly = await create_assembly(plugin.id, product.id, component_data)
+        assembly_ids.append(assembly.assembly_id)
+        assert assembly.component_key == component_key
+
+    assemblies = await get_assemblies_by_component_key(component_key)
+    assert len(assemblies) == 2
+    for assembly in assemblies:
+        assert assembly.assembly_id in assembly_ids
+
+@pytest.mark.asyncio
 async def test_assembly_continuous_indices_validation(create_item, create_test_assembly_plugin, create_assembly):
     # Create components and product
     component1 = await create_item()

@@ -13,38 +13,10 @@ database refactor
     do proper execution
         acquire redis lock, etc 
 
-add cache flag to plugins 
-
-
-thoughts on item data model
-    should assembly have an external id field?
-    all saved molecules should have an internal ID unrelated to user external IDs
-    an assembled molecule should be linked to parents by parent IDs
-
-    how much item saving do we really want to do?
-        scored results of course
-        current qdrant data has external id, item, embedding
-            move non-embedding to postgres?
-
-        say we want to link assembled molecules to parents by id
-            requires all parents to be in postgres with id
-            easy if qdrant upload and assembly are the only ways of molecules entering the system
-            harder to support user plugin data sources
-                ie every data query result will need to be checked into postgres 
-
-        lazy logging
-            store assembly parents as a json blob lol
-
-    what is the external id really for?
-        comparing results to user dataset?
-    when do we need an internal id?
-
-how much logging
-    internal datasets
-        uploaded datasets
-    external datasets
-        job inputs
-        data source / assembly results
+add cache flag to plugins?
+    or do at runtime?
+runtime args for plugins
+    could be used by plugins and job executor
 
 
 item table

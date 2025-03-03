@@ -89,6 +89,7 @@ class Assembly(Base):
     product_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False, index=True)
     plugin_id = Column(Integer, ForeignKey("plugins.id", ondelete="CASCADE"), nullable=False, index=True)
     assembly_key = Column(String, nullable=False, index=True)
+    component_key = Column(String, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     product = relationship("Item", passive_deletes=True)
@@ -108,6 +109,12 @@ class Assembly(Base):
         """Generate assembly key from components and product"""
         component_ids = [c.component_id for c in sorted(self.components, key=lambda x: x.assembly_index)]
         return f"{self.plugin_id}_{'_'.join(map(str, component_ids))}_{self.product_id}"
+    
+    @property
+    def generate_component_key(self):
+        """Generate component key from components and product"""
+        component_ids = [c.component_id for c in sorted(self.components, key=lambda x: x.assembly_index)]
+        return f"{self.plugin_id}_{'_'.join(map(str, component_ids))}"
 
     @classmethod
     async def get_or_create(cls, 
@@ -124,6 +131,7 @@ class Assembly(Base):
             for idx, comp_id in enumerate(component_ids)
         ]
         assembly_key = temp_assembly.generate_assembly_key
+        component_key = temp_assembly.generate_component_key
         
         # Check if assembly exists
         stmt = select(cls).where(cls.assembly_key == assembly_key)
@@ -135,6 +143,7 @@ class Assembly(Base):
         
         # Create new assembly
         temp_assembly.assembly_key = assembly_key
+        temp_assembly.component_key = component_key
         session.add(temp_assembly)
         await session.flush()  # Flush to get the assembly_id
         

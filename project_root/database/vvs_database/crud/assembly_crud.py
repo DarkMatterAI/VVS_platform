@@ -86,6 +86,19 @@ async def get_assemblies_by_component(
     )
     return result.scalars().all()
 
+async def get_assemblies_by_component_key(
+    db: AsyncSession,
+    component_key: str
+) -> List[Assembly]:
+    """Get all assemblies that use a specific component."""
+    result = await db.execute(
+        select(Assembly)
+        .options(selectinload(Assembly.components))
+        .filter(Assembly.component_key == component_key)
+        .distinct()
+    )
+    return result.scalars().all()
+
 async def delete_assembly(
     db: AsyncSession,
     assembly: Assembly

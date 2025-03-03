@@ -266,6 +266,15 @@ async def get_assemblies_by_component(db_session):
     return _get_assemblies_by_component
 
 @pytest_asyncio.fixture(scope="function")
+async def get_assemblies_by_component_key(db_session):
+    async def _get_assemblies_by_component_key(component_key):
+        async with db_session.begin():
+            result = await crud.get_assemblies_by_component_key(db_session, component_key)
+        return result
+
+    return _get_assemblies_by_component_key
+
+@pytest_asyncio.fixture(scope="function")
 async def delete_assembly(db_session):
     async def _delete_assembly(assembly):
         result = await crud.delete_assembly(db_session, assembly)
