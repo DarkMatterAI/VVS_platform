@@ -76,6 +76,7 @@ async def create_test_embedding(db_session):
             timeout=30,
             max_concurrency=5,
             max_retries=1,
+            batch_size=1,
             vector_length=vector_length,
             distance_metric=distance_metric
         )
@@ -98,6 +99,7 @@ async def create_test_assembly_plugin(db_session):
             timeout=30,
             max_concurrency=5,
             max_retries=1,
+            batch_size=1,
             num_parents=num_parents
         )
         plugin = await crud.create_plugin(db_session, assembly_plugin)
@@ -148,6 +150,15 @@ async def get_item(db_session):
     return _get_item
 
 @pytest_asyncio.fixture(scope="function")
+async def get_items(db_session):    
+    async def _get_items(item_ids):
+        async with db_session.begin():
+            result = await crud.get_items(db_session, item_ids)
+            return result 
+
+    return _get_items
+
+@pytest_asyncio.fixture(scope="function")
 async def delete_item(db_session):    
     async def _delete_item(item):
         result = await crud.delete_item(db_session, item)
@@ -183,6 +194,15 @@ async def get_item_source(db_session):
     return _get_item_source
 
 @pytest_asyncio.fixture(scope="function")
+async def get_item_sources(db_session):    
+    async def _get_item_sources(item_ids, plugin_id):
+        async with db_session.begin():
+            result = await crud.get_item_sources(db_session, item_ids, plugin_id)
+            return result
+
+    return _get_item_sources
+
+@pytest_asyncio.fixture(scope="function")
 async def delete_item_source(db_session):    
     async def _delete_item_source(item_source):
         result = await crud.delete_item_source(db_session, item_source)
@@ -216,6 +236,15 @@ def get_item_result(db_session):
             return result
 
     return _get_item_result
+
+@pytest_asyncio.fixture(scope="function")
+def get_item_results(db_session):    
+    async def _get_item_results(item_ids, plugin_id):
+        async with db_session.begin():
+            result = await crud.get_item_results(db_session, item_ids, plugin_id)
+            return result
+
+    return _get_item_results
 
 @pytest_asyncio.fixture(scope="function")
 async def delete_item_result(db_session):    
@@ -273,6 +302,15 @@ async def get_assemblies_by_component_key(db_session):
         return result
 
     return _get_assemblies_by_component_key
+
+@pytest_asyncio.fixture(scope="function")
+async def get_assemblies_by_component_keys(db_session):
+    async def _get_assemblies_by_component_keys(component_keys):
+        async with db_session.begin():
+            result = await crud.get_assemblies_by_component_keys(db_session, component_keys)
+        return result
+
+    return _get_assemblies_by_component_keys
 
 @pytest_asyncio.fixture(scope="function")
 async def delete_assembly(db_session):

@@ -22,3 +22,16 @@ async def test_item_delete(create_item, get_item, delete_item):
     await delete_item(item)
     item_record = await get_item(item.id)
     assert item_record is None 
+
+@pytest.mark.asyncio
+async def test_get_items(create_item, get_items):
+    items = []
+    for i in range(5):
+        item_record = await create_item()
+        items.append(item_record)
+
+    item_ids = [item.id for item in items]
+    records = await get_items(item_ids)
+    assert len(records) == len(items)
+    for record in records:
+        assert record.id in item_ids 

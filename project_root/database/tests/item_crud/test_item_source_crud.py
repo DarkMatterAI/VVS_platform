@@ -28,6 +28,27 @@ async def test_item_source_get(get_item_source, create_item_plugin_source):
     assert item_source_get.external_id==external_id
 
 @pytest.mark.asyncio
+async def test_get_item_sources(get_item_sources, create_item, 
+                                create_test_embedding, create_item_source):
+    plugin = await create_test_embedding()
+    n_items = 3
+
+    item_ids = {}
+    for i in range(n_items):
+        item = await create_item()
+        external_id = f"test_get_item_results_{i}"
+        item_source = await create_item_source(item.id, plugin.id, external_id)
+        item_ids[item.id] = external_id
+
+    item_sources_get = await get_item_sources(item_ids, plugin.id)
+    assert len(item_sources_get) == n_items
+
+    for source in item_sources_get:
+        assert source.plugin_id == plugin.id
+        assert source.item_id in item_ids 
+        assert source.external_id == item_ids[source.item_id]
+
+@pytest.mark.asyncio
 async def test_item_source_delete(create_item_plugin_source, get_item_source, delete_item_source):
     item, plugin, item_source = await create_item_plugin_source()
 

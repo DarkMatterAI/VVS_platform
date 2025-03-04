@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from typing import Optional, List
 
 from vvs_database.models import Item, ItemSource, ItemResult
@@ -15,6 +15,12 @@ async def get_item(db: AsyncSession, item_id: int) -> Optional[Item]:
     """Get an item by ID."""
     result = await db.execute(select(Item).filter(Item.id == item_id))
     return result.scalar_one_or_none()
+
+async def get_items(db: AsyncSession, item_ids: List[int]) -> List[Item]:
+    """Get items by list of IDs"""
+    results = await db.execute(select(Item).filter(Item.id.in_(item_ids)))
+    results = results.scalars().all()
+    return results 
 
 async def get_item_by_name(db: AsyncSession, item: str) -> Optional[Item]:
     """Get an item by ID."""
@@ -53,6 +59,23 @@ async def get_item_source(
         )
     )
     return result.scalar_one_or_none()
+
+async def get_item_sources(
+    db: AsyncSession,
+    item_ids: List[int],
+    plugin_id: int
+) -> List[ItemSource]:
+    """Get item sources by item IDs and plugin id"""
+    result = await db.execute(
+        select(ItemSource)
+        .where(
+            ItemSource.item_id.in_(item_ids),
+            ItemSource.plugin_id == plugin_id
+        )
+    )
+    
+    item_sources = result.scalars().all()
+    return item_sources 
 
 async def delete_item_source(db: AsyncSession, item_source: ItemSource) -> ItemSource:
     """Delete an item source."""
@@ -94,6 +117,25 @@ async def get_item_result(
         )
     )
     return result.scalar_one_or_none()
+
+async def get_item_results(
+    db: AsyncSession,
+    item_ids: List[int],
+    plugin_id: int
+) -> List[ItemResult]:
+    """Get item results by list of item IDs and plugin ID"""
+    if not item_ids:
+        return [] 
+    
+    stmt = select(ItemResult).where(
+        and_(
+            ItemResult.item_id.in_(item_ids),
+            ItemResult.plugin_id == plugin_id
+        )
+    )
+    results = await db.execute(stmt)
+    item_results = results.scalars().all()
+    return item_results 
 
 async def delete_item_result(db: AsyncSession, item_result: ItemResult) -> ItemResult:
     """Delete an item result."""

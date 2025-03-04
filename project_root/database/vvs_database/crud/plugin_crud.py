@@ -19,11 +19,6 @@ from vvs_database.models import (
 
 from vvs_database.crud.item_checkin import result_checkin, item_checkin, assembly_checkin
 
-# Utility function
-def object_as_dict(obj):
-    """Convert SQLAlchemy model instance to dictionary."""
-    return {c.key: getattr(obj, c.key) for c in obj.__table__.columns}
-
 async def get_embeddings(db: AsyncSession, embedding_ids: List[int]):
     """Get embedding plugins by their IDs."""
     stmt = select(EmbeddingPlugin).filter(EmbeddingPlugin.id.in_(embedding_ids))

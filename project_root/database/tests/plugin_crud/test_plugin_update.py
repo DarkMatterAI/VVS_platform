@@ -46,6 +46,7 @@ async def test_update_data_source_plugin_embeddings(db_session, create_test_embe
         timeout=30,
         max_concurrency=5,
         max_retries=1,
+        batch_size=1,
         embedding_ids=[embedding1.id]
     )
     plugin = await create_plugin(db_session, plugin_data)
@@ -96,6 +97,7 @@ async def test_update_mapper_plugin(db_session, create_test_embedding):
         timeout=30,
         max_concurrency=5,
         max_retries=1,
+        batch_size=1,
         input_embedding_id=input_embedding.id,
         output_order=output_order
     )
@@ -153,6 +155,7 @@ async def test_update_assembly_plugin(db_session):
         timeout=30,
         max_concurrency=5,
         max_retries=1,
+        batch_size=1,
         num_parents=2
     )
     plugin = await create_plugin(db_session, plugin_data)

@@ -60,22 +60,22 @@ async def test_create_requires_timeout(client, create_test_embedding):
     )
     assert response.status_code == 422
 
-@pytest.mark.asyncio
-async def test_create_requires_concurrency(client):
-    response = await client.post(
-        f"{api_str}/",
-        json={
-            "name": "Test Filter",
-            "plugin_class": "generic",
-            "type": "filter",
-            "execution_type": "api",
-            "group_key": "test",
-            "timeout": 30,
-            "max_retries": 1,
-            "endpoint_url": "http://test.com/filter",
-        }
-    )
-    assert response.status_code == 422 
+# @pytest.mark.asyncio
+# async def test_create_requires_concurrency(client):
+#     response = await client.post(
+#         f"{api_str}/",
+#         json={
+#             "name": "Test Filter",
+#             "plugin_class": "generic",
+#             "type": "filter",
+#             "execution_type": "api",
+#             "group_key": "test",
+#             "timeout": 30,
+#             "max_retries": 1,
+#             "endpoint_url": "http://test.com/filter",
+#         }
+#     )
+#     assert response.status_code == 422 
 
 @pytest.mark.asyncio
 async def test_positive_batch_size(client):
@@ -95,23 +95,23 @@ async def test_positive_batch_size(client):
     )
     assert response.status_code == 422 
 
-@pytest.mark.asyncio
-async def test_create_requires_retries(client, create_test_embedding):
-    embedding = await create_test_embedding()
-    response = await client.post(
-        f"{api_str}/",
-        json={
-            "name": "Test Data Source",
-            "plugin_class": "generic",
-            "type": "data_source",
-            "execution_type": "queue",
-            "group_key": "test",
-            "max_concurrency": 10,
-            "timeout": 30,
-            "embedding_ids": [embedding.id]
-        }
-    )
-    assert response.status_code == 422
+# @pytest.mark.asyncio
+# async def test_create_requires_retries(client, create_test_embedding):
+#     embedding = await create_test_embedding()
+#     response = await client.post(
+#         f"{api_str}/",
+#         json={
+#             "name": "Test Data Source",
+#             "plugin_class": "generic",
+#             "type": "data_source",
+#             "execution_type": "queue",
+#             "group_key": "test",
+#             "max_concurrency": 10,
+#             "timeout": 30,
+#             "embedding_ids": [embedding.id]
+#         }
+#     )
+#     assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_create_embedding_plugin(client):

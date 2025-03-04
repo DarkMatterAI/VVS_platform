@@ -21,21 +21,21 @@ class PluginBase(BaseModel):
     plugin_class: PluginClass
     execution_type: PluginExecutionType
     timeout: Optional[int] = None
-    max_concurrency: Optional[int] = None
-    max_retries: Optional[int] = None
-    batch_size: Optional[int] = None
+    max_concurrency: Optional[int] = 1
+    max_retries: Optional[int] = 1
+    batch_size: Optional[int] = 1
     endpoint_url: Optional[str] = None
     group_key: Optional[str] = None
     config: Optional[Dict] = None
     plugin_metadata: Optional[Dict] = None
 
-    @field_validator('timeout', 'max_concurrency', 'max_retries', 'group_key')
+    @field_validator('timeout', 'max_concurrency', 'max_retries', 'batch_size', 'group_key')
     def check_queue_api_fields(cls, v, info):
         if v is None:
             raise ValueError(f"{info.field_name} is required")
         return v
     
-    @field_validator('batch_size')
+    @field_validator('timeout', 'max_concurrency', 'max_retries', 'batch_size')
     def check_batch_size(cls, v, info):
         if (type(v)==int) and (v <= 0):
             raise ValueError(f"{info.field_name} must be greater than zero")
@@ -121,9 +121,9 @@ class PluginUpdate(BaseModel):
     name: Optional[str] = None
     execution_type: Optional[PluginExecutionType] = None
     timeout: Optional[int] = None
-    max_concurrency: Optional[int] = None
-    max_retries: Optional[int] = None
-    batch_size: Optional[int] = None
+    max_concurrency: Optional[int] = 1
+    max_retries: Optional[int] = 1
+    batch_size: Optional[int] = 1
     endpoint_url: Optional[str] = None
     group_key: Optional[str] = None
     config: Optional[Dict] = None
@@ -136,13 +136,13 @@ class PluginUpdate(BaseModel):
     output_order: Optional[List[OutputEmbedding]] = None
     num_parents: Optional[int] = None
 
-    @field_validator('timeout', 'max_concurrency', 'max_retries', 'group_key')
+    @field_validator('timeout', 'max_concurrency', 'max_retries', 'batch_size', 'group_key')
     def check_queue_api_fields(cls, v, info):
         if v is None:
             raise ValueError(f"{info.field_name} is required")
         return v
     
-    @field_validator('batch_size')
+    @field_validator('timeout', 'max_concurrency', 'max_retries', 'batch_size')
     def check_batch_size(cls, v, info):
         if (type(v)==int) and (v <= 0):
             raise ValueError(f"{info.field_name} must be greater than zero")

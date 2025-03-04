@@ -18,6 +18,8 @@ add cache flag to plugins?
 runtime args for plugins
     could be used by plugins and job executor
 
+table to track plugin usage?
+    just plugin, request id, execute time, number of inputs 
 
 item table
     id, item_id, timestamp

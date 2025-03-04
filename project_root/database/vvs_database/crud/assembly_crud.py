@@ -90,7 +90,7 @@ async def get_assemblies_by_component_key(
     db: AsyncSession,
     component_key: str
 ) -> List[Assembly]:
-    """Get all assemblies that use a specific component."""
+    """Get all assemblies with a specific component key"""
     result = await db.execute(
         select(Assembly)
         .options(selectinload(Assembly.components))
@@ -98,6 +98,20 @@ async def get_assemblies_by_component_key(
         .distinct()
     )
     return result.scalars().all()
+
+async def get_assemblies_by_component_keys(
+    db: AsyncSession,
+    component_keys: List[str]
+) -> List[Assembly]:
+    """Get all assemblies with any of the provided component keys"""
+    result = await db.execute(
+        select(Assembly)
+        .options(selectinload(Assembly.components))
+        .options(selectinload(Assembly.product))
+        .where(Assembly.component_key.in_(component_keys))
+    )
+    all_assemblies = result.scalars().all()
+    return all_assemblies
 
 async def delete_assembly(
     db: AsyncSession,

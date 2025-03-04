@@ -17,13 +17,16 @@ from vvs_database.crud.plugin_crud import (
 from vvs_database.crud.item_crud import (
     create_item,
     get_item,
+    get_items,
     get_item_by_name,
     delete_item,
     create_item_source,
     get_item_source,
+    get_item_sources,
     delete_item_source,
     create_item_result,
     get_item_result,
+    get_item_results,
     delete_item_result,
     cleanup_unreferenced_items,
 )
@@ -40,6 +43,7 @@ from vvs_database.crud.assembly_crud import (
     get_assembly_by_product_plugin,
     get_assemblies_by_component,
     get_assemblies_by_component_key,
+    get_assemblies_by_component_keys,
     delete_assembly
 )
 
@@ -62,13 +66,16 @@ __all__ = [
     # item crud 
     "create_item",
     "get_item",
+    "get_items",
     "get_item_by_name",
     "delete_item",
     "create_item_source",
     "get_item_source",
+    "get_item_sources",
     "delete_item_source",
     "create_item_result",
     "get_item_result",
+    "get_item_results",
     "delete_item_result",
     "cleanup_unreferenced_items",
 
@@ -78,6 +85,7 @@ __all__ = [
     "get_assembly_by_product_plugin",
     "get_assemblies_by_component",
     "get_assemblies_by_component_key",
+    "get_assemblies_by_component_keys",
     "delete_assembly",
 
     # item checkin 

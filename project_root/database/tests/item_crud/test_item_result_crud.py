@@ -48,6 +48,27 @@ async def test_item_result_get(create_item_plugin_source,
     assert item_result_get.score == item_result.score
 
 @pytest.mark.asyncio
+async def test_get_item_results(create_item, create_test_embedding,
+                                create_item_source, create_item_result, 
+                                get_item_results):
+    
+    plugin = await create_test_embedding()
+    items = []
+    item_results = []
+    for i in range(3):
+        item = await create_item()
+        item_source = await create_item_source(item.id, plugin.id, f"test_get_item_results_{i}")
+        score = 10 + 0.5*i 
+        item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
+
+        items.append(item)
+        item_results.append(item_result)
+
+    item_results_get = await get_item_results([i.id for i in items], plugin.id)
+    assert len(item_results_get) == len(items)
+
+
+@pytest.mark.asyncio
 async def test_item_result_delete(create_item_plugin_source, create_item_result,
                                 get_item_result, delete_item_result):
     score = 10.1
