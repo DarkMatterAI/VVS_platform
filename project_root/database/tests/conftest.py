@@ -44,7 +44,6 @@ async def test_engine():
         settings.POSTGRES_DB_TEST
     )
 
-
 @pytest_asyncio.fixture(scope="function")
 async def db_session(test_engine):
     TestingSessionLocal = sessionmaker(
@@ -121,78 +120,6 @@ async def create_item_plugin_source(db_session, create_item, create_test_embeddi
         return item, plugin, item_source
 
     return _create_item_plugin_source
-
-@pytest_asyncio.fixture(scope="function")
-async def get_item_source(db_session):    
-    async def _get_item_source(item_id, plugin_id):
-        async with db_session.begin():
-            result = await crud.get_item_source(db_session, item_id, plugin_id)
-            return result
-
-    return _get_item_source
-
-@pytest_asyncio.fixture(scope="function")
-async def get_item_sources(db_session):    
-    async def _get_item_sources(item_ids, plugin_id):
-        async with db_session.begin():
-            result = await crud.get_item_sources(db_session, item_ids, plugin_id)
-            return result
-
-    return _get_item_sources
-
-@pytest_asyncio.fixture(scope="function")
-def get_item_result(db_session):    
-    async def _get_item_result(item_id, plugin_id):
-        async with db_session.begin():
-            result = await crud.get_item_result(db_session, item_id, plugin_id)
-            return result
-
-    return _get_item_result
-
-@pytest_asyncio.fixture(scope="function")
-def get_item_results(db_session):    
-    async def _get_item_results(item_ids, plugin_id):
-        async with db_session.begin():
-            result = await crud.get_item_results(db_session, item_ids, plugin_id)
-            return result
-
-    return _get_item_results
-
-@pytest_asyncio.fixture(scope="function")
-async def get_assembly_by_id(db_session):
-    async def _get_assembly_by_id(assembly_id):
-        async with db_session.begin():
-            result = await crud.get_assembly_by_id(db_session, assembly_id)
-        return result
-
-    return _get_assembly_by_id
-
-@pytest_asyncio.fixture(scope="function")
-async def get_assembly_by_product_plugin(db_session):
-    async def _get_assembly_by_product_plugin(product_id, plugin_id):
-        async with db_session.begin():
-            result = await crud.get_assembly_by_product_plugin(db_session, product_id, plugin_id)
-        return result
-
-    return _get_assembly_by_product_plugin
-
-@pytest_asyncio.fixture(scope="function")
-async def get_assemblies_by_component(db_session):
-    async def _get_assemblies_by_component(component_id):
-        async with db_session.begin():
-            result = await crud.get_assemblies_by_component(db_session, component_id)
-        return result
-
-    return _get_assemblies_by_component
-
-@pytest_asyncio.fixture(scope="function")
-async def get_assemblies_by_component_key(db_session):
-    async def _get_assemblies_by_component_key(component_key):
-        async with db_session.begin():
-            result = await crud.get_assemblies_by_component_key(db_session, component_key)
-        return result
-
-    return _get_assemblies_by_component_key
 
 @pytest_asyncio.fixture(scope="function")
 async def get_assemblies_by_component_keys(db_session):

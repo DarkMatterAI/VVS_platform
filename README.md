@@ -5,6 +5,7 @@ todos
     execution refactor
         execution refactor 
     refactor db tests to use fewer fixtures 
+    fix unnecessary commits `async with db_session.begin():`
     backend/db code for publishing messages to queue in bulk
     batch endpoint is redundant - remove
     jobs

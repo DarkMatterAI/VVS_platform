@@ -54,6 +54,7 @@ async def get_assembly_by_id(
         .options(selectinload(Assembly.components))
         .filter(Assembly.assembly_id == assembly_id)
     )
+    await db.commit() # required to release transaction 
     return result.scalar_one_or_none()
 
 async def get_assembly_by_product_plugin(
@@ -70,6 +71,7 @@ async def get_assembly_by_product_plugin(
             Assembly.plugin_id == plugin_id
         )
     )
+    await db.commit() # required to release transaction
     return result.scalar_one_or_none()
 
 async def get_assemblies_by_component(
@@ -84,6 +86,7 @@ async def get_assemblies_by_component(
         .filter(AssemblyComponent.component_id == component_id)
         .distinct()
     )
+    await db.commit() # required to release transactions
     return result.scalars().all()
 
 async def get_assemblies_by_component_key(
@@ -97,6 +100,7 @@ async def get_assemblies_by_component_key(
         .filter(Assembly.component_key == component_key)
         .distinct()
     )
+    await db.commit()
     return result.scalars().all()
 
 async def get_assemblies_by_component_keys(

@@ -42,13 +42,12 @@ async def test_item_result_create_fails_invalid_ids(db_session):
 
 @pytest.mark.asyncio
 async def test_item_result_get(db_session,
-                               create_item_plugin_source, 
-                               get_item_result):
+                               create_item_plugin_source):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
     item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
 
-    item_result_get = await get_item_result(item.id, plugin.id)
+    item_result_get = await crud.get_item_result(db_session, item.id, plugin.id)
     assert item_result_get is not None
     assert item_result_get.valid is True
     assert item_result_get.score == item_result.score
@@ -56,8 +55,7 @@ async def test_item_result_get(db_session,
 @pytest.mark.asyncio
 async def test_get_item_results(db_session,
                                 create_item, 
-                                create_test_embedding,
-                                get_item_results):
+                                create_test_embedding):
     
     plugin = await create_test_embedding()
     items = []
@@ -71,28 +69,25 @@ async def test_get_item_results(db_session,
         items.append(item)
         item_results.append(item_result)
 
-    item_results_get = await get_item_results([i.id for i in items], plugin.id)
+    item_results_get = await crud.get_item_results(db_session, [i.id for i in items], plugin.id)
     assert len(item_results_get) == len(items)
 
 
 @pytest.mark.asyncio
 async def test_item_result_delete(db_session,
-                                  create_item_plugin_source, 
-                                  get_item_result):
+                                  create_item_plugin_source):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
     item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
 
     _ = await crud.delete_item_result(db_session, item_result)
 
-    item_result_get = await get_item_result(item.id, plugin.id)
+    item_result_get = await crud.get_item_result(db_session, item.id, plugin.id)
     assert item_result_get is None 
 
 @pytest.mark.asyncio
 async def test_item_delete_result_propagation(db_session, 
-                                              create_item_plugin_source, 
-                                              get_item_result, 
-                                              get_item_source):
+                                              create_item_plugin_source):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
@@ -101,11 +96,11 @@ async def test_item_delete_result_propagation(db_session,
     _ = await crud.delete_item(db_session, item)
 
     # check delete propagated to result 
-    item_result = await get_item_result(item.id, plugin.id)
+    item_result = await crud.get_item_result(db_session, item.id, plugin.id)
     assert item_result is None 
 
     # check propagated to source
-    item_source = await get_item_source(item.id, plugin.id)
+    item_source = await crud.get_item_source(db_session, item.id, plugin.id)
     assert item_source is None 
 
     # check plugin still exists
@@ -115,9 +110,7 @@ async def test_item_delete_result_propagation(db_session,
 
 @pytest.mark.asyncio
 async def test_plugin_delete_result_propagation(db_session, 
-                                                create_item_plugin_source, 
-                                                get_item_source, 
-                                                get_item_result):
+                                                create_item_plugin_source):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
@@ -130,11 +123,11 @@ async def test_plugin_delete_result_propagation(db_session,
     assert response is None 
 
     # check propagated to source
-    item_source = await get_item_source(item.id, plugin.id)
+    item_source = await crud.get_item_source(db_session, item.id, plugin.id)
     assert item_source is None 
 
     # check delete propagated to result 
-    item_result = await get_item_result(item.id, plugin.id)
+    item_result = await crud.get_item_result(db_session, item.id, plugin.id)
     assert item_result is None 
 
     # check item still exists

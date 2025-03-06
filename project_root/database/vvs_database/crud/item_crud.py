@@ -60,6 +60,7 @@ async def get_item_source(
             ItemSource.plugin_id == plugin_id
         )
     )
+    await db.commit() # required to release transaction
     return result.scalar_one_or_none()
 
 async def get_item_sources(
@@ -75,7 +76,7 @@ async def get_item_sources(
             ItemSource.plugin_id == plugin_id
         )
     )
-    
+    await db.commit() # required to release transaction
     item_sources = result.scalars().all()
     return item_sources 
 
@@ -118,6 +119,7 @@ async def get_item_result(
             ItemResult.plugin_id == plugin_id
         )
     )
+    await db.commit() # required to release transaction
     return result.scalar_one_or_none()
 
 async def get_item_results(
@@ -136,6 +138,7 @@ async def get_item_results(
         )
     )
     results = await db.execute(stmt)
+    await db.commit() # requred to release transaction
     item_results = results.scalars().all()
     return item_results 
 

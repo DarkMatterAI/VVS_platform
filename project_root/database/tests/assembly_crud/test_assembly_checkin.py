@@ -1,5 +1,7 @@
 import pytest 
 
+from vvs_database import crud 
+
 @pytest.mark.asyncio
 async def test_assembly_checkin_basic(assembly_checkin, create_item, create_test_assembly_plugin):
     # Create components that will be part of the assembly
@@ -96,8 +98,10 @@ async def test_assembly_checkin_multiple(assembly_checkin, create_item, create_t
     assert components2[1].component_id == component3.id
 
 @pytest.mark.asyncio
-async def test_assembly_checkin_deduplication(assembly_checkin, create_item, 
-                                              create_test_assembly_plugin, get_assembly_by_id):
+async def test_assembly_checkin_deduplication(db_session,
+                                              assembly_checkin, 
+                                              create_item, 
+                                              create_test_assembly_plugin):
     # Create components
     component1 = await create_item()
     component2 = await create_item()
@@ -129,7 +133,7 @@ async def test_assembly_checkin_deduplication(assembly_checkin, create_item,
     assert assembly1_id == assembly2_id
     
     # Get the assembly to verify
-    assembly = await get_assembly_by_id(assembly1_id)
+    assembly = await crud.get_assembly_by_id(db_session, assembly1_id)
     assert assembly is not None
     assert len(assembly.components) == 2
 
