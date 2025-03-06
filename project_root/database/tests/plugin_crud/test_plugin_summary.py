@@ -33,8 +33,7 @@ async def test_get_plugins_summary(db_session, create_test_embedding):
     await crud.create_plugin(db_session, filter_plugin)
     
     # Get the summary
-    from vvs_database.crud import get_plugins_summary
-    summary = await get_plugins_summary(db_session)
+    summary = await crud.get_plugins_summary(db_session)
     
     # Assert the summary contains counts for all plugin types
     assert summary["embedding"] >= 1

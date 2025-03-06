@@ -14,11 +14,13 @@ async def create_item(db: AsyncSession, item: str) -> Item:
 async def get_item(db: AsyncSession, item_id: int) -> Optional[Item]:
     """Get an item by ID."""
     result = await db.execute(select(Item).filter(Item.id == item_id))
+    await db.commit() # required to release transaction
     return result.scalar_one_or_none()
 
 async def get_items(db: AsyncSession, item_ids: List[int]) -> List[Item]:
     """Get items by list of IDs"""
     results = await db.execute(select(Item).filter(Item.id.in_(item_ids)))
+    await db.commit() # required to release transaction
     results = results.scalars().all()
     return results 
 

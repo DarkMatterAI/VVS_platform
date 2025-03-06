@@ -69,7 +69,6 @@ async def test_item_source_delete(db_session,
 async def test_cleanup_items(db_session,
                              create_item_plugin_source, 
                              create_item, 
-                             get_item, 
                              get_item_source):
     item1, plugin1, item_source1 = await create_item_plugin_source()
     item2 = await create_item()
@@ -77,20 +76,19 @@ async def test_cleanup_items(db_session,
     
     assert deleted_count > 0
 
-    item1_get = await get_item(item1.id)
+    item1_get = await crud.get_item(db_session, item1.id)
     assert item1_get is not None 
 
     item_source1_get = await get_item_source(item1.id, plugin1.id)
-    assert item_source1 is not None 
+    assert item_source1_get is not None 
 
-    item2_get = await get_item(item2.id)
+    item2_get = await crud.get_item(db_session, item2.id)
     assert item2_get is None 
 
 @pytest.mark.asyncio
 async def test_item_delete_source_propagation(db_session, 
                                               create_item_plugin_source,
-                                              get_item_source, 
-                                              get_plugin):
+                                              get_item_source):
     item, plugin, item_source = await create_item_plugin_source()
 
     # delete item
@@ -101,15 +99,13 @@ async def test_item_delete_source_propagation(db_session,
     assert item_source is None 
 
     # check plugin still exists
-    response = await get_plugin(plugin.id)
+    response = await crud.get_plugin(db_session, plugin.id)
     assert response is not None 
 
 @pytest.mark.asyncio
 async def test_plugin_delete_source_propagation(db_session, 
                                                 create_item_plugin_source,
-                                                get_item_source, 
-                                                get_item, 
-                                                get_plugin):
+                                                get_item_source):
     
     item, plugin, item_source = await create_item_plugin_source()
 
@@ -117,7 +113,7 @@ async def test_plugin_delete_source_propagation(db_session,
     result = await crud.delete_plugin(db_session, plugin.id)
 
     # check plugin deleted 
-    response = await get_plugin(plugin.id, with_error=False)
+    response = await crud.get_plugin(db_session, plugin.id, with_error=False)
     assert response is None 
 
     # check propagated to source
@@ -125,7 +121,7 @@ async def test_plugin_delete_source_propagation(db_session,
     assert item_source is None 
 
     # check item still exists
-    item_record = await get_item(item.id)
+    item_record = await crud.get_item(db_session, item.id)
     assert item_record is not None 
 
     # run cleanup
@@ -133,6 +129,6 @@ async def test_plugin_delete_source_propagation(db_session,
     assert deleted_count > 0
 
     # check item deleted
-    item_record = await get_item(item.id)
+    item_record = await crud.get_item(db_session, item.id)
     assert item_record is None 
 

@@ -3,15 +3,16 @@ from vvs_database import schemas, crud
 from vvs_database.exceptions import ReferenceError
 
 @pytest.mark.asyncio
-async def test_delete_plugin(db_session, get_plugin, create_test_embedding):
+async def test_delete_plugin(db_session, create_test_embedding):
     """Test deleting a plugin"""
     plugin = await create_test_embedding()
     
     deleted_plugin = await crud.delete_plugin(db_session, plugin.id)
     
     assert deleted_plugin.id == plugin.id
+
+    plugin = await crud.get_plugin(db_session, plugin.id, with_error=False)
     
-    plugin = await get_plugin(plugin.id, with_error=False)
     assert plugin is None
 
 @pytest.mark.asyncio

@@ -105,15 +105,6 @@ async def create_test_assembly_plugin(db_session):
     return _create_assembly_plugin
 
 @pytest_asyncio.fixture(scope="function")
-async def get_plugin(db_session):    
-    async def _get_plugin(plugin_id, with_error=True):
-        async with db_session.begin():
-            result = await crud.get_plugin(db_session, plugin_id, with_error=with_error)
-            return result 
-
-    return _get_plugin
-
-@pytest_asyncio.fixture(scope="function")
 async def create_item(db_session):
     async def _create_item(name=None):
         name = name or f"Test Item {next(_item_counter)}"
@@ -122,30 +113,11 @@ async def create_item(db_session):
     return _create_item
 
 @pytest_asyncio.fixture(scope="function")
-async def get_item(db_session):    
-    async def _get_item(item_id):
-        async with db_session.begin():
-            result = await crud.get_item(db_session, item_id)
-            return result 
-
-    return _get_item
-
-@pytest_asyncio.fixture(scope="function")
-async def get_items(db_session):    
-    async def _get_items(item_ids):
-        async with db_session.begin():
-            result = await crud.get_items(db_session, item_ids)
-            return result 
-
-    return _get_items
-
-@pytest_asyncio.fixture(scope="function")
 async def create_item_plugin_source(db_session, create_item, create_test_embedding):    
     async def _create_item_plugin_source(item=None, external_id=None):
         item = await create_item(item)
         plugin = await create_test_embedding()
         item_source = await crud.create_item_source(db_session, item.id, plugin.id, external_id)
-        # item_source = await create_item_source(item.id, plugin.id, external_id)
         return item, plugin, item_source
 
     return _create_item_plugin_source

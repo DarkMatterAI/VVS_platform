@@ -92,8 +92,7 @@ async def test_item_result_delete(db_session,
 async def test_item_delete_result_propagation(db_session, 
                                               create_item_plugin_source, 
                                               get_item_result, 
-                                              get_item_source,
-                                              get_plugin):
+                                              get_item_source):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
@@ -110,7 +109,7 @@ async def test_item_delete_result_propagation(db_session,
     assert item_source is None 
 
     # check plugin still exists
-    response = await get_plugin(plugin.id)
+    response = await crud.get_plugin(db_session, plugin.id)
     assert response is not None 
 
 
@@ -118,9 +117,7 @@ async def test_item_delete_result_propagation(db_session,
 async def test_plugin_delete_result_propagation(db_session, 
                                                 create_item_plugin_source, 
                                                 get_item_source, 
-                                                get_item_result, 
-                                                get_item, 
-                                                get_plugin):
+                                                get_item_result):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
@@ -129,7 +126,7 @@ async def test_plugin_delete_result_propagation(db_session,
     result = await crud.delete_plugin(db_session, plugin.id)
 
     # check plugin deleted 
-    response = await get_plugin(plugin.id, with_error=False)
+    response = await crud.get_plugin(db_session, plugin.id, with_error=False)
     assert response is None 
 
     # check propagated to source
@@ -141,7 +138,7 @@ async def test_plugin_delete_result_propagation(db_session,
     assert item_result is None 
 
     # check item still exists
-    item_record = await get_item(item.id)
+    item_record = await crud.get_item(db_session, item.id)
     assert item_record is not None 
 
     # run cleanup
@@ -149,5 +146,5 @@ async def test_plugin_delete_result_propagation(db_session,
     assert deleted_count > 0
 
     # check item deleted
-    item_record = await get_item(item.id)
+    item_record = await crud.get_item(db_session, item.id)
     assert item_record is None

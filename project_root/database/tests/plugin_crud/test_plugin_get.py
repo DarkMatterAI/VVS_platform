@@ -1,5 +1,6 @@
 import pytest
-from vvs_database import schemas
+from vvs_database import schemas, crud 
+from vvs_database.exceptions import NotFoundError
 
 @pytest.mark.asyncio
 async def test_get_plugin_by_id(db_session, create_test_embedding):
@@ -8,8 +9,7 @@ async def test_get_plugin_by_id(db_session, create_test_embedding):
     plugin = await create_test_embedding()
     
     # Get the plugin by ID
-    from vvs_database.crud import get_plugin
-    retrieved_plugin = await get_plugin(db_session, plugin.id)
+    retrieved_plugin = await crud.get_plugin(db_session, plugin.id)
     
     # Assert the plugin was retrieved correctly
     assert retrieved_plugin.id == plugin.id
@@ -21,15 +21,13 @@ async def test_get_plugin_by_id(db_session, create_test_embedding):
 @pytest.mark.asyncio
 async def test_get_nonexistent_plugin(db_session):
     """Test getting a nonexistent plugin"""
-    from vvs_database.crud import get_plugin
-    from vvs_database.exceptions import NotFoundError
     
     # Try to get a nonexistent plugin
     with pytest.raises(NotFoundError):
-        await get_plugin(db_session, 99999)
+        await crud.get_plugin(db_session, 99999)
     
     # Try with with_error=False
-    result = await get_plugin(db_session, 99999, with_error=False)
+    result = await crud.get_plugin(db_session, 99999, with_error=False)
     assert result is None
     await db_session.commit()
 
@@ -42,22 +40,21 @@ async def test_get_plugins_with_filters(db_session, create_test_embedding):
     await create_test_embedding(name="Other Plugin", plugin_class=schemas.PluginClass.GENERIC)
     
     # Get plugins with name filter
-    from vvs_database.crud import get_plugins
-    plugins = await get_plugins(db_session, filter_params={"name": "Test%"})
+    plugins = await crud.get_plugins(db_session, filter_params={"name": "Test%"})
     
     # Assert the correct plugins were retrieved
     assert len(plugins) >= 2
     assert all("Test" in plugin.name for plugin in plugins)
     
     # Get plugins with plugin_class filter
-    plugins = await get_plugins(db_session, filter_params={"plugin_class": schemas.PluginClass.INTERNAL_RDKIT})
+    plugins = await crud.get_plugins(db_session, filter_params={"plugin_class": schemas.PluginClass.INTERNAL_RDKIT})
     
     # Assert the correct plugins were retrieved
     assert len(plugins) >= 1
     assert all(plugin.plugin_class == schemas.PluginClass.INTERNAL_RDKIT for plugin in plugins)
     
     # Get plugins with multiple filters
-    plugins = await get_plugins(
+    plugins = await crud.get_plugins(
         db_session, 
         filter_params={
             "name": "Test%",
@@ -79,9 +76,8 @@ async def test_get_plugins_with_pagination(db_session, create_test_embedding):
         await create_test_embedding(name=f"Pagination Test {i}")
     
     # Get plugins with pagination
-    from vvs_database.crud import get_plugins
-    plugins_page1 = await get_plugins(db_session, skip=0, limit=2)
-    plugins_page2 = await get_plugins(db_session, skip=2, limit=2)
+    plugins_page1 = await crud.get_plugins(db_session, skip=0, limit=2)
+    plugins_page2 = await crud.get_plugins(db_session, skip=2, limit=2)
     
     # Assert pagination works correctly
     assert len(plugins_page1) == 2
@@ -97,8 +93,7 @@ async def test_get_plugins_with_response_model(db_session, create_test_embedding
     plugin = await create_test_embedding()
     
     # Get the plugin with response_model=True
-    from vvs_database.crud import get_plugin
-    plugin_response = await get_plugin(db_session, plugin.id, response_model=True)
+    plugin_response = await crud.get_plugin(db_session, plugin.id, response_model=True)
     
     # Assert that the returned object is a Pydantic model
     assert isinstance(plugin_response, schemas.EmbeddingPluginInDB)
