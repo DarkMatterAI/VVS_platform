@@ -51,21 +51,26 @@ async def test_get_item_sources(get_item_sources, create_item,
         assert source.external_id == item_ids[source.item_id]
 
 @pytest.mark.asyncio
-async def test_item_source_delete(create_item_plugin_source, get_item_source, delete_item_source):
+async def test_item_source_delete(db_session, 
+                                  create_item_plugin_source, 
+                                  get_item_source):
     item, plugin, item_source = await create_item_plugin_source()
 
-    _ = await delete_item_source(item_source)
+    result = await crud.delete_item_source(db_session, item_source)
 
     item_source_get = await get_item_source(item.id, plugin.id)
     assert item_source_get is None 
 
 @pytest.mark.asyncio
-async def test_cleanup_items(create_item_plugin_source, create_item, 
-                             cleanup_items, get_item, get_item_source):
+async def test_cleanup_items(db_session,
+                             create_item_plugin_source, 
+                             create_item, 
+                             get_item, 
+                             get_item_source):
     item1, plugin1, item_source1 = await create_item_plugin_source()
     item2 = await create_item()
-
-    deleted_count = await cleanup_items()
+    deleted_count = await crud.cleanup_unreferenced_items(db_session)
+    
     assert deleted_count > 0
 
     item1_get = await get_item(item1.id)
@@ -100,7 +105,6 @@ async def test_plugin_delete_source_propagation(db_session,
                                                 create_item_plugin_source,
                                                 get_item_source, 
                                                 get_item, 
-                                                cleanup_items, 
                                                 get_plugin):
     
     item, plugin, item_source = await create_item_plugin_source()
@@ -121,7 +125,7 @@ async def test_plugin_delete_source_propagation(db_session,
     assert item_record is not None 
 
     # run cleanup
-    deleted_count = await cleanup_items()
+    deleted_count = await crud.cleanup_unreferenced_items(db_session)
     assert deleted_count > 0
 
     # check item deleted

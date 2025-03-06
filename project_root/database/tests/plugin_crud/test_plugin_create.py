@@ -1,10 +1,10 @@
 import pytest
 import pydantic 
-from vvs_database import schemas
+from vvs_database import schemas, crud 
 from vvs_database.exceptions import ValidationError
 
 @pytest.mark.asyncio
-async def test_create_embedding_plugin(create_plugin):
+async def test_create_embedding_plugin(db_session):
     """Test creating an embedding plugin"""
     plugin_data = schemas.EmbeddingPluginCreate(
         name="Test Embedding",
@@ -20,7 +20,7 @@ async def test_create_embedding_plugin(create_plugin):
         distance_metric=schemas.DistanceMetric.Cosine
     )
     
-    plugin = await create_plugin(plugin_data)
+    plugin = await crud.create_plugin(db_session, plugin_data, response_model=False)
     
     assert plugin.id is not None
     assert plugin.name == "Test Embedding"
@@ -32,7 +32,7 @@ async def test_create_embedding_plugin(create_plugin):
     assert plugin.distance_metric == schemas.DistanceMetric.Cosine
 
 @pytest.mark.asyncio
-async def test_create_data_source_plugin(create_plugin, create_test_embedding):
+async def test_create_data_source_plugin(db_session, create_test_embedding):
     """Test creating a data source plugin"""
     embedding = await create_test_embedding()
     
@@ -50,7 +50,7 @@ async def test_create_data_source_plugin(create_plugin, create_test_embedding):
         embedding_ids=[embedding.id]
     )
     
-    plugin = await create_plugin(plugin_data, response_model=True)
+    plugin = await crud.create_plugin(db_session, plugin_data, response_model=True)
     
     assert plugin.id is not None
     assert plugin.name == "Test Data Source"
@@ -61,7 +61,7 @@ async def test_create_data_source_plugin(create_plugin, create_test_embedding):
 
 
 @pytest.mark.asyncio
-async def test_create_filter_plugin(create_plugin, create_test_embedding):
+async def test_create_filter_plugin(db_session, create_test_embedding):
     """Test creating a filter plugin"""
     plugin_data = schemas.FilterPluginCreate(
         name="Test Filter",
@@ -75,7 +75,7 @@ async def test_create_filter_plugin(create_plugin, create_test_embedding):
         batch_size=10
     )
     
-    plugin = await create_plugin(plugin_data, response_model=True)
+    plugin = await crud.create_plugin(db_session, plugin_data, response_model=True)
     
     assert plugin.id is not None
     assert plugin.name == "Test Filter"
@@ -84,12 +84,12 @@ async def test_create_filter_plugin(create_plugin, create_test_embedding):
     
     embedding = await create_test_embedding()
     plugin_data.embedding_ids = [embedding.id]
-    plugin = await create_plugin(plugin_data, response_model=True)
+    plugin = await crud.create_plugin(db_session, plugin_data, response_model=True)
     
     assert plugin.embedding_ids == [embedding.id]
 
 @pytest.mark.asyncio
-async def test_create_score_plugin(create_plugin, create_test_embedding):
+async def test_create_score_plugin(db_session, create_test_embedding):
     """Test creating a score plugin"""
     embedding = await create_test_embedding()
     
@@ -106,7 +106,7 @@ async def test_create_score_plugin(create_plugin, create_test_embedding):
         embedding_ids=[embedding.id]
     )
     
-    plugin = await create_plugin(plugin_data, response_model=True)
+    plugin = await crud.create_plugin(db_session, plugin_data, response_model=True)
     
     assert plugin.id is not None
     assert plugin.name == "Test Score"
@@ -114,7 +114,7 @@ async def test_create_score_plugin(create_plugin, create_test_embedding):
     assert plugin.embedding_ids == [embedding.id]
 
 @pytest.mark.asyncio
-async def test_create_mapper_plugin(create_plugin, create_test_embedding):
+async def test_create_mapper_plugin(db_session, create_test_embedding):
     """Test creating a mapper plugin"""
     input_embedding = await create_test_embedding(name="Input Embedding")
     output_embedding1 = await create_test_embedding(name="Output Embedding 1")
@@ -139,7 +139,7 @@ async def test_create_mapper_plugin(create_plugin, create_test_embedding):
         output_order=output_order
     )
     
-    plugin = await create_plugin(plugin_data, response_model=True)
+    plugin = await crud.create_plugin(db_session, plugin_data, response_model=True)
     
     assert plugin.id is not None
     assert plugin.name == "Test Mapper"
@@ -156,7 +156,7 @@ async def test_create_mapper_plugin(create_plugin, create_test_embedding):
     assert output_embedding2.id in embedding_ids
 
 @pytest.mark.asyncio
-async def test_create_assembly_plugin(create_plugin):
+async def test_create_assembly_plugin(db_session):
     """Test creating an assembly plugin"""
     plugin_data = schemas.AssemblyPluginCreate(
         name="Test Assembly",
@@ -171,7 +171,7 @@ async def test_create_assembly_plugin(create_plugin):
         num_parents=2
     )
     
-    plugin = await create_plugin(plugin_data)
+    plugin = await crud.create_plugin(db_session, plugin_data, response_model=False)
     
     assert plugin.id is not None
     assert plugin.name == "Test Assembly"
@@ -179,7 +179,7 @@ async def test_create_assembly_plugin(create_plugin):
     assert plugin.num_parents == 2
 
 @pytest.mark.asyncio
-async def test_create_plugin_with_invalid_data(create_plugin):
+async def test_create_plugin_with_invalid_data(db_session):
     """Test creating a plugin with invalid data"""
     
     with pytest.raises(pydantic.ValidationError):
@@ -192,7 +192,7 @@ async def test_create_plugin_with_invalid_data(create_plugin):
             vector_length=128,
             distance_metric=schemas.DistanceMetric.Cosine
         )
-        await create_plugin(plugin_data)
+        plugin = await crud.create_plugin(db_session, plugin_data, response_model=False)
     
     # API execution_type requires endpoint_url
     with pytest.raises(pydantic.ValidationError):
@@ -209,5 +209,5 @@ async def test_create_plugin_with_invalid_data(create_plugin):
             vector_length=128,
             distance_metric=schemas.DistanceMetric.Cosine
         )
-        await create_plugin(plugin_data)
+        plugin = await crud.create_plugin(db_session, plugin_data, response_model=False)
 

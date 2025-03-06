@@ -117,14 +117,6 @@ async def get_plugin(db_session):
     return _get_plugin
 
 @pytest_asyncio.fixture(scope="function")
-async def create_plugin(db_session):    
-    async def _create_plugin(plugin_data, response_model=False):
-        result = await crud.create_plugin(db_session, plugin_data, response_model=response_model)
-        return result 
-
-    return _create_plugin
-
-@pytest_asyncio.fixture(scope="function")
 async def create_item(db_session):
     async def _create_item(name=None):
         name = name or f"Test Item {next(_item_counter)}"
@@ -187,22 +179,6 @@ async def get_item_sources(db_session):
     return _get_item_sources
 
 @pytest_asyncio.fixture(scope="function")
-async def delete_item_source(db_session):    
-    async def _delete_item_source(item_source):
-        result = await crud.delete_item_source(db_session, item_source)
-        return result 
-
-    return _delete_item_source
-
-@pytest_asyncio.fixture(scope="function")
-async def cleanup_items(db_session):    
-    async def _cleanup_items():
-        result = await crud.cleanup_unreferenced_items(db_session)
-        return result 
-
-    return _cleanup_items
-
-@pytest_asyncio.fixture(scope="function")
 async def create_item_result(db_session):    
     async def _create_item_result(item_id, plugin_id, valid, score=None, embedding=None):
         item_result = await crud.create_item_result(
@@ -229,14 +205,6 @@ def get_item_results(db_session):
             return result
 
     return _get_item_results
-
-@pytest_asyncio.fixture(scope="function")
-async def delete_item_result(db_session):    
-    async def _delete_item_result(item_result):
-        result = await crud.delete_item_result(db_session, item_result)
-        return result 
-
-    return _delete_item_result
 
 @pytest_asyncio.fixture(scope="function")
 async def get_assembly_by_id(db_session):

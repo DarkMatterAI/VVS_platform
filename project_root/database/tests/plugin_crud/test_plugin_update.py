@@ -1,5 +1,5 @@
 import pytest
-from vvs_database import schemas
+from vvs_database import schemas, crud 
 
 @pytest.mark.asyncio
 async def test_update_embedding_plugin(db_session, create_test_embedding):
@@ -35,7 +35,6 @@ async def test_update_data_source_plugin_embeddings(db_session, create_test_embe
     embedding2 = await create_test_embedding(name="Embedding 2")
     
     # Create a data source plugin with embedding1
-    from vvs_database.crud import create_plugin
     plugin_data = schemas.DataSourcePluginCreate(
         name="Test Data Source",
         plugin_class=schemas.PluginClass.GENERIC,
@@ -48,7 +47,7 @@ async def test_update_data_source_plugin_embeddings(db_session, create_test_embe
         batch_size=1,
         embedding_ids=[embedding1.id]
     )
-    plugin = await create_plugin(db_session, plugin_data)
+    plugin = await crud.create_plugin(db_session, plugin_data)
     
     # Update to use embedding2
     update_data = schemas.PluginUpdate(
@@ -81,7 +80,6 @@ async def test_update_mapper_plugin(db_session, create_test_embedding):
     output_embedding2 = await create_test_embedding(name="Output Embedding 2")
     
     # Create mapper plugin
-    from vvs_database.crud import create_plugin
     output_order = [
         schemas.OutputEmbedding(index=0, embedding_id=output_embedding1.id),
         schemas.OutputEmbedding(index=1, embedding_id=output_embedding2.id)
@@ -100,7 +98,7 @@ async def test_update_mapper_plugin(db_session, create_test_embedding):
         input_embedding_id=input_embedding.id,
         output_order=output_order
     )
-    plugin = await create_plugin(db_session, plugin_data)
+    plugin = await crud.create_plugin(db_session, plugin_data)
     
     # Create new embeddings for update
     new_input = await create_test_embedding(name="New Input Embedding")
@@ -144,7 +142,6 @@ async def test_update_mapper_plugin(db_session, create_test_embedding):
 async def test_update_assembly_plugin(db_session):
     """Test updating an assembly plugin"""
     # Create an assembly plugin
-    from vvs_database.crud import create_plugin
     plugin_data = schemas.AssemblyPluginCreate(
         name="Test Assembly",
         plugin_class=schemas.PluginClass.GENERIC,
@@ -157,7 +154,7 @@ async def test_update_assembly_plugin(db_session):
         batch_size=1,
         num_parents=2
     )
-    plugin = await create_plugin(db_session, plugin_data)
+    plugin = await crud.create_plugin(db_session, plugin_data)
     
     # Update data
     update_data = schemas.PluginUpdate(
@@ -166,8 +163,7 @@ async def test_update_assembly_plugin(db_session):
     )
     
     # Update the plugin
-    from vvs_database.crud import update_plugin
-    updated_plugin = await update_plugin(db_session, plugin.id, update_data)
+    updated_plugin = await crud.update_plugin(db_session, plugin.id, update_data)
     
     # Assert the plugin was updated
     assert updated_plugin.id == plugin.id

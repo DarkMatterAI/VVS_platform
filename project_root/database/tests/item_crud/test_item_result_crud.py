@@ -71,15 +71,15 @@ async def test_get_item_results(create_item, create_test_embedding,
 
 
 @pytest.mark.asyncio
-async def test_item_result_delete(create_item_plugin_source, 
+async def test_item_result_delete(db_session,
+                                  create_item_plugin_source, 
                                   create_item_result,
-                                  get_item_result, 
-                                  delete_item_result):
+                                  get_item_result):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
     item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
 
-    _ = await delete_item_result(item_result)
+    _ = await crud.delete_item_result(db_session, item_result)
 
     item_result_get = await get_item_result(item.id, plugin.id)
     assert item_result_get is None 
@@ -118,7 +118,6 @@ async def test_plugin_delete_result_propagation(db_session,
                                                 get_item_source, 
                                                 get_item_result, 
                                                 get_item, 
-                                                cleanup_items,
                                                 get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
@@ -144,7 +143,7 @@ async def test_plugin_delete_result_propagation(db_session,
     assert item_record is not None 
 
     # run cleanup
-    deleted_count = await cleanup_items()
+    deleted_count = await crud.cleanup_unreferenced_items(db_session)
     assert deleted_count > 0
 
     # check item deleted

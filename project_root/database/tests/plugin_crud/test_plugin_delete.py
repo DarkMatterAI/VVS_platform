@@ -22,7 +22,6 @@ async def test_cannot_delete_embedding_with_references(db_session, create_test_e
     embedding2 = await create_test_embedding(name="Referenced Embedding")
     
     # Create a data source plugin that references the embedding
-    from vvs_database.crud import create_plugin
     data_source = schemas.DataSourcePluginCreate(
         name="Data Source",
         plugin_class=schemas.PluginClass.GENERIC,
@@ -34,10 +33,9 @@ async def test_cannot_delete_embedding_with_references(db_session, create_test_e
         max_retries=1,
         embedding_ids=[embedding1.id]
     )
-    await create_plugin(db_session, data_source)
+    await crud.create_plugin(db_session, data_source)
     
     # Try to delete the embedding
-    
     with pytest.raises(ReferenceError):
         await crud.delete_plugin(db_session, embedding1.id)
     
@@ -59,7 +57,7 @@ async def test_cannot_delete_embedding_with_references(db_session, create_test_e
     )
     
     # Clean up the data source first
-    mapper_plugin = await create_plugin(db_session, mapper)
+    mapper_plugin = await crud.create_plugin(db_session, mapper)
     await crud.delete_plugin(db_session, mapper_plugin.id)
     
     # You should still not be able to delete the embedding

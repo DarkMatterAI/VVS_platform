@@ -1,14 +1,12 @@
 import pytest
-from vvs_database import schemas
+from vvs_database import schemas, crud 
 
 @pytest.mark.asyncio
 async def test_get_plugins_summary(db_session, create_test_embedding):
     """Test getting a summary of plugins by type"""
     # Create one of each plugin type
     embedding = await create_test_embedding()
-    
-    from vvs_database.crud import create_plugin
-    
+        
     data_source = schemas.DataSourcePluginCreate(
         name="Data Source",
         plugin_class=schemas.PluginClass.GENERIC,
@@ -20,7 +18,7 @@ async def test_get_plugins_summary(db_session, create_test_embedding):
         max_retries=1,
         embedding_ids=[embedding.id]
     )
-    await create_plugin(db_session, data_source)
+    await crud.create_plugin(db_session, data_source)
     
     filter_plugin = schemas.FilterPluginCreate(
         name="Filter Plugin",
@@ -32,7 +30,7 @@ async def test_get_plugins_summary(db_session, create_test_embedding):
         max_concurrency=5,
         max_retries=1
     )
-    await create_plugin(db_session, filter_plugin)
+    await crud.create_plugin(db_session, filter_plugin)
     
     # Get the summary
     from vvs_database.crud import get_plugins_summary
