@@ -4,18 +4,20 @@ import sqlalchemy
 from vvs_database import crud 
 
 @pytest.mark.asyncio
-async def test_item_source_create(create_item, create_test_embedding, create_item_source):
+async def test_item_source_create(db_session,
+                                  create_item, 
+                                  create_test_embedding):
     item = await create_item()
     plugin = await create_test_embedding()
-    item_source = await create_item_source(item.id, plugin.id, external_id='test')
+    item_source = await crud.create_item_source(db_session, item.id, plugin.id, 'test')
     assert item_source.external_id == 'test'
     assert item_source.item_id == item.id
     assert item_source.plugin_id == plugin.id 
 
 @pytest.mark.asyncio
-async def test_item_source_create_fails_invalid_ids(create_item_source):
+async def test_item_source_create_fails_invalid_ids(db_session):
     with pytest.raises(sqlalchemy.exc.IntegrityError):
-        item_source = await create_item_source(10000000, 20000000, external_id='test')
+        item_source = await crud.create_item_source(db_session, 10000000, 20000000, "test")
 
 @pytest.mark.asyncio
 async def test_item_source_get(get_item_source, create_item_plugin_source):
@@ -30,8 +32,10 @@ async def test_item_source_get(get_item_source, create_item_plugin_source):
     assert item_source_get.external_id==external_id
 
 @pytest.mark.asyncio
-async def test_get_item_sources(get_item_sources, create_item, 
-                                create_test_embedding, create_item_source):
+async def test_get_item_sources(db_session,
+                                get_item_sources, 
+                                create_item, 
+                                create_test_embedding):
     plugin = await create_test_embedding()
     n_items = 3
 
@@ -39,7 +43,7 @@ async def test_get_item_sources(get_item_sources, create_item,
     for i in range(n_items):
         item = await create_item()
         external_id = f"test_get_item_results_{i}"
-        item_source = await create_item_source(item.id, plugin.id, external_id)
+        item_source = await crud.create_item_source(db_session, item.id, plugin.id, external_id)
         item_ids[item.id] = external_id
 
     item_sources_get = await get_item_sources(item_ids, plugin.id)

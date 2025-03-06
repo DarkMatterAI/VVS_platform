@@ -11,6 +11,7 @@ from vvs_database.testing import create_test_database_url, drop_test_database
 
 _item_counter = itertools.count(1)
 _embedding_counter = itertools.count(1)
+_assembly_counter = itertools.count(1)
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -62,13 +63,11 @@ async def db_session(test_engine):
             await session.close()
 
 @pytest_asyncio.fixture(scope="function")
-async def create_test_embedding(db_session):
-    counter = itertools.count(1)
-    
+async def create_test_embedding(db_session):    
     async def _create_embedding(name=None, plugin_class='generic',
                                 vector_length=128, distance_metric="Cosine"):
         embedding = schemas.EmbeddingPluginCreate(
-            name=name or f"Test Embedding {next(counter)}",
+            name=name or f"Test Embedding {next(_embedding_counter)}",
             plugin_class=plugin_class,
             type="embedding",
             execution_type="queue",
@@ -86,12 +85,10 @@ async def create_test_embedding(db_session):
     return _create_embedding
 
 @pytest_asyncio.fixture(scope="function")
-async def create_test_assembly_plugin(db_session):
-    counter = itertools.count(1)
-    
+async def create_test_assembly_plugin(db_session):    
     async def _create_assembly_plugin(name=None, num_parents=2):
         assembly_plugin = schemas.AssemblyPluginCreate(
-            name=name or f"Test Assembly Plugin {next(counter)}",
+            name=name or f"Test Assembly Plugin {next(_assembly_counter)}",
             plugin_class="generic",
             type="assembly",
             execution_type="queue",
@@ -143,19 +140,12 @@ async def get_items(db_session):
     return _get_items
 
 @pytest_asyncio.fixture(scope="function")
-async def create_item_source(db_session):    
-    async def _create_item_source(item_id, plugin_id, external_id=None):
-        item_source = await crud.create_item_source(db_session, item_id, plugin_id, external_id)
-        return item_source
-
-    return _create_item_source
-
-@pytest_asyncio.fixture(scope="function")
-async def create_item_plugin_source(create_item, create_test_embedding, create_item_source):    
+async def create_item_plugin_source(db_session, create_item, create_test_embedding):    
     async def _create_item_plugin_source(item=None, external_id=None):
         item = await create_item(item)
         plugin = await create_test_embedding()
-        item_source = await create_item_source(item.id, plugin.id, external_id)
+        item_source = await crud.create_item_source(db_session, item.id, plugin.id, external_id)
+        # item_source = await create_item_source(item.id, plugin.id, external_id)
         return item, plugin, item_source
 
     return _create_item_plugin_source
@@ -177,16 +167,6 @@ async def get_item_sources(db_session):
             return result
 
     return _get_item_sources
-
-@pytest_asyncio.fixture(scope="function")
-async def create_item_result(db_session):    
-    async def _create_item_result(item_id, plugin_id, valid, score=None, embedding=None):
-        item_result = await crud.create_item_result(
-            db_session, item_id, plugin_id, valid, score, embedding
-        )
-        return item_result
-
-    return _create_item_result
 
 @pytest_asyncio.fixture(scope="function")
 def get_item_result(db_session):    

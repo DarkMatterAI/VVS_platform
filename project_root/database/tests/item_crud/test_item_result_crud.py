@@ -4,14 +4,15 @@ import sqlalchemy
 from vvs_database import crud 
 
 @pytest.mark.asyncio
-async def test_item_result_create(create_item, create_test_embedding, create_item_result):
+async def test_item_result_create(db_session,
+                                  create_item, 
+                                  create_test_embedding):
     item = await create_item()
     plugin = await create_test_embedding()
     score = 3.82
     embedding = [0.1, 0.2, 0.3]
-    item_result = await create_item_result(
-        item.id, plugin.id, valid=True, score=score, embedding=embedding
-    )
+    item_result = await crud.create_item_result(db_session, item.id, plugin.id, 
+                                                valid=True, score=score, embedding=embedding)
     assert item_result.valid is True
     assert item_result.score == score
     assert item_result.embedding == embedding
@@ -19,13 +20,14 @@ async def test_item_result_create(create_item, create_test_embedding, create_ite
     assert item_result.plugin_id == plugin.id 
 
 @pytest.mark.asyncio
-async def test_item_result_create_no_score(create_item, create_test_embedding, create_item_result):
+async def test_item_result_create_no_score(db_session,
+                                           create_item, 
+                                           create_test_embedding):
     item = await create_item()
     plugin = await create_test_embedding()
     embedding = [0.1, 0.2, 0.3]
-    item_result = await create_item_result(
-        item.id, plugin.id, valid=False, embedding=embedding
-    )
+    item_result = await crud.create_item_result(db_session, item.id, plugin.id, 
+                                                valid=False, score=None, embedding=embedding)
     assert item_result.valid is False
     assert item_result.score is None
     assert item_result.embedding == embedding
@@ -33,16 +35,18 @@ async def test_item_result_create_no_score(create_item, create_test_embedding, c
     assert item_result.plugin_id == plugin.id 
 
 @pytest.mark.asyncio
-async def test_item_result_create_fails_invalid_ids(create_item_result):
+async def test_item_result_create_fails_invalid_ids(db_session):
     with pytest.raises(sqlalchemy.exc.IntegrityError):
-        item_result = await create_item_result(10000000, 20000000, valid=True, score=5.01)
+        item_result = await crud.create_item_result(db_session, 10000000, 20000000, 
+                                                    valid=True, score=5.01)
 
 @pytest.mark.asyncio
-async def test_item_result_get(create_item_plugin_source, 
-                              create_item_result, get_item_result):
+async def test_item_result_get(db_session,
+                               create_item_plugin_source, 
+                               get_item_result):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
-    item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
+    item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
 
     item_result_get = await get_item_result(item.id, plugin.id)
     assert item_result_get is not None
@@ -50,8 +54,9 @@ async def test_item_result_get(create_item_plugin_source,
     assert item_result_get.score == item_result.score
 
 @pytest.mark.asyncio
-async def test_get_item_results(create_item, create_test_embedding,
-                                create_item_source, create_item_result, 
+async def test_get_item_results(db_session,
+                                create_item, 
+                                create_test_embedding,
                                 get_item_results):
     
     plugin = await create_test_embedding()
@@ -59,9 +64,9 @@ async def test_get_item_results(create_item, create_test_embedding,
     item_results = []
     for i in range(3):
         item = await create_item()
-        item_source = await create_item_source(item.id, plugin.id, f"test_get_item_results_{i}")
+        item_source = await crud.create_item_source(db_session, item.id, plugin.id, f"test_get_item_results_{i}")
         score = 10 + 0.5*i 
-        item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
+        item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
 
         items.append(item)
         item_results.append(item_result)
@@ -73,11 +78,10 @@ async def test_get_item_results(create_item, create_test_embedding,
 @pytest.mark.asyncio
 async def test_item_result_delete(db_session,
                                   create_item_plugin_source, 
-                                  create_item_result,
                                   get_item_result):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
-    item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
+    item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
 
     _ = await crud.delete_item_result(db_session, item_result)
 
@@ -87,13 +91,12 @@ async def test_item_result_delete(db_session,
 @pytest.mark.asyncio
 async def test_item_delete_result_propagation(db_session, 
                                               create_item_plugin_source, 
-                                              create_item_result,
                                               get_item_result, 
                                               get_item_source,
                                               get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
-    item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
+    item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
 
     # delete item
     _ = await crud.delete_item(db_session, item)
@@ -114,14 +117,13 @@ async def test_item_delete_result_propagation(db_session,
 @pytest.mark.asyncio
 async def test_plugin_delete_result_propagation(db_session, 
                                                 create_item_plugin_source, 
-                                                create_item_result,
                                                 get_item_source, 
                                                 get_item_result, 
                                                 get_item, 
                                                 get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
-    item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
+    item_result = await crud.create_item_result(db_session, item.id, plugin.id, valid=True, score=score)
 
     # delete plugin
     result = await crud.delete_plugin(db_session, plugin.id)

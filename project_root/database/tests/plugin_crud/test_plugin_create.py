@@ -1,7 +1,6 @@
 import pytest
 import pydantic 
 from vvs_database import schemas, crud 
-from vvs_database.exceptions import ValidationError
 
 @pytest.mark.asyncio
 async def test_create_embedding_plugin(db_session):

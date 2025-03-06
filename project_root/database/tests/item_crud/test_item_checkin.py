@@ -1,6 +1,8 @@
 import pytest
 import random 
 
+from vvs_database import crud 
+
 @pytest.mark.asyncio
 async def test_item_checkin(item_checkin, create_test_embedding):
     plugin = await create_test_embedding()
@@ -114,14 +116,15 @@ async def test_result_checkin_duplicates(item_checkin, result_checkin, create_te
     assert result_records[0].item_id == result_records[2].item_id
 
 @pytest.mark.asyncio
-async def test_result_checkin_conflict(result_checkin, create_item,
-                                     create_item_result, create_item_plugin_source):
+async def test_result_checkin_conflict(db_session,
+                                       result_checkin, 
+                                       create_item,
+                                       create_item_plugin_source):
     item1, plugin, item_source = await create_item_plugin_source()
     score = 9.42
     embedding1 = [0.1, 0.2, 0.3, 0.8]
-    item_result = await create_item_result(
-        item1.id, plugin.id, valid=True, score=score, embedding=embedding1
-    )
+    item_result = await crud.create_item_result(db_session, item1.id, plugin.id, 
+                                                valid=True, score=score, embedding=embedding1)
 
     item2 = await create_item()
     score2 = 3.42
