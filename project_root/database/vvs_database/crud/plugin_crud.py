@@ -17,8 +17,6 @@ from vvs_database.models import (
     plugin_embeddings
 )
 
-# from vvs_database.crud.item_checkin import result_checkin, item_checkin, assembly_checkin
-
 async def get_embeddings(db: AsyncSession, embedding_ids: List[int]):
     """Get embedding plugins by their IDs."""
     stmt = select(EmbeddingPlugin).filter(EmbeddingPlugin.id.in_(embedding_ids))
@@ -161,9 +159,7 @@ async def create_plugin_db(
         )
 
     await db.flush()
-    
-    # await db.commit()
-    
+        
     # Reload with relationships
     stmt = select(plugin_model).options(selectinload(plugin_model.embeddings)).filter_by(id=db_plugin.id)
     result = await db.execute(stmt)
@@ -381,125 +377,3 @@ async def count_plugins_linked_to_embedding_class(db: AsyncSession, plugin_class
     result = await db.execute(query)
     count = result.scalar_one()
     return count
-
-# async def execute_plugin_db(db_plugin: Plugin, 
-#                             execute_request: Union[schemas.ExecuteRequestUnion, 
-#                                                    schemas.BatchExecuteRequestUnion]):
-#     execution_type = db_plugin.execution_type.lower()
-#     if execution_type not in [i for i in schemas.PluginExecutionType]:
-#         raise ValidationError(f"Execution type {execution_type} not supported")
-    
-#     plugin_type = db_plugin.type.lower()
-#     if plugin_type not in [i for i in schemas.PluginType]:
-#         raise ValidationError(f"Plugin type {plugin_type} execution not supported")
-
-#     if type(execute_request) == list:
-#         utils.validate_execute_request(db_plugin, execute_request)
-#         execution_function = utils.batch_execute_plugin_map.get(execution_type, None)
-#     else:
-#         utils.validate_execute_request(db_plugin, [execute_request])
-#         execution_function = utils.execute_plugin_map.get(execution_type, None)
-
-#     response = await execution_function(db_plugin, execute_request)
-#     return response 
-
-# async def execute_plugin(db: AsyncSession, plugin_id: int, 
-#                          execute_request: Union[schemas.ExecuteRequestUnion, 
-#                                                 schemas.BatchExecuteRequestUnion],
-#                          checkin_result=False):
-#     """
-#     Execute a plugin and optionally check in the results to the database.
-    
-#     Args:
-#         db: Database session
-#         plugin_id: ID of the plugin to execute
-#         execute_request: Request data for the plugin
-#         checkin_result: Whether to check in the results to the database
-        
-#     Returns:
-#         The plugin execution response
-#     """
-#     db_plugin = await get_plugin(db, plugin_id)
-#     response = await execute_plugin_db(db_plugin, execute_request)
-
-#     response_model = utils.plugin_type_map[db_plugin.type]['execute_response_model']
-    
-#     if checkin_result:
-#         # Check if request is a batch or single request
-#         is_batch = isinstance(execute_request, list)
-#         requests = execute_request if is_batch else [execute_request]
-#         responses = response if is_batch else [response]
-#         responses = [response_model(**i) for i in responses]
-#         # print(type(requests[0]), type(responses[0]))
-        
-#         # Process based on plugin type
-#         if db_plugin.type == schemas.PluginType.EMBEDDING:
-#             await handle_result_checkin(db, requests, responses, plugin_id, include_embedding=True)
-#         elif db_plugin.type == schemas.PluginType.FILTER or db_plugin.type == schemas.PluginType.SCORE:
-#             await handle_result_checkin(db, requests, responses, plugin_id)
-#         elif db_plugin.type == schemas.PluginType.DATA_SOURCE:
-#             await handle_item_checkin(db, responses, plugin_id)
-#         elif db_plugin.type == schemas.PluginType.ASSEMBLY:
-#             await handle_assembly_checkin(db, requests, responses, plugin_id)
-#         # MAPPER type has no check-in
-    
-#     return response
-
-# async def handle_result_checkin(db: AsyncSession, requests, responses, plugin_id, include_embedding=False):
-#     """Handle check-in for embedding, filter, and score plugins using result_checkin."""
-#     new_results = []
-    
-#     for req, resp in zip(requests, responses):
-#         result_data = {
-#             "item_id": req.item_data.item_id,
-#             "valid": resp.valid
-#         }
-        
-#         # Add score if available (for score plugins)
-#         if hasattr(resp, "score"):
-#             result_data["score"] = resp.score
-            
-#         # Add embedding if requested and available (for embedding plugins)
-#         if include_embedding and hasattr(resp, "embedding") and resp.embedding:
-#             result_data["embedding"] = resp.embedding
-            
-#         new_results.append(schemas.NewResult(**result_data))
-        
-#     if new_results:
-#         await result_checkin(db, new_results, plugin_id)
-
-# async def handle_item_checkin(db: AsyncSession, responses, plugin_id):
-#     """Handle check-in for data source plugins using item_checkin."""
-#     new_items = []
-    
-#     for resp in responses:
-#         if resp.valid and resp.result:
-#             for item in resp.result:
-#                 external_id = item.external_id
-#                 if external_id is not None:
-#                     external_id = str(external_id)
-#                 new_items.append(schemas.NewItem(item=item.item, 
-#                                                  external_id=external_id))
-                
-#     if new_items:
-#         await item_checkin(db, new_items, plugin_id)
-
-# async def handle_assembly_checkin(db: AsyncSession, requests, responses, plugin_id):
-#     """Handle check-in for assembly plugins using assembly_checkin."""
-#     new_assemblies = []
-    
-#     for req, resp in zip(requests, responses):
-#         if resp.valid and resp.result:
-#             for result in resp.result:
-#                 # Get parent components from the request
-#                 components = [
-#                     {"item_id": parent.item_id, "assembly_index": parent.assembly_index}
-#                     for parent in req.parents
-#                 ]
-
-#                 new_assemblies.append(schemas.NewAssembly(item=result.item,
-#                                                           external_id=result.external_id,
-#                                                           components=components))
-                
-#     if new_assemblies:
-#         await assembly_checkin(db, new_assemblies, plugin_id)

@@ -1,5 +1,7 @@
 import pytest
 
+from vvs_database import crud 
+
 @pytest.mark.asyncio
 async def test_item_create(create_item):
     item = 'item_create_test_1'
@@ -16,10 +18,11 @@ async def test_item_get(create_item, get_item):
     assert item_record is not None
 
 @pytest.mark.asyncio
-async def test_item_delete(create_item, get_item, delete_item):
+async def test_item_delete(db_session, create_item, get_item):
     item = await create_item()
 
-    await delete_item(item)
+    _ = await crud.delete_item(db_session, item)
+
     item_record = await get_item(item.id)
     assert item_record is None 
 

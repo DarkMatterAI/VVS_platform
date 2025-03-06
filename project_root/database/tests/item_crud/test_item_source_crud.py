@@ -1,6 +1,8 @@
 import pytest
 import sqlalchemy
 
+from vvs_database import crud 
+
 @pytest.mark.asyncio
 async def test_item_source_create(create_item, create_test_embedding, create_item_source):
     item = await create_item()
@@ -76,12 +78,14 @@ async def test_cleanup_items(create_item_plugin_source, create_item,
     assert item2_get is None 
 
 @pytest.mark.asyncio
-async def test_item_delete_source_propagation(create_item_plugin_source, delete_item,
-                                              get_item_source, get_plugin):
+async def test_item_delete_source_propagation(db_session, 
+                                              create_item_plugin_source,
+                                              get_item_source, 
+                                              get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
 
     # delete item
-    response = await delete_item(item)
+    _ = await crud.delete_item(db_session, item)
 
     # check propagated to source
     item_source = await get_item_source(item.id, plugin.id)
@@ -92,13 +96,17 @@ async def test_item_delete_source_propagation(create_item_plugin_source, delete_
     assert response is not None 
 
 @pytest.mark.asyncio
-async def test_plugin_delete_source_propagation(create_item_plugin_source,
-                                              get_item_source, get_item, 
-                                              cleanup_items, get_plugin, delete_plugin):
+async def test_plugin_delete_source_propagation(db_session, 
+                                                create_item_plugin_source,
+                                                get_item_source, 
+                                                get_item, 
+                                                cleanup_items, 
+                                                get_plugin):
+    
     item, plugin, item_source = await create_item_plugin_source()
 
     # delete plugin
-    response = await delete_plugin(plugin.id)
+    result = await crud.delete_plugin(db_session, plugin.id)
 
     # check plugin deleted 
     response = await get_plugin(plugin.id, with_error=False)

@@ -3,10 +3,8 @@ VVS V2
 
 todos
     execution refactor
-        code ablation
-            figure out how much of old execute/utils code can be removed
-        big delete
         execution refactor 
+    refactor db tests to use fewer fixtures 
     backend/db code for publishing messages to queue in bulk
     batch endpoint is redundant - remove
     jobs

@@ -11,7 +11,6 @@ from vvs_database.crud.plugin_crud import (
     count_plugins_by_class,
     count_plugins_linked_to_embedding_id,
     count_plugins_linked_to_embedding_class,
-    # execute_plugin
 )
 
 from vvs_database.crud.item_crud import (
@@ -61,7 +60,6 @@ __all__ = [
     "count_plugins_by_class",
     "count_plugins_linked_to_embedding_id",
     "count_plugins_linked_to_embedding_class",
-    # "execute_plugin",
 
     # item crud 
     "create_item",

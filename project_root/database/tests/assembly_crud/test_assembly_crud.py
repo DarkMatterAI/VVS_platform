@@ -1,7 +1,9 @@
 import pytest 
 
+from vvs_database import crud 
+
 @pytest.mark.asyncio
-async def test_assembly_create(create_item, create_test_assembly_plugin, create_assembly):
+async def test_assembly_create(db_session, create_item, create_test_assembly_plugin):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -17,7 +19,7 @@ async def test_assembly_create(create_item, create_test_assembly_plugin, create_
     ]
     
     # Create assembly
-    assembly = await create_assembly(plugin.id, product.id, component_data)
+    assembly = await crud.create_assembly(db_session, plugin.id, product.id, component_data)
     
     # Verify assembly
     assert assembly.plugin_id == plugin.id
@@ -30,8 +32,10 @@ async def test_assembly_create(create_item, create_test_assembly_plugin, create_
     assert sorted_components[1].component_id == component2.id
 
 @pytest.mark.asyncio
-async def test_assembly_get_by_id(create_item, create_test_assembly_plugin, 
-                               create_assembly, get_assembly_by_id):
+async def test_assembly_get_by_id(db_session, 
+                                  create_item, 
+                                  create_test_assembly_plugin, 
+                                  get_assembly_by_id):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -47,7 +51,8 @@ async def test_assembly_get_by_id(create_item, create_test_assembly_plugin,
     ]
     
     # Create assembly
-    assembly = await create_assembly(plugin.id, product.id, component_data)
+    assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
     
     # Get assembly by ID
     retrieved_assembly = await get_assembly_by_id(assembly.assembly_id)
@@ -60,8 +65,10 @@ async def test_assembly_get_by_id(create_item, create_test_assembly_plugin,
     assert len(retrieved_assembly.components) == 2
 
 @pytest.mark.asyncio
-async def test_assembly_get_by_product_plugin(create_item, create_test_assembly_plugin, 
-                                         create_assembly, get_assembly_by_product_plugin):
+async def test_assembly_get_by_product_plugin(db_session, 
+                                              create_item, 
+                                              create_test_assembly_plugin, 
+                                              get_assembly_by_product_plugin):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -77,7 +84,8 @@ async def test_assembly_get_by_product_plugin(create_item, create_test_assembly_
     ]
     
     # Create assembly
-    assembly = await create_assembly(plugin.id, product.id, component_data)
+    assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
     
     # Get assembly by product and plugin
     retrieved_assembly = await get_assembly_by_product_plugin(product.id, plugin.id)
@@ -89,8 +97,10 @@ async def test_assembly_get_by_product_plugin(create_item, create_test_assembly_
     assert retrieved_assembly.product_id == product.id
 
 @pytest.mark.asyncio
-async def test_assembly_get_by_component(create_item, create_test_assembly_plugin, 
-                                     create_assembly, get_assemblies_by_component):
+async def test_assembly_get_by_component(db_session, 
+                                         create_item, 
+                                         create_test_assembly_plugin, 
+                                         get_assemblies_by_component):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -106,7 +116,8 @@ async def test_assembly_get_by_component(create_item, create_test_assembly_plugi
     ]
     
     # Create assembly
-    assembly = await create_assembly(plugin.id, product.id, component_data)
+    assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
     
     # Get assemblies by component
     assemblies1 = await get_assemblies_by_component(component1.id)
@@ -120,8 +131,10 @@ async def test_assembly_get_by_component(create_item, create_test_assembly_plugi
     assert assemblies2[0].assembly_id == assembly.assembly_id
 
 @pytest.mark.asyncio
-async def test_assembly_get_by_component_key(create_item, create_test_assembly_plugin, 
-                                     create_assembly, get_assemblies_by_component_key):
+async def test_assembly_get_by_component_key(db_session, 
+                                             create_item, 
+                                             create_test_assembly_plugin, 
+                                             get_assemblies_by_component_key):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -141,7 +154,8 @@ async def test_assembly_get_by_component_key(create_item, create_test_assembly_p
     # create assembly
     assembly_ids = []
     for product in [product1, product2]:
-        assembly = await create_assembly(plugin.id, product.id, component_data)
+        assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
         assembly_ids.append(assembly.assembly_id)
         assert assembly.component_key == component_key
 
@@ -151,8 +165,10 @@ async def test_assembly_get_by_component_key(create_item, create_test_assembly_p
         assert assembly.assembly_id in assembly_ids
 
 @pytest.mark.asyncio
-async def test_assembly_get_by_component_keys(create_item, create_test_assembly_plugin,
-                                              create_assembly, get_assemblies_by_component_keys):
+async def test_assembly_get_by_component_keys(db_session, 
+                                              create_item, 
+                                              create_test_assembly_plugin,
+                                              get_assemblies_by_component_keys):
     n_items = 3
     plugin = await create_test_assembly_plugin()
 
@@ -166,8 +182,8 @@ async def test_assembly_get_by_component_keys(create_item, create_test_assembly_
             {"assembly_index": 0, "component_id": component1.id},
             {"assembly_index": 1, "component_id": component2.id}
         ]
-
-        assembly = await create_assembly(plugin.id, product.id, component_data)
+        assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
         assemblies.append(assembly)
 
     component_keys = [i.component_key for i in assemblies]
@@ -180,7 +196,9 @@ async def test_assembly_get_by_component_keys(create_item, create_test_assembly_
 
 
 @pytest.mark.asyncio
-async def test_assembly_continuous_indices_validation(create_item, create_test_assembly_plugin, create_assembly):
+async def test_assembly_continuous_indices_validation(db_session, 
+                                                      create_item, 
+                                                      create_test_assembly_plugin):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -199,7 +217,8 @@ async def test_assembly_continuous_indices_validation(create_item, create_test_a
     
     # Attempt to create assembly should fail
     with pytest.raises(ValueError) as excinfo:
-        await create_assembly(plugin.id, product.id, component_data)
+        assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
     
     assert "Assembly indices must be continuous" in str(excinfo.value)
     
@@ -211,12 +230,15 @@ async def test_assembly_continuous_indices_validation(create_item, create_test_a
     ]
     
     # This should succeed
-    assembly = await create_assembly(plugin.id, product.id, component_data)
+    assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
     assert len(assembly.components) == 3
 
 @pytest.mark.asyncio
-async def test_assembly_delete(create_item, create_test_assembly_plugin, 
-                           create_assembly, delete_assembly, get_assembly_by_id):
+async def test_assembly_delete(db_session, 
+                               create_item, 
+                               create_test_assembly_plugin, 
+                               get_assembly_by_id):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -232,17 +254,20 @@ async def test_assembly_delete(create_item, create_test_assembly_plugin,
     ]
     
     # Create assembly
-    assembly = await create_assembly(plugin.id, product.id, component_data)
+    assembly = await crud.create_assembly(db_session, plugin.id, 
+                                          product.id, component_data)
     
     # Delete assembly
-    await delete_assembly(assembly)
+    result = await crud.delete_assembly(db_session, assembly)
     
     # Verify assembly is deleted
     deleted_assembly = await get_assembly_by_id(assembly.assembly_id)
     assert deleted_assembly is None
 
 @pytest.mark.asyncio
-async def test_assembly_deduplication(create_item, create_test_assembly_plugin, create_assembly):
+async def test_assembly_deduplication(db_session, 
+                                      create_item, 
+                                      create_test_assembly_plugin):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -258,18 +283,20 @@ async def test_assembly_deduplication(create_item, create_test_assembly_plugin, 
     ]
     
     # Create assembly
-    assembly1 = await create_assembly(plugin.id, product.id, component_data)
+    assembly1 = await crud.create_assembly(db_session, plugin.id, product.id, component_data)
     
     # Create identical assembly
-    assembly2 = await create_assembly(plugin.id, product.id, component_data)
+    assembly2 = await crud.create_assembly(db_session, plugin.id, product.id, component_data)
     
     # Verify both references are the same assembly
     assert assembly1.assembly_id == assembly2.assembly_id
     assert assembly1.assembly_key == assembly2.assembly_key
 
 @pytest.mark.asyncio
-async def test_product_delete_propagation(create_item, create_test_assembly_plugin, 
-                                      create_assembly, get_assembly_by_id, delete_item):
+async def test_product_delete_propagation(db_session, 
+                                          create_item, 
+                                          create_test_assembly_plugin, 
+                                          get_assembly_by_id,):
     # Create components and product
     component1 = await create_item()
     component2 = await create_item()
@@ -285,10 +312,10 @@ async def test_product_delete_propagation(create_item, create_test_assembly_plug
     ]
     
     # Create assembly
-    assembly = await create_assembly(plugin.id, product.id, component_data)
+    assembly = await crud.create_assembly(db_session, plugin.id, product.id, component_data)
     
     # Delete product
-    await delete_item(product)
+    _ = await crud.delete_item(db_session, product)
     
     # Verify assembly is deleted due to cascade
     deleted_assembly = await get_assembly_by_id(assembly.assembly_id)

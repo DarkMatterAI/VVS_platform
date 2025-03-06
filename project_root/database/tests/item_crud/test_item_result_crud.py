@@ -1,6 +1,8 @@
 import pytest
 import sqlalchemy
 
+from vvs_database import crud 
+
 @pytest.mark.asyncio
 async def test_item_result_create(create_item, create_test_embedding, create_item_result):
     item = await create_item()
@@ -69,8 +71,10 @@ async def test_get_item_results(create_item, create_test_embedding,
 
 
 @pytest.mark.asyncio
-async def test_item_result_delete(create_item_plugin_source, create_item_result,
-                                get_item_result, delete_item_result):
+async def test_item_result_delete(create_item_plugin_source, 
+                                  create_item_result,
+                                  get_item_result, 
+                                  delete_item_result):
     score = 10.1
     item, plugin, item_source = await create_item_plugin_source()
     item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
@@ -81,15 +85,18 @@ async def test_item_result_delete(create_item_plugin_source, create_item_result,
     assert item_result_get is None 
 
 @pytest.mark.asyncio
-async def test_item_delete_result_propagation(create_item_plugin_source, create_item_result,
-                                             delete_item, get_item_result, get_item_source,
-                                             get_plugin):
+async def test_item_delete_result_propagation(db_session, 
+                                              create_item_plugin_source, 
+                                              create_item_result,
+                                              get_item_result, 
+                                              get_item_source,
+                                              get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
 
     # delete item
-    response = await delete_item(item)
+    _ = await crud.delete_item(db_session, item)
 
     # check delete propagated to result 
     item_result = await get_item_result(item.id, plugin.id)
@@ -105,15 +112,20 @@ async def test_item_delete_result_propagation(create_item_plugin_source, create_
 
 
 @pytest.mark.asyncio
-async def test_plugin_delete_result_propagation(create_item_plugin_source, create_item_result,
-                                              get_item_source, get_item_result, get_item, cleanup_items,
-                                              get_plugin, delete_plugin):
+async def test_plugin_delete_result_propagation(db_session, 
+                                                create_item_plugin_source, 
+                                                create_item_result,
+                                                get_item_source, 
+                                                get_item_result, 
+                                                get_item, 
+                                                cleanup_items,
+                                                get_plugin):
     item, plugin, item_source = await create_item_plugin_source()
     score = 9.56
     item_result = await create_item_result(item.id, plugin.id, valid=True, score=score)
 
     # delete plugin
-    response = await delete_plugin(plugin.id)
+    result = await crud.delete_plugin(db_session, plugin.id)
 
     # check plugin deleted 
     response = await get_plugin(plugin.id, with_error=False)

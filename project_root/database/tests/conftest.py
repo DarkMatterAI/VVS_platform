@@ -125,14 +125,6 @@ async def create_plugin(db_session):
     return _create_plugin
 
 @pytest_asyncio.fixture(scope="function")
-async def delete_plugin(db_session):    
-    async def _delete_plugin(plugin_id):
-        result = await crud.delete_plugin(db_session, plugin_id)
-        return result 
-
-    return _delete_plugin
-
-@pytest_asyncio.fixture(scope="function")
 async def create_item(db_session):
     async def _create_item(name=None):
         name = name or f"Test Item {next(_item_counter)}"
@@ -157,14 +149,6 @@ async def get_items(db_session):
             return result 
 
     return _get_items
-
-@pytest_asyncio.fixture(scope="function")
-async def delete_item(db_session):    
-    async def _delete_item(item):
-        result = await crud.delete_item(db_session, item)
-        return result 
-
-    return _delete_item
 
 @pytest_asyncio.fixture(scope="function")
 async def create_item_source(db_session):    
@@ -255,19 +239,6 @@ async def delete_item_result(db_session):
     return _delete_item_result
 
 @pytest_asyncio.fixture(scope="function")
-async def create_assembly(db_session):
-    async def _create_assembly(plugin_id, product_id, component_data):
-        assembly = await crud.create_assembly(
-            db_session, 
-            plugin_id, 
-            product_id, 
-            component_data
-        )
-        return assembly
-
-    return _create_assembly
-
-@pytest_asyncio.fixture(scope="function")
 async def get_assembly_by_id(db_session):
     async def _get_assembly_by_id(assembly_id):
         async with db_session.begin():
@@ -311,14 +282,6 @@ async def get_assemblies_by_component_keys(db_session):
         return result
 
     return _get_assemblies_by_component_keys
-
-@pytest_asyncio.fixture(scope="function")
-async def delete_assembly(db_session):
-    async def _delete_assembly(assembly):
-        result = await crud.delete_assembly(db_session, assembly)
-        return result
-
-    return _delete_assembly
 
 @pytest_asyncio.fixture(scope="function")
 async def item_checkin(db_session):    
