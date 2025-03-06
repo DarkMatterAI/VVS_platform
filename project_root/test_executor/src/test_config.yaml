@@ -1,7 +1,7 @@
 # services:
 #   backend:
-#     unit_test: False 
-#     integration_test: False 
+#     unit_test: True 
+#     integration_test: True 
 #   qdrant_plugin:
 #     integration_test: False 
 #   tei_plugin:
@@ -16,7 +16,7 @@
 #   test_consumer:
 #     enabled: True
 #   test_server:
-#     enabled: False
+#     enabled: True
 
 services:
   backend:
