@@ -4,7 +4,7 @@ import sys
 import time 
 from pathlib import Path
 
-TEST_ROOT = 'tests_new'
+TEST_ROOT = 'tests'
 
 def load_config():
     with open('test_config.yaml', 'r') as file:
