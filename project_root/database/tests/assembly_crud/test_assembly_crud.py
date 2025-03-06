@@ -163,8 +163,7 @@ async def test_assembly_get_by_component_key(db_session,
 @pytest.mark.asyncio
 async def test_assembly_get_by_component_keys(db_session, 
                                               create_item, 
-                                              create_test_assembly_plugin,
-                                              get_assemblies_by_component_keys):
+                                              create_test_assembly_plugin):
     n_items = 3
     plugin = await create_test_assembly_plugin()
 
@@ -185,7 +184,7 @@ async def test_assembly_get_by_component_keys(db_session,
     component_keys = [i.component_key for i in assemblies]
     assembly_ids = [i.assembly_id for i in assemblies]
 
-    assembly_records = await get_assemblies_by_component_keys(component_keys)
+    assembly_records = await crud.get_assemblies_by_component_keys(db_session, component_keys)
     assert len(assembly_records) == len(assemblies)
     for record in assembly_records:
         assert record.assembly_id in assembly_ids 

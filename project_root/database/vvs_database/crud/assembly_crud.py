@@ -49,12 +49,12 @@ async def get_assembly_by_id(
     assembly_id: int
 ) -> Optional[Assembly]:
     """Get an assembly by ID."""
-    result = await db.execute(
-        select(Assembly)
-        .options(selectinload(Assembly.components))
-        .filter(Assembly.assembly_id == assembly_id)
-    )
-    await db.commit() # required to release transaction 
+    async with db.begin():
+        result = await db.execute(
+            select(Assembly)
+            .options(selectinload(Assembly.components))
+            .filter(Assembly.assembly_id == assembly_id)
+        )
     return result.scalar_one_or_none()
 
 async def get_assembly_by_product_plugin(
@@ -63,15 +63,15 @@ async def get_assembly_by_product_plugin(
     plugin_id: int
 ) -> Optional[Assembly]:
     """Get an assembly by product ID and plugin ID."""
-    result = await db.execute(
-        select(Assembly)
-        .options(selectinload(Assembly.components))
-        .filter(
-            Assembly.product_id == product_id,
-            Assembly.plugin_id == plugin_id
+    async with db.begin():
+        result = await db.execute(
+            select(Assembly)
+            .options(selectinload(Assembly.components))
+            .filter(
+                Assembly.product_id == product_id,
+                Assembly.plugin_id == plugin_id
+            )
         )
-    )
-    await db.commit() # required to release transaction
     return result.scalar_one_or_none()
 
 async def get_assemblies_by_component(
@@ -79,14 +79,14 @@ async def get_assemblies_by_component(
     component_id: int
 ) -> List[Assembly]:
     """Get all assemblies that use a specific component."""
-    result = await db.execute(
-        select(Assembly)
-        .options(selectinload(Assembly.components))
-        .join(AssemblyComponent)
-        .filter(AssemblyComponent.component_id == component_id)
-        .distinct()
-    )
-    await db.commit() # required to release transactions
+    async with db.begin():
+        result = await db.execute(
+            select(Assembly)
+            .options(selectinload(Assembly.components))
+            .join(AssemblyComponent)
+            .filter(AssemblyComponent.component_id == component_id)
+            .distinct()
+        )
     return result.scalars().all()
 
 async def get_assemblies_by_component_key(
@@ -94,13 +94,13 @@ async def get_assemblies_by_component_key(
     component_key: str
 ) -> List[Assembly]:
     """Get all assemblies with a specific component key"""
-    result = await db.execute(
-        select(Assembly)
-        .options(selectinload(Assembly.components))
-        .filter(Assembly.component_key == component_key)
-        .distinct()
-    )
-    await db.commit()
+    async with db.begin():
+        result = await db.execute(
+            select(Assembly)
+            .options(selectinload(Assembly.components))
+            .filter(Assembly.component_key == component_key)
+            .distinct()
+        )
     return result.scalars().all()
 
 async def get_assemblies_by_component_keys(
@@ -108,12 +108,13 @@ async def get_assemblies_by_component_keys(
     component_keys: List[str]
 ) -> List[Assembly]:
     """Get all assemblies with any of the provided component keys"""
-    result = await db.execute(
-        select(Assembly)
-        .options(selectinload(Assembly.components))
-        .options(selectinload(Assembly.product))
-        .where(Assembly.component_key.in_(component_keys))
-    )
+    async with db.begin():
+        result = await db.execute(
+            select(Assembly)
+            .options(selectinload(Assembly.components))
+            .options(selectinload(Assembly.product))
+            .where(Assembly.component_key.in_(component_keys))
+        )
     all_assemblies = result.scalars().all()
     return all_assemblies
 

@@ -122,15 +122,6 @@ async def create_item_plugin_source(db_session, create_item, create_test_embeddi
     return _create_item_plugin_source
 
 @pytest_asyncio.fixture(scope="function")
-async def get_assemblies_by_component_keys(db_session):
-    async def _get_assemblies_by_component_keys(component_keys):
-        async with db_session.begin():
-            result = await crud.get_assemblies_by_component_keys(db_session, component_keys)
-        return result
-
-    return _get_assemblies_by_component_keys
-
-@pytest_asyncio.fixture(scope="function")
 async def item_checkin(db_session):    
     async def _item_checkin(new_items, plugin_id):
         new_items = [schemas.NewItem(**i) for i in new_items]
