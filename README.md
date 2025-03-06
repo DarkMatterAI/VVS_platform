@@ -6,6 +6,8 @@ todos
         code ablation
             figure out how much of old execute/utils code can be removed
         big delete
+    backend/db code for publishing messages to queue in bulk
+    batch endpoint is redundant - remove
     jobs
         qdrant upload
         search

@@ -41,10 +41,6 @@ async def update_plugin(db: AsyncSession, plugin_id: int, plugin: schemas.Plugin
     except Exception as e:
         handle_db_exception(e)
 
-# async def execute_plugin(db: AsyncSession, plugin_id: int,
-#                          execute_request: Union[schemas.ExecuteRequestUnion, 
-#                                                 schemas.BatchExecuteRequestUnion],
-#                          checkin_result: bool=False):
 async def execute_plugin(db: AsyncSession, 
                          plugin_id: int,
                          execute_request: Union[schemas.ExecuteRequestUnion, schemas.BatchExecuteRequestUnion],
@@ -59,7 +55,6 @@ async def execute_plugin(db: AsyncSession,
                                                   cache=cache,
                                                   db_lookup=db_lookup,
                                                   db_persist=db_persist)
-    # response = await crud.execute_plugin(db, plugin_id, execute_request, checkin_result)
         return response 
     except AssertionError as e:
         raise HTTPException(status_code=502, detail=str(e))

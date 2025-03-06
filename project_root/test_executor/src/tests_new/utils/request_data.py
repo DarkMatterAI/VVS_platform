@@ -208,7 +208,6 @@ async def generate_rdkit_assembly_request(db_session, parents, plugin, to_model=
     checkin_result = await checkin_items(db_session, new_items, None)
     checkin_result = checkin_result['items']
     record_dict = {i.item:i for i in checkin_result}
-    # print(record_dict)
 
     requests = []
     for parent_list in parents:

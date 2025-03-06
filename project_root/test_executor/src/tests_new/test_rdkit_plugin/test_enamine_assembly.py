@@ -6,7 +6,6 @@ from tests_new.utils.rabbitmq_utils import rabbitmq_publish, poll_redis
 from tests_new.utils.backend_utils import backend_execute_plugin, backend_delete_plugin
 from tests_new.utils.db_utils import validate_assembly_checkin
 
-# Test data for different reactions
 reaction_data = [
     {'id': 22, 'r1': 'CS(=O)(=O)c1ccc(CCN)cc1', 'r2': 'O=C(O)c1cc(C(F)(F)F)n[nH]1'},
     {'id': 11, 'r1': 'NNC(=O)c1ccccc1', 'r2': 'O=C(O)C(F)c1ccc(F)cc1'},
@@ -50,7 +49,6 @@ def test_enamine_assembly_created(backend_client):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reaction_id", [r['id'] for r in reaction_data])
-# @pytest.mark.parametrize("reaction_id", [22])
 async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, redis_connection, 
                                                backend_client, reaction_id):
     plugin = get_reaction_plugin(backend_client, reaction_id)
@@ -65,7 +63,6 @@ async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reaction_id", [r['id'] for r in reaction_data])
-# @pytest.mark.parametrize("reaction_id", [22])
 async def test_rdkit_assembly_backend(db_session, backend_client, reaction_id):
     plugin = get_reaction_plugin(backend_client, reaction_id)
     reactants = reaction_dict[reaction_id]
