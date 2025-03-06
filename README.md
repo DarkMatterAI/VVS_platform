@@ -2,6 +2,10 @@
 VVS V2
 
 todos
+    execution refactor
+        code ablation
+            figure out how much of old execute/utils code can be removed
+        big delete
     jobs
         qdrant upload
         search
@@ -9,9 +13,6 @@ todos
             mapper
             bb
 
-database refactor
-    do proper execution
-        acquire redis lock, etc 
 
 add cache flag to plugins?
     or do at runtime?

@@ -1,4 +1,3 @@
-# /home/dmai/VVS_V2/project_root/database/tests/plugin_crud/test_plugin_get.py
 import pytest
 from vvs_database import schemas
 

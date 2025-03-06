@@ -13,6 +13,7 @@ dependencies = [
     "asyncpg",
     "psycopg2-binary",
     "httpx",
+    "redis",
     "aioredis",
     "pika"
 ]

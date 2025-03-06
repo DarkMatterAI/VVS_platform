@@ -55,7 +55,7 @@ class ItemResultInDB(ItemResultBase):
         }
 
 class NewItem(BaseModel):
-    external_id: Optional[Union[int, str]]
+    external_id: Optional[str]
     item: str
 
 class NewResult(BaseModel):

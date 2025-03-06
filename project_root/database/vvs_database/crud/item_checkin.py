@@ -3,19 +3,14 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from typing import List, Dict
+from typing import List, Dict, Optional 
 
 from vvs_database.models import Item, ItemSource, ItemResult, Assembly, AssemblyComponent
 from vvs_database import schemas 
 
-async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugin_id: int) -> Dict:
-    """Check in multiple items, creating or updating them as needed."""
-    # Create a list of unique items
-    unique_items = {ni.item: ni.external_id for ni in new_items}
-
-    # Create the insert instance for the Item table
+async def upsert_items(db: AsyncSession, new_items: List[dict]) -> List:
     ins_stmt = pg_insert(Item)
-    item_stmt = ins_stmt.values([{"item": item} for item in unique_items.keys()])
+    item_stmt = ins_stmt.values(new_items)
     item_stmt = item_stmt.on_conflict_do_update(
         index_elements=["item"],
         set_={"item": item_stmt.excluded.item}
@@ -23,21 +18,11 @@ async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugi
 
     result = await db.execute(item_stmt)
     item_records = result.fetchall()
+    return item_records 
 
-    # Prepare data for ItemSource using the returned item IDs
-    item_source_data = []
-    for item in item_records:
-        external_id = unique_items[item.item]
-        external_id = external_id if external_id is None else str(external_id)
-        item_source_data.append({
-            "item_id": item.id,
-            "external_id": external_id,
-            "plugin_id": plugin_id,
-        })
-    
-    # Similarly, create the insert instance for the ItemSource table
+async def upsert_item_sources(db: AsyncSession, new_item_sources: List[dict]) -> List: 
     ins_stmt_source = pg_insert(ItemSource)
-    source_stmt = ins_stmt_source.values(item_source_data)
+    source_stmt = ins_stmt_source.values(new_item_sources)
     source_stmt = source_stmt.on_conflict_do_update(
         index_elements=["item_id", "plugin_id"],
         set_={"external_id": source_stmt.excluded.external_id}
@@ -50,14 +35,71 @@ async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugi
 
     result = await db.execute(source_stmt)
     item_source_records = result.fetchall()
+    return item_source_records
 
-    await db.commit()
+async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugin_id: Optional[int]) -> Dict:
+    """Check in multiple items, creating or updating them as needed."""
+    # Create a list of unique items
+    unique_items = {ni.item: ni.external_id for ni in new_items}
+
+    # Create the insert instance for the Item table
+    item_dicts = [{"item": item} for item in unique_items.keys()]
+    item_records = await upsert_items(db, item_dicts)
 
     item_records_dict = {i.item: i for i in item_records}
-    item_source_records_dict = {i.item_id: i for i in item_source_records}
-
     item_records_response = [item_records_dict[ni.item] for ni in new_items]
-    item_source_records_response = [item_source_records_dict[i.id] for i in item_records_response]
+
+    item_source_records_dict = {}
+    item_source_records_response = []
+
+
+    # ins_stmt = pg_insert(Item)
+    # item_stmt = ins_stmt.values([{"item": item} for item in unique_items.keys()])
+    # item_stmt = item_stmt.on_conflict_do_update(
+    #     index_elements=["item"],
+    #     set_={"item": item_stmt.excluded.item}
+    # ).returning(Item.id, Item.item, Item.created_at)
+
+    # result = await db.execute(item_stmt)
+    # item_records = result.fetchall()
+
+    # Prepare data for ItemSource using the returned item IDs
+    if plugin_id is not None:
+        item_source_data = []
+        for item in item_records:
+            external_id = unique_items[item.item]
+            external_id = external_id if external_id is None else str(external_id)
+            item_source_data.append({
+                "item_id": item.id,
+                "external_id": external_id,
+                "plugin_id": plugin_id,
+            })
+
+        item_source_records = await upsert_item_sources(db, item_source_data)
+        
+        # # Similarly, create the insert instance for the ItemSource table
+        # ins_stmt_source = pg_insert(ItemSource)
+        # source_stmt = ins_stmt_source.values(item_source_data)
+        # source_stmt = source_stmt.on_conflict_do_update(
+        #     index_elements=["item_id", "plugin_id"],
+        #     set_={"external_id": source_stmt.excluded.external_id}
+        # ).returning(
+        #     ItemSource.item_id,
+        #     ItemSource.external_id,
+        #     ItemSource.plugin_id,
+        #     ItemSource.created_at
+        # )
+
+        # result = await db.execute(source_stmt)
+        # item_source_records = result.fetchall()
+
+        await db.commit()
+
+        # item_records_dict = {i.item: i for i in item_records}
+        item_source_records_dict = {i.item_id: i for i in item_source_records}
+
+        # item_records_response = [item_records_dict[ni.item] for ni in new_items]
+        item_source_records_response = [item_source_records_dict[i.id] for i in item_records_response]
     
     return {
         "items": item_records_response,
@@ -120,8 +162,6 @@ async def assembly_checkin(db: AsyncSession,
     Optimized implementation with bulk operations for assembly creation.
     """
     # Step 1: Check in the assembly result items (already optimized)
-    # new_items = [schemas.NewItem(item=a.item, external_id=a.external_id) for a in new_assemblies]
-    # item_checkin_result = await item_checkin(db, new_items, plugin_id)
     item_checkin_result = await item_checkin(db, new_assemblies, plugin_id)
     checked_in_items = item_checkin_result["items"]
     

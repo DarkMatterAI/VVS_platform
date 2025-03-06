@@ -3,12 +3,12 @@
 #     unit_test: False 
 #     integration_test: False 
 #   qdrant_plugin:
-#     integration_test: False 
+#     integration_test: True 
 #   tei_plugin:
 #     integration_test: False 
 #   rdkit_plugin:
-#     unit_test: False 
-#     integration_test: False 
+#     unit_test: True 
+#     integration_test: True 
 #   triton_plugin:
 #     unit_test: False 
 #     integration_test: False 
@@ -16,7 +16,7 @@
 #   test_consumer:
 #     enabled: False
 #   test_server:
-#     enabled: True
+#     enabled: False
 
 services:
   backend:

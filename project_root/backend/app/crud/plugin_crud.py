@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from typing import Union 
 
 from app import schemas
-from vvs_database import crud
+from vvs_database import crud, execution
 from vvs_database.exceptions import ValidationError, NotFoundError, ReferenceError
 from pydantic import ValidationError as PydanticValidationError
 
@@ -41,12 +41,25 @@ async def update_plugin(db: AsyncSession, plugin_id: int, plugin: schemas.Plugin
     except Exception as e:
         handle_db_exception(e)
 
-async def execute_plugin(db: AsyncSession, plugin_id: int,
-                         execute_request: Union[schemas.ExecuteRequestUnion, 
-                                                schemas.BatchExecuteRequestUnion],
-                         checkin_result: bool=False):
+# async def execute_plugin(db: AsyncSession, plugin_id: int,
+#                          execute_request: Union[schemas.ExecuteRequestUnion, 
+#                                                 schemas.BatchExecuteRequestUnion],
+#                          checkin_result: bool=False):
+async def execute_plugin(db: AsyncSession, 
+                         plugin_id: int,
+                         execute_request: Union[schemas.ExecuteRequestUnion, schemas.BatchExecuteRequestUnion],
+                         cache: bool=False,
+                         db_lookup: bool=False,
+                         db_persist: bool=False
+                         ):
     try:
-        response = await crud.execute_plugin(db, plugin_id, execute_request, checkin_result)
+        response = await execution.execute_plugin(db, 
+                                                  plugin_id, 
+                                                  execute_request, 
+                                                  cache=cache,
+                                                  db_lookup=db_lookup,
+                                                  db_persist=db_persist)
+    # response = await crud.execute_plugin(db, plugin_id, execute_request, checkin_result)
         return response 
     except AssertionError as e:
         raise HTTPException(status_code=502, detail=str(e))

@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     DEFAULT_DB_URL: str = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/postgres"
     TEST_DB_URL: str = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/{POSTGRES_DB_TEST}"
 
+    RABBITMQ_HOST: str = os.getenv("RABBITMQ_HOST", "rabbitmq")
     RABBITMQ_PORT: int = int(os.environ.get('RABBITMQ_PORT', 5672))
     RABBITMQ_DEFAULT_USER: str = os.getenv('RABBITMQ_DEFAULT_USER')
     RABBITMQ_DEFAULT_PASS: str = os.getenv('RABBITMQ_DEFAULT_PASS')

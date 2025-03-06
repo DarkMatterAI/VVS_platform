@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Union, Optional
 
 class RequestData(BaseModel):
@@ -47,6 +47,8 @@ class DataSourceRequest(BaseModel):
         return f"plugin:{plugin_id}:datasource:{request_id}"
         
 class DataSourceResponseItem(BaseModel):
+    model_config = ConfigDict(extra='allow')
+    # item_id: Optional[int]=None
     item: str
     external_id: Optional[Union[int, str]]
     embedding: List[float]
@@ -100,7 +102,7 @@ class AssemblyRequest(BaseModel):
 
     def generate_key(self, plugin_id: int):
         sorted_parents = sorted(self.parents, key=lambda x: x.assembly_index)
-        parent_ids = [i.item_id for i in sorted_parents]
+        parent_ids = [str(i.item_id) for i in sorted_parents]
         key = f"plugin:{plugin_id}:assembly:{'_'.join(parent_ids)}"
         return key 
     
@@ -111,6 +113,8 @@ class AssemblyRequest(BaseModel):
         return component_key
 
 class AssemblyResult(BaseModel):
+    model_config = ConfigDict(extra='allow')
+    # item_id: Optional[int]=None
     item: str 
     external_id: Optional[Union[int, str]]
         
@@ -121,6 +125,10 @@ class AssemblyResponse(BaseModel):
     @classmethod
     def failure_response(cls):
         return cls(valid=False, result=None)
+    
+class ItemInternal(ItemDataEmbed):
+    score: Optional[float]
+    parents: Optional[List[AssemblyItem]] = None 
 
 class RedisResult(BaseModel):
     result_id: str 

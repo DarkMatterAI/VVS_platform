@@ -475,8 +475,11 @@ async def handle_item_checkin(db: AsyncSession, responses, plugin_id):
     for resp in responses:
         if resp.valid and resp.result:
             for item in resp.result:
+                external_id = item.external_id
+                if external_id is not None:
+                    external_id = str(external_id)
                 new_items.append(schemas.NewItem(item=item.item, 
-                                                 external_id=item.external_id))
+                                                 external_id=external_id))
                 
     if new_items:
         await item_checkin(db, new_items, plugin_id)

@@ -38,7 +38,7 @@ from vvs_database.schemas.item_schemas import (
     ItemResultCreate,
     ItemResultInDB,
     NewItem,
-    NewResult
+    NewResult,
 )
 
 from vvs_database.schemas.execute_schemas import (
@@ -55,6 +55,7 @@ from vvs_database.schemas.execute_schemas import (
     AssemblyRequest,
     AssemblyResult,
     AssemblyResponse,
+    ItemInternal,
     RedisResult,
     ExecuteRequestUnion,
     BatchExecuteRequestUnion,
@@ -138,6 +139,7 @@ __all__ = [
     "AssemblyRequest",
     "AssemblyResult",
     "AssemblyResponse",
+    "ItemInternal",
     "RedisResult",
     "ExecuteRequestUnion",
     "BatchExecuteRequestUnion",

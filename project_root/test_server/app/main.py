@@ -62,6 +62,6 @@ async def mapper(request: Union[schemas.MapperRequest, List[schemas.MapperReques
     return response 
 
 @app.post("/assembly", response_model=Union[schemas.AssemblyResponse, List[schemas.AssemblyResponse]])
-async def assemble(request: Union[schemas.AssemblyRequest, List[schemas.AssemblyResponse]]):
+async def assemble(request: Union[schemas.AssemblyRequest, List[schemas.AssemblyRequest]]):
     response = await get_response('assembly', request)
     return response 

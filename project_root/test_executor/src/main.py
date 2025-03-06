@@ -4,6 +4,8 @@ import sys
 import time 
 from pathlib import Path
 
+TEST_ROOT = 'tests_new'
+
 def load_config():
     with open('test_config.yaml', 'r') as file:
         test_config = yaml.safe_load(file)
@@ -17,7 +19,7 @@ def get_enabled_tests(config):
     test_paths = []
     for test, details in config.get('temp_services', {}).items():
         if details.get('enabled', False):
-            test_path = Path(f'tests/{test}')
+            test_path = Path(f'{TEST_ROOT}/{test}')
             if test_path.exists():
                 test_paths.append(str(test_path))
     return test_paths 
@@ -28,7 +30,7 @@ def get_enabled_plugin_tests(plugin_config, test_config):
         if (details.get('integration_test', False) and 
             plugin_config.get('plugins', {}).get(plugin, {}).get('enabled', False)):
             print(f"Adding tests for {plugin}")
-            test_path = Path(f"tests/test_{plugin}")
+            test_path = Path(f"{TEST_ROOT}/test_{plugin}")
             if test_path.exists():
                 test_paths.append(str(test_path))
     return test_paths 
