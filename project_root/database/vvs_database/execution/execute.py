@@ -45,12 +45,12 @@ class PluginExecutor:
         )
         
         # Execute the plugin
-        response, checkin_response = await executor.execute(requests)
+        response, checkin_response, valid_execution = await executor.execute(requests)
         
         # Clean up resources
         await executor.close()
         
-        return response, checkin_response 
+        return response, checkin_response, valid_execution
 
 async def execute_plugin(db: AsyncSession, 
                          plugin_id: int, 
@@ -87,7 +87,7 @@ async def execute_plugin(db: AsyncSession,
 
     # Execute the plugin
     executor = PluginExecutor(db)
-    response, _ = await executor.execute_plugin(
+    response, _, _ = await executor.execute_plugin(
         plugin_id, 
         execute_request, 
         cache=cache,

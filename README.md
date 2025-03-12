@@ -3,10 +3,15 @@ VVS V2
 
 todos
     execution refactor
-        execution refactor 
         redundant code in utils 
-        expose args for polling and whatnot 
-    batch endpoint is redundant - remove
+        tests
+            test semaphore
+            test errors 
+                api error
+                queue timeout
+                queue alt/dlx 
+        test failure modes for executor
+            when should fail responses be logged?
     jobs
         qdrant upload
         search

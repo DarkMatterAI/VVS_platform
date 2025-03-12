@@ -105,10 +105,6 @@ class BasePluginExecutor:
             processed_requests.append(request)
         return processed_requests
 
-    # def generate_key(self, request: ExecuteRequestUnion) -> str:
-    #     """Generate cache/dedupe key for a request - must be implemented by subclasses"""
-    #     raise NotImplementedError("Subclasses must implement generate_key method")
-
     def deduplicate(self, 
                     requests: List[ExecuteRequestUnion]
                     ) -> Tuple[Dict[str, ExecuteRequestUnion], Dict[str, List[int]]]:
@@ -169,10 +165,20 @@ class BasePluginExecutor:
         print(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
         executed_results = {}
         if remaining_requests:
-            executed_results = await self.execution_strategy.execute(self.plugin, remaining_requests)
-            executed_results = {k: self.response_model.model_validate(v)
-                                for k, v in executed_results.items()}            
+            raw_result = await self.execution_strategy.execute(self.plugin, remaining_requests)
+            for k,v in raw_result.items():
+                if v["valid"]:
+                    executed_results[k] = self.response_model.model_validate(v["response_data"])
+                else:
+                    print(f"{self.log_id}: Failed execution: {v['failure_reason']}, {v['failure_detail']}")
+
             await self.redis_service.set_results(executed_results)
+
+        # if remaining_requests:
+        #     executed_results = await self.execution_strategy.execute(self.plugin, remaining_requests)
+        #     executed_results = {k: self.response_model.model_validate(v)
+        #                         for k, v in executed_results.items()}            
+        #     await self.redis_service.set_results(executed_results)
 
         return executed_results 
     
@@ -180,9 +186,10 @@ class BasePluginExecutor:
                            original_requests: List[ExecuteRequestUnion], 
                            results: Dict[str, ExecuteResponseUnion], 
                            key_to_index: Dict[str, List[int]]
-                           ) -> List[ExecuteResponseUnion]:
+                           ) -> Tuple[List[ExecuteResponseUnion], List[bool]]:
         """Reassemble results in original order"""
         reassembled = [None] * len(original_requests)
+        valid_execution = [True] * len(original_requests)
         
         for key, indices in key_to_index.items():
             if key in results:
@@ -194,11 +201,15 @@ class BasePluginExecutor:
         for i, result in enumerate(reassembled):
             if result is None:
                 reassembled[i] = self.response_model.failure_response()
+                valid_execution[i] = False
         
-        return reassembled
+        return reassembled, valid_execution
     
-    async def check_in_results(self, requests: List[ExecuteRequestUnion], 
-                               results: List[ExecuteResponseUnion]) -> Any:
+    async def check_in_results(self, 
+                               requests: List[ExecuteRequestUnion], 
+                               results: List[ExecuteResponseUnion],
+                               valid_execution: List[bool],
+                               ) -> Any:
         """Check in results to the database - must be implemented by subclasses"""
         raise NotImplementedError("Subclasses must implement check_in_results method")
 
@@ -227,11 +238,9 @@ class BasePluginExecutor:
         all_results = {**cached_results, **db_results, **executed_results}
         
         # Step 6: Reassemble results in original order
-        final_results = self.reassemble_results(requests, all_results, key_to_index)
+        final_results, valid_execution = self.reassemble_results(requests, all_results, key_to_index)
 
         # Step 7: Check in items if needed
-        # checkin_results = None
-        # if self.db_persist:
-        checkin_results = await self.check_in_results(requests, final_results)
+        checkin_results = await self.check_in_results(requests, final_results, valid_execution)
         
-        return final_results, checkin_results
+        return final_results, checkin_results, valid_execution

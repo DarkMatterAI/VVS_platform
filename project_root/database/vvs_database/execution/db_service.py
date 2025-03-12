@@ -120,12 +120,16 @@ class DatabaseService:
     async def check_in_item_results(self,
                                     plugin: Plugin,
                                     requests: List[ExecuteRequestUnion],
-                                    results: List[ExecuteResponseUnion]
+                                    results: List[ExecuteResponseUnion],
+                                    valid_execution: List[bool]
                                     ):
         print(f"{self.log_id}: Checking in {len(requests)} item results")
         new_results = []
 
-        for request, response in zip(requests, results):
+        for request, response, valid_ex in zip(requests, results, valid_execution):
+            if not valid_ex:
+                continue 
+
             result_data = {"item_id": request.item_data.item_id,
                            "valid": response.valid,
                            "score": getattr(response, "score", None),
@@ -141,13 +145,17 @@ class DatabaseService:
                                            plugin: Plugin,
                                            requests: List[ExecuteRequestUnion],
                                            results: List[ExecuteResponseUnion],
+                                           valid_execution: List[bool],
                                            persist: bool=False
                                            ):
         print(f"{self.log_id}: Checking in {len(requests)} data source results")
         new_items = []
         embeddings = defaultdict(list)
         checkin_result = None
-        for request, response in zip(requests, results):
+        for request, response, valid_ex in zip(requests, results, valid_execution):
+            if not valid_ex:
+                continue 
+
             if response.valid and response.result:
                 for item in response.result:
                     external_id = item.external_id
@@ -190,12 +198,16 @@ class DatabaseService:
                                         plugin: Plugin,
                                         requests: List[ExecuteRequestUnion],
                                         results: List[ExecuteResponseUnion],
+                                        valid_execution: List[bool],
                                         ):
         print(f"{self.log_id}: Checking in {len(requests)} assembly results")
         new_assemblies = []
         checkin_result = None
 
-        for request, response in zip(requests, results):
+        for request, response, valid_ex in zip(requests, results, valid_execution):
+            if not valid_ex:
+                continue 
+            
             if (not response.valid) or (response.result is None) or (len(response.result)==0):
                 continue 
 

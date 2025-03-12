@@ -140,17 +140,26 @@ class APIExecutionStrategy(ExecutionStrategy):
                 if type(batch) == dict:
                     response = await make_post_request(batch['request'].model_dump(), url, 
                                                        timeout, retries, retry_sleep=1.0, log_id=log_id)
-                    batch['response'] = response 
+                    batch["response"] = {"valid": True, "response_data": response}
                 else:
                     response = await make_post_request([i['request'].model_dump() for i in batch], 
                                                        url, timeout, retries, retry_sleep=1.0, log_id=log_id)
                     for i, request in enumerate(batch):
-                        request['response'] = response[i]
+                        request["response"] = {"valid": True, "response_data": response[i]}                
 
                 return batch 
             except Exception as e:
                 print(f"{self.log_id}: Post request to {url} failed - {str(e)}")
-                return []
+                failure_result = {"valid": False, 
+                                  "response_data": None,
+                                  "failure_reason": "post request failure",
+                                  "failure_detail": f"{str(e)}"}
+                if type(batch) == dict:
+                    batch["response"] = failure_result
+                else:
+                    for i, request in enumerate(batch):
+                        request["response"] = failure_result
+                return batch 
             finally:
                 if self.use_semaphore:
                     await self.redis_service.release_semaphore(semaphore_name, [identifier])

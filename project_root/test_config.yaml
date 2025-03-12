@@ -16,7 +16,7 @@
 #   test_consumer:
 #     enabled: False
 #   test_server:
-#     enabled: False
+#     enabled: True
 
 services:
   backend:

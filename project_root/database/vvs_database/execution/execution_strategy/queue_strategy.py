@@ -266,7 +266,11 @@ class QueueExecutionStrategy(ExecutionStrategy):
         for req_data in request_tracker.values():
             if req_data["status"] == "processing" and req_data["queued_at"] is None:
                 req_data["status"] = "error"
-                # req_data["result"] = {"error": "Failed to queue message after multiple attempts"}
+                req_data["result"] = {"valid": False, 
+                                      "response_data": None, 
+                                      "failure_reason": "Queue error",
+                                      "failure_detail": "Too many queue errors, marking failed messages as error"
+                                    }
     
     async def _acquire_available_locks(self, 
                                        request_tracker, 
@@ -351,7 +355,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
             if response_id in processing_requests:
                 orig_key, req_data = processing_requests[response_id]
                 req_data["status"] = "completed"
-                req_data["result"] = result["response_data"]
+                req_data["result"] = result 
                 
                 # Add this identifier to the release list
                 if req_data["identifier"]:
@@ -396,6 +400,11 @@ class QueueExecutionStrategy(ExecutionStrategy):
 
             if fail_request:
                 req_data["status"] = "error"
+                req_data["result"] = {"valid": False, 
+                        "response_data": None, 
+                        "failure_reason": "Timeout error",
+                        "failure_detail": "Failed to return message in time"
+                    }
                 if req_data["identifier"]:
                     identifiers_to_release.append(req_data["identifier"])
                     req_data["identifier"] = None  # Mark as scheduled for release

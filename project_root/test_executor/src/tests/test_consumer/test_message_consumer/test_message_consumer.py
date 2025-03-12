@@ -62,7 +62,7 @@ async def test_dlx_queue(db_session, rabbitmq_connection, redis_connection, back
                                                         batch_size,
                                                         to_model=True)
     
-    # changing `request` to `blah` should route to alt queue
+    # changing plugin type to `dlx_test` should route to dlx queue
     for request in request_data:
         request_id = request.request_data.request_id
         response_id = request_id.replace(plugin['type'], 'dlx_test')
