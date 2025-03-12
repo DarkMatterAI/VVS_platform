@@ -6,10 +6,6 @@ todos
         redundant code in utils 
         tests
             test semaphore
-            test errors 
-                api error
-                queue timeout
-                queue alt/dlx 
         test failure modes for executor
             when should fail responses be logged?
     jobs

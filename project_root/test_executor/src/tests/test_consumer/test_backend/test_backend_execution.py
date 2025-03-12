@@ -73,3 +73,33 @@ async def test_backend_queue_execute_assembly_checkin(db_session, backend_client
     validate_api_response(plugin, response_data, 200)
     await validate_assembly_checkin(db_session, request_data, response_data.json(), plugin)
 
+@pytest.mark.asyncio
+async def test_backend_queue_execute_error(db_session, backend_client):
+    plugin_type = 'filter'
+    batch_size = 3
+    plugin, request_data = await get_plugin_and_request(db_session, 
+                                                        backend_client, 
+                                                        plugin_type, 
+                                                        f"mock_{plugin_type}_queue_%",
+                                                        batch_size)
+    request_data[0]['runtime_args'] = {'no_response' : True}
+    response = backend_execute_plugin(backend_client, request_data, plugin['id'])
+    validate_api_response(plugin, response, 200)
+
+@pytest.mark.asyncio
+async def test_backend_queue_execute_item_error_checkin(db_session, backend_client):
+    plugin_type = 'filter'
+    db_persist = True 
+    plugin, request_data = await get_plugin_and_request(db_session, 
+                                                        backend_client, 
+                                                        plugin_type, 
+                                                        f"mock_{plugin_type}_queue_%",
+                                                        3)
+    
+    request_data[0]['runtime_args'] = {'no_response' : True}
+    response_data = backend_execute_plugin(backend_client, request_data, 
+                                           plugin['id'], params={'db_persist' : db_persist})
+    validate_api_response(plugin, response_data, 200)
+    response_data = response_data.json()
+    await validate_item_checkin(db_session, [request_data[0]], [response_data[0]], plugin, False)
+    await validate_item_checkin(db_session, request_data[1:], response_data[1:], plugin, True)

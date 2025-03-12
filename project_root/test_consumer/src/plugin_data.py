@@ -12,7 +12,7 @@ def get_create_data(plugin_type):
         "type" : plugin_type,
         "execution_type" : "queue",
         "group_key": "mock_queue",
-        "timeout" : 20,
+        "timeout" : 3.5,
         "max_concurrency" : 4,
         "max_retries" : 2,
     }

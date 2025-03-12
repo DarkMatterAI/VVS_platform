@@ -1,12 +1,12 @@
 from sqlalchemy.orm import class_mapper
 import httpx 
-import json 
+# import json 
 import asyncio
 
-from aioredis import Redis
+# from aioredis import Redis
 
 from vvs_database import schemas, models
-from vvs_database import settings 
+# from vvs_database import settings 
 
 plugin_type_map = {
     schemas.PluginType.EMBEDDING : {
@@ -89,11 +89,15 @@ def validate_updates(plugin: models.Plugin, update_data: dict):
     plugin_dict.update(update_data)
     plugin_type_map[plugin.type]['response_model'].model_validate(plugin_dict)
 
-async def make_post_request(data, url, timeout, retries, retry_sleep=0):
+async def make_post_request(data, url, timeout, retries, retry_sleep=0, log_id=None):
     """Make HTTP POST request with retry logic."""
+    if log_id is None:
+        log_id = ''
+    else:
+        log_id = f"{log_id}: "
     async with httpx.AsyncClient() as client:
         for attempt in range(retries + 1):
-            print(f"Post Request to {url} attempt {attempt+1}")
+            print(f"{log_id}Post Request to {url} attempt {attempt+1}")
             try:
                 response = await client.post(url, json=data, timeout=timeout)
                 response.raise_for_status()
@@ -131,74 +135,5 @@ async def make_post_request(data, url, timeout, retries, retry_sleep=0):
                     raise httpx.RequestError(f"Request to {url} failed: {str(e)}")
                 
             if retry_sleep > 0:
-                print(f"Post request failed, sleeping for {retry_sleep} seconds")
+                print(f"{log_id}Post request failed, sleeping for {retry_sleep} seconds")
                 await asyncio.sleep(retry_sleep) 
-    
-# async def get_redis_result(result_id: str, delete: bool = True):
-#     """Get result from Redis by ID."""
-#     redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
-#     redis_key = result_id.replace('.', ':')
-    
-#     try:
-#         result = await redis.get(redis_key)
-#         if not result:
-#             return {'result_id': result_id}
-        
-#         try:
-#             parsed_result = json.loads(result)
-#             if delete:
-#                 await redis.delete(redis_key)
-#             return parsed_result
-#         except json.JSONDecodeError as e:
-#             result = {
-#                 'valid': False,
-#                 'response_data': None,
-#                 'failure_reason': 'Json decode error - Invalid JSON data in Redis result',
-#                 'failure_detail': str(e)
-#             }
-#             return result 
-            
-#     finally:
-#         await redis.close()
-
-# async def get_redis_result_batch(result_ids: list[dict], delete: bool = True):
-#     """Get multiple results from Redis."""
-#     redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
-#     results = []
-    
-#     try:
-#         result_ids = [i.result_id for i in result_ids]
-#         redis_keys = [rid.replace('.', ':') for rid in result_ids]
-#         raw_results = await redis.mget(redis_keys)
-        
-#         if delete:
-#             # Delete keys where result was found
-#             keys_to_delete = [
-#                 key for key, result in zip(redis_keys, raw_results)
-#                 if result is not None
-#             ]
-#             if keys_to_delete:
-#                 await redis.delete(*keys_to_delete)
-        
-#         # Process each result
-#         for result_id, raw_result in zip(result_ids, raw_results):
-#             if raw_result is None:
-#                 results.append({'result_id': result_id})
-#                 continue
-                
-#             try:
-#                 parsed_result = json.loads(raw_result)
-#                 results.append(parsed_result)
-#             except json.JSONDecodeError as e:
-#                 results.append({
-#                     'valid': False,
-#                     'response_data': None,
-#                     'failure_reason': 'Json decode error - Invalid JSON data in Redis result',
-#                     'failure_detail': str(e)
-#                 })
-                
-#         return results
-        
-#     finally:
-#         await redis.close()
-

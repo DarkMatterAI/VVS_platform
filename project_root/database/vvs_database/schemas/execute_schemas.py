@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 
 class RequestData(BaseModel):
     """Data for plugin making a request"""
@@ -24,7 +24,8 @@ class ItemDataEmbed(ItemData):
         
 class ItemRequest(BaseModel):
     request_data: RequestData
-    item_data: ItemDataEmbed  
+    item_data: ItemDataEmbed
+    runtime_args: Optional[Dict]=None
 
     def generate_key(self, plugin_id: int):
         return f"plugin:{plugin_id}:item:{self.item_data.item_id}"
@@ -41,6 +42,7 @@ class DataSourceRequest(BaseModel):
     request_data: RequestData
     embedding: Embedding
     k: int 
+    runtime_args: Optional[Dict]=None
 
     def generate_key(self, plugin_id: int):
         request_id = self.request_data.request_id.split('.')[-1]
@@ -80,6 +82,7 @@ class ScoreResponse(BaseModel):
 class MapperRequest(BaseModel):
     request_data: RequestData
     embedding: Embedding
+    runtime_args: Optional[Dict]=None
 
     def generate_key(self, plugin_id: int):
         request_id = self.request_data.request_id.split('.')[-1]
@@ -99,6 +102,7 @@ class AssemblyItem(ItemData):
 class AssemblyRequest(BaseModel):
     request_data: RequestData
     parents: List[AssemblyItem]
+    runtime_args: Optional[Dict]=None
 
     def generate_key(self, plugin_id: int):
         sorted_parents = sorted(self.parents, key=lambda x: x.assembly_index)

@@ -74,6 +74,12 @@ async def get_response(plugin_type, request):
     if len(request) > MAX_BATCH_SIZE:
         raise HTTPException(status_code=422, detail=f"batch size limit")
     
+    for r in request:
+        runtime_args = r.runtime_args
+        if runtime_args is not None:
+            if runtime_args.get('throw_error', False):
+                raise HTTPException(status_code=422, detail=f"error test")
+    
     response = response_mapping[plugin_type](request)
 
     if delist:

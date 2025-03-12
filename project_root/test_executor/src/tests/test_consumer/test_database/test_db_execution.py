@@ -84,3 +84,42 @@ async def test_db_queue_execute_assembly_checkin(db_session, backend_client):
                                     cache=False, db_lookup=True, db_persist=False)
     validate_response(plugin, response_data)
     await validate_assembly_checkin(db_session, request_data, response_data, plugin)
+
+@pytest.mark.asyncio
+async def test_db_queue_execute_error(db_session, backend_client):
+    plugin_type = 'filter'
+    batch_size = 3
+    plugin, request_data = await get_plugin_and_request(db_session, 
+                                                        backend_client, 
+                                                        plugin_type, 
+                                                        f"mock_{plugin_type}_queue_%",
+                                                        batch_size, 
+                                                        to_model=True)
+    request_data[1].runtime_args = {'no_response' : True}
+
+    response, checkin_response, valid_execution = await execute_plugin(db_session, plugin['id'], request_data, 
+                                                                       cache=False, db_lookup=False, db_persist=False, 
+                                                                       return_all=True)
+    assert valid_execution[1] == False, valid_execution
+    
+    validate_response(plugin, response)
+
+@pytest.mark.asyncio
+async def test_db_queue_execute_item_error_checkin(db_session, backend_client):
+    plugin_type = 'filter'
+    db_persist = True 
+    plugin, request_data = await get_plugin_and_request(db_session, 
+                                                        backend_client, 
+                                                        plugin_type, 
+                                                        f"mock_{plugin_type}_queue_%",
+                                                        3, 
+                                                        to_model=True)
+    request_data[0].runtime_args = {'no_response' : True}
+    response_data = await execute_plugin(db_session, plugin['id'], request_data, 
+                                    cache=False, db_lookup=True, db_persist=db_persist)
+    validate_response(plugin, response_data)
+
+    # error should prevent db persist 
+    await validate_item_checkin(db_session, [request_data[0]], [response_data[0]], plugin, False)
+    await validate_item_checkin(db_session, request_data[1:], response_data[1:], plugin, True)
+

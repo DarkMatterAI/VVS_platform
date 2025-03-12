@@ -61,6 +61,7 @@ async def execute_plugin(db: AsyncSession,
                          use_semaphore: bool = True,
                          max_semaphore_attempts: int = 20,
                          queue_polling_interval: float = 0.2,
+                         return_all: bool=False
                          ):
     """
     Execute a plugin and optionally check in the results to the database.
@@ -75,6 +76,7 @@ async def execute_plugin(db: AsyncSession,
         use_semaphore: Use semaphore to limit concurrency
         max_semaphore_attempts: Max number of attempts at acquiring semaphore
         queue_polling_interval: Polling interval for queue execution
+        return_all: Return checkin/valid execution data
         
     Returns:
         The plugin execution response
@@ -87,7 +89,7 @@ async def execute_plugin(db: AsyncSession,
 
     # Execute the plugin
     executor = PluginExecutor(db)
-    response, _, _ = await executor.execute_plugin(
+    response, checkin_response, valid_execution = await executor.execute_plugin(
         plugin_id, 
         execute_request, 
         cache=cache,
@@ -101,6 +103,9 @@ async def execute_plugin(db: AsyncSession,
     # Return single response if input was single
     if delist:
         response = response[0]
+
+    if return_all:
+        return response, checkin_response, valid_execution
         
     return response
 

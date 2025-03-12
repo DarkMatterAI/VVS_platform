@@ -29,3 +29,18 @@ async def test_server_endpoint(db_session, test_api_client, backend_client, plug
         status_code = 200
 
     validate_api_response(plugin, response, status_code)
+
+@pytest.mark.asyncio
+async def test_server_endpoint(db_session, test_api_client, backend_client):
+    batch_size = 3
+    plugin_type = 'filter'
+    plugin, request_data = await get_plugin_and_request(db_session, 
+                                                        backend_client, 
+                                                        plugin_type, 
+                                                        f"mock_{plugin_type}_api_%", 
+                                                        batch_size)
+    request_data[0]['runtime_args'] = {'throw_error' : True}
+
+    response = test_api_client.post(f"/{plugin_type}", json=request_data)
+
+    validate_api_response(plugin, response, 422)

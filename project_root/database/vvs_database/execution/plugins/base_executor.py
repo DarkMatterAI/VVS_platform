@@ -170,7 +170,8 @@ class BasePluginExecutor:
                 if v["valid"]:
                     executed_results[k] = self.response_model.model_validate(v["response_data"])
                 else:
-                    print(f"{self.log_id}: Failed execution: {v['failure_reason']}, {v['failure_detail']}")
+                    print(f"{self.log_id}: Failed execution: plugin {self.plugin.id}, " \
+                          f"{v['failure_reason']}, {v['failure_detail']}")
 
             await self.redis_service.set_results(executed_results)
 
@@ -219,6 +220,7 @@ class BasePluginExecutor:
             return [], None
         
         self.init_log_id(log_id)
+        print(f"{self.log_id}: Executing {len(requests)} requests for plugin {self.plugin.id}")
         
         # Step 1: Validate requests
         requests = self.validate_requests(requests)

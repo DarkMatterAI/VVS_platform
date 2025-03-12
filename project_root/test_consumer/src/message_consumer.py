@@ -25,6 +25,12 @@ def callback(ch, method, properties, body):
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
+    runtime_args = response_data.get('runtime_args')
+    if runtime_args is not None:
+        if runtime_args.get('no_response', False):
+            print(f"Skipping response for testing")
+            return 
+
     ch.basic_publish(
         exchange=EXCHANGE_NAME,
         routing_key=return_key,

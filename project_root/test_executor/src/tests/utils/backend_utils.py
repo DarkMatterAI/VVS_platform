@@ -36,7 +36,7 @@ def backend_execute_plugin(backend_client, request_data, plugin_id, params=None)
     if type(request_data) == list:
         endpoint = f"{endpoint}/batch"
 
-    response = backend_client.post(endpoint, json=request_data, params=default_params, timeout=20)
+    response = backend_client.post(endpoint, json=request_data, params=default_params, timeout=30)
     return response 
 
 def backend_delete_plugin(backend_client, endpoint, plugin_record):

@@ -46,10 +46,10 @@ async def validate_data_source_checkin(db_session, response_data, plugin, db_per
             item_source = await crud.get_item_source(db_session, item.item_id, plugin['id'])
             assert item_source is not None 
 
-        if db_persist:
-            embedding_id = plugin['embedding_ids'][0]
-            item_result = await crud.get_item_result(db_session, item.item_id, embedding_id)
-            assert item_result is not None 
+            if db_persist:
+                embedding_id = plugin['embedding_ids'][0]
+                item_result = await crud.get_item_result(db_session, item.item_id, embedding_id)
+                assert item_result is not None 
 
 async def validate_assembly_checkin(db_session, request_data, response_data, plugin):
     request_data = request_dict_to_model(request_data, plugin)
