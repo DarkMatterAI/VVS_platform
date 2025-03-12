@@ -7,6 +7,7 @@ from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
 from vvs_database.models import Plugin 
 from vvs_database.exceptions import SemaphoreException
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
+from vvs_database.execution.redis import RedisService
 
 async def make_post_request(data, url, timeout, retries, retry_sleep=0, log_id=''):
     """Make HTTP POST request with retry logic."""
@@ -70,6 +71,15 @@ async def concurrency_wrapper(concurrency, func, iterable, kwargs):
 
 class APIExecutionStrategy(ExecutionStrategy):
     """Strategy for executing API-based plugins"""
+    def __init__(self, 
+                 redis_service: RedisService,
+                 use_semaphore: bool=True,
+                 max_semaphore_attempts: int=20
+                 ):
+        self.redis_service = redis_service 
+        self.log_id = 'API Execute'
+        self.use_semaphore = use_semaphore
+        self.max_semaphore_attempts = max_semaphore_attempts
 
     def batch_requests(self, 
                        request_list: List[Tuple[str, ExecuteRequestUnion]],
@@ -109,15 +119,19 @@ class APIExecutionStrategy(ExecutionStrategy):
 
         async def process_batch(batch):
             # Try to acquire semaphore with built-in retry/backoff
-            success, identifier = await self.redis_service.acquire_semaphore(
-                name=semaphore_name, 
-                max_locks=max_concurrency,
-                lock_timeout=lock_timeout,
-                max_attempts=20,  # max attempts on acquiring semaphore
-                initial_backoff=initial_backoff,
-                max_backoff=timeout,
-                backoff_factor=2.0
-            )
+            if self.use_semaphore:
+                success, identifier = await self.redis_service.acquire_semaphore(
+                    name=semaphore_name, 
+                    max_locks=max_concurrency,
+                    lock_timeout=lock_timeout,
+                    max_attempts=self.max_semaphore_attempts,
+                    initial_backoff=initial_backoff,
+                    max_backoff=timeout,
+                    backoff_factor=2.0
+                )
+            else:
+                success = True 
+                identifier = None 
 
             if not success:
                 raise SemaphoreException(f"Failed to acquire semaphore '{semaphore_name}' after maximum attempts")
@@ -134,13 +148,14 @@ class APIExecutionStrategy(ExecutionStrategy):
                         request['response'] = response[i]
 
                 return batch 
-            # except:
-            #     return []
+            except Exception as e:
+                print(f"{self.log_id}: Post request to {url} failed - {str(e)}")
+                return []
             finally:
-                await self.redis_service.release_semaphore(semaphore_name, [identifier])
+                if self.use_semaphore:
+                    await self.redis_service.release_semaphore(semaphore_name, [identifier])
 
         batch_results = await concurrency_wrapper(max_concurrency, process_batch, request_batches, {})
-        # print(batch_results)
         results = []
         for batch_result in batch_results:
             if isinstance(batch_result, list):
@@ -148,7 +163,6 @@ class APIExecutionStrategy(ExecutionStrategy):
             else:
                 results.append(batch_result)
 
-        # assert len(results) == len(requests)
         results = {i['key']:i['response'] for i in results}
         return results 
 

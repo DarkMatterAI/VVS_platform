@@ -17,8 +17,8 @@ from vvs_database.schemas import (
     ItemResponseUnion,
     AssemblyRequest,
     AssemblyResponse,
-    DataSourceRequest,
-    DataSourceResponse,
+    # DataSourceRequest,
+    # DataSourceResponse,
     ExecuteRequestUnion, 
     ExecuteResponseUnion,
     NewItem,
@@ -170,7 +170,7 @@ class DatabaseService:
                     for item in response.result:
                         item.item_id = item_to_id.get(item.item, None)
 
-        if persist:
+        if persist and (checkin_result is not None):
             print(f"{self.log_id}: Saving data source embeddings")
             item_records = checkin_result['items']
             item_records_dict = {i.item: i for i in item_records}
@@ -218,28 +218,3 @@ class DatabaseService:
                 for result in response.result:
                     result.item_id = item_to_id.get(result.item, None)
         return checkin_result
-
-
-    async def check_in_results(self,
-                               plugin: Plugin,
-                               requests: List[ExecuteRequestUnion],
-                               results: List[ExecuteResponseUnion],
-                               persist: bool=False
-                               ) -> None: 
-        print(f"{self.log_id}: Checking in {len(requests)} results")
-        plugin_type = plugin.type.lower()
-        checkin_result = None  
-
-        if plugin_type == 'score':
-            # always persist scores
-            checkin_result = await self.check_in_item_results(plugin, requests, results)
-        elif (plugin_type in ['filter', 'embedding']) and persist:
-            # maybe persist filter/embedding
-            checkin_result = await self.check_in_item_results(plugin, requests, results)
-        elif plugin_type == 'data_source':
-            checkin_result = await self.check_in_data_source_results(plugin, requests, results, persist)
-        elif plugin_type == 'assembly':
-            checkin_result = await self.check_in_assembly_results(plugin, requests, results)
-        return checkin_result 
-
-

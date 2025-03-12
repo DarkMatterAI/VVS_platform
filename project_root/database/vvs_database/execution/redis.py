@@ -74,9 +74,10 @@ class RedisService:
     
     async def set_results(self, results: Dict[str, Any]) -> None:
         """Set multiple results in Redis cache"""
-        print(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
         if (not self.cache) or (not results):
             return
+        
+        print(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
             
         pipeline = self.redis.pipeline()
         

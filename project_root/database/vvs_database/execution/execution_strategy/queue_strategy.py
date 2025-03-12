@@ -16,12 +16,20 @@ from vvs_database.execution.redis import RedisService
 class QueueExecutionStrategy(ExecutionStrategy):
     """Strategy for executing queue-based plugins"""
 
-    def __init__(self, redis_service: RedisService):
+    def __init__(self, 
+                 redis_service: RedisService,
+                 use_semaphore: bool=True,
+                 max_semaphore_attempts: int=20,
+                 queue_polling_interval: int=0.2
+                 ):
         self.redis_service = redis_service 
-        self.log_id = 'Execute'
-        self.init_rabbitmq_connection()
+        self.log_id = 'Queue Execute'
+        self.use_semaphore = use_semaphore
+        self.max_semaphore_attempts = max_semaphore_attempts
+        self.polling_interval = queue_polling_interval
         self.connection = None 
         self.channel = None 
+        self.init_rabbitmq_connection()
 
     def init_rabbitmq_connection(self):
         """Initialize connection to RabbitMQ"""
@@ -115,9 +123,6 @@ class QueueExecutionStrategy(ExecutionStrategy):
         
         # Backoff settings
         base_backoff = max(0.5, min(2.0, timeout / max_concurrency))
-        min_polling_interval = 0.2  # Minimum time between result polls
-        # max_polling_interval = 2.0  # Maximum time between result polls
-        self.max_semaphore_attempts = 20
         
         # Prepare request tracking structure
         request_tracker = self._prepare_requests(plugin, requests)
@@ -159,24 +164,17 @@ class QueueExecutionStrategy(ExecutionStrategy):
             pending_before = pending_count 
             pending_count = self._count_pending_requests(request_tracker)
             acquired_this_round = pending_before - pending_count
-            
-            # # Calculate dynamic backoff based on load and contention
-            # if acquired_this_round == 0 and pending_count > 0:
-            #     # High contention - back off more
-            #     backoff_time = min(base_backoff * 2.0 * (1 + random.random() * 0.2), max_polling_interval * 2)
-            # else:
-            #     # Normal operation - standard backoff
-            #     backoff_time = max(min_polling_interval, base_backoff * (1 + random.random() * 0.2))
+            print(f"{self.log_id}: Published {acquired_this_round} messages")
 
-            backoff_time = max(min_polling_interval, base_backoff * (1 + random.random() * 0.2))
+            backoff_time = max(self.polling_interval, base_backoff * (1 + random.random() * 0.2))
             
             # 4. Poll for results and handle timeouts during backoff period
             backoff_start = time.time()
             print(f"{self.log_id}: Backoff time {backoff_time}")
 
             remaining_backoff = float('inf') # init to inf to guarantee one poll
-            while remaining_backoff > min_polling_interval and pending_count > 0:
-                poll_interval = min(remaining_backoff, min_polling_interval)
+            while remaining_backoff > self.polling_interval and pending_count > 0:
+                poll_interval = min(remaining_backoff, self.polling_interval)
                 await self._poll_and_release_cycle(request_tracker, plugin, semaphore_name, poll_interval)
                 remaining_backoff = backoff_time - (time.time() - backoff_start)
                 pending_count = self._count_pending_requests(request_tracker)
@@ -200,14 +198,14 @@ class QueueExecutionStrategy(ExecutionStrategy):
         identifiers_to_release = await self._poll_for_results(request_tracker)
         
         # Release semaphores for completed requests
-        if identifiers_to_release:
+        if identifiers_to_release and self.use_semaphore:
             await self.redis_service.release_semaphore(semaphore_name, identifiers_to_release)
         
         # Check for timeouts
         timeout_identifiers = await self._check_for_timeouts(request_tracker, plugin.timeout)
         
         # Release semaphores for timed-out requests
-        if timeout_identifiers:
+        if timeout_identifiers and self.use_semaphore:
             await self.redis_service.release_semaphore(semaphore_name, timeout_identifiers)
         
         # Wait before next cycle if needed
@@ -270,8 +268,12 @@ class QueueExecutionStrategy(ExecutionStrategy):
                 req_data["status"] = "error"
                 # req_data["result"] = {"error": "Failed to queue message after multiple attempts"}
     
-    async def _acquire_available_locks(self, request_tracker, semaphore_name, max_locks, 
-                                       lock_timeout, max_concurrency):
+    async def _acquire_available_locks(self, 
+                                       request_tracker, 
+                                       semaphore_name, 
+                                       max_locks, 
+                                       lock_timeout, 
+                                       max_concurrency):
         """
         Try to acquire locks for pending requests (just one try per request per iteration)
         
@@ -281,6 +283,13 @@ class QueueExecutionStrategy(ExecutionStrategy):
             max_locks: Maximum number of concurrent locks
             lock_timeout: How long until the lock expires
         """
+        if not self.use_semaphore:
+            for key, req_data in request_tracker.items():
+                if req_data["status"] == "pending":
+                    req_data["status"] = "processing"
+                    req_data["identifier"] = None
+            return # early exit without semaphore 
+
         print(f"{self.log_id}: Acquiring locks")
         lock_count = 0
         for key, req_data in request_tracker.items():

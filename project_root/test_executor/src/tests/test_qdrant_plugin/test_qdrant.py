@@ -110,7 +110,9 @@ async def test_qdrant_execute_wrong_embedding(db_session, backend_client, qdrant
 
     request_data = await generate_request_data(db_session, data_record1, 3)
     response = backend_execute_plugin(backend_client, request_data, data_record2['id'])
-    validate_api_response(data_record2, response, 500)
+    validate_api_response(data_record2, response, 200)
+    for r in response.json():
+        assert r['valid'] == False, r
 
     backend_delete_plugin(backend_client, plugin_api_str, data_record1)
     backend_delete_plugin(backend_client, plugin_api_str, data_record2)

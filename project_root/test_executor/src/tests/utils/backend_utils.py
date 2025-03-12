@@ -19,13 +19,24 @@ def backend_get_plugins_by_filter(backend_client,
 def backend_execute_plugin(backend_client, request_data, plugin_id, params=None):
     endpoint = f"/api/v1/execute/{plugin_id}"
 
+    default_params = {"cache": False,
+                      "db_lookup": False,
+                      "db_persist": False,
+                      "use_semaphore": False,
+                      "max_semaphore_attempts": 20,
+                      "queue_polling_interval": 0.2
+                      }
+    if params is not None:
+        for k,v in params.items():
+            default_params[k] = v
+
     if type(request_data) == list and len(request_data)==1:
         request_data = request_data[0]
     
     if type(request_data) == list:
         endpoint = f"{endpoint}/batch"
 
-    response = backend_client.post(endpoint, json=request_data, params=params, timeout=20)
+    response = backend_client.post(endpoint, json=request_data, params=default_params, timeout=20)
     return response 
 
 def backend_delete_plugin(backend_client, endpoint, plugin_record):

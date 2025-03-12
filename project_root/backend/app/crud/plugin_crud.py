@@ -46,7 +46,10 @@ async def execute_plugin(db: AsyncSession,
                          execute_request: Union[schemas.ExecuteRequestUnion, schemas.BatchExecuteRequestUnion],
                          cache: bool=False,
                          db_lookup: bool=False,
-                         db_persist: bool=False
+                         db_persist: bool=False,
+                         use_semaphore: bool=True,
+                         max_semaphore_attempts: int=20,
+                         queue_polling_interval: float=0.2,
                          ):
     try:
         response = await execution.execute_plugin(db, 
@@ -54,7 +57,10 @@ async def execute_plugin(db: AsyncSession,
                                                   execute_request, 
                                                   cache=cache,
                                                   db_lookup=db_lookup,
-                                                  db_persist=db_persist)
+                                                  db_persist=db_persist,
+                                                  use_semaphore=use_semaphore,
+                                                  max_semaphore_attempts=max_semaphore_attempts,
+                                                  queue_polling_interval=queue_polling_interval)
         return response 
     except AssertionError as e:
         raise HTTPException(status_code=502, detail=str(e))

@@ -4,9 +4,8 @@ VVS V2
 todos
     execution refactor
         execution refactor 
-    refactor db tests to use fewer fixtures 
-    fix unnecessary commits `async with db_session.begin():`
-    backend/db code for publishing messages to queue in bulk
+        redundant code in utils 
+        expose args for polling and whatnot 
     batch endpoint is redundant - remove
     jobs
         qdrant upload
