@@ -17,8 +17,6 @@ from vvs_database.schemas import (
     ItemResponseUnion,
     AssemblyRequest,
     AssemblyResponse,
-    # DataSourceRequest,
-    # DataSourceResponse,
     ExecuteRequestUnion, 
     ExecuteResponseUnion,
     NewItem,
@@ -226,7 +224,10 @@ class DatabaseService:
         if new_assemblies:
             checkin_result = await assembly_checkin(self.db, new_assemblies, plugin.id)
             item_to_id = {i.item : i.id for i in checkin_result['items']}
+            item_id_to_assembly_id = {i.product_id: i.assembly_id for i in checkin_result['assemblies']}
             for response in results:
                 for result in response.result:
-                    result.item_id = item_to_id.get(result.item, None)
+                    # result.item_id = item_to_id.get(result.item, None)
+                    result.item_id = item_to_id[result.item]
+                    result.assembly_id = item_id_to_assembly_id[result.item_id]
         return checkin_result

@@ -7,9 +7,8 @@ import random
 from typing import Dict, List, Tuple  
 
 from vvs_database.settings import settings 
-from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, RedisResult
+from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
 from vvs_database.models import Plugin 
-from vvs_database.exceptions import SemaphoreException
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
 from vvs_database.execution.redis import RedisService
 
@@ -384,6 +383,8 @@ class QueueExecutionStrategy(ExecutionStrategy):
 
         for key, req_data in request_tracker.items():
             fail_request = False 
+            failure_reason = None 
+            failure_detail = None 
 
             # timeout on queue
             if req_data["status"] == "queued" and req_data["queued_at"] is not None:
@@ -391,19 +392,23 @@ class QueueExecutionStrategy(ExecutionStrategy):
                 if elapsed > timeout:
                     fail_request = True 
                     timeout_count += 1
+                    failure_reason = "Timeout error"
+                    failure_detail = "Failed to return message response in time "
 
             # unable to acquire semaphore 
             if ((req_data["status"] not in ["complete", "error"]) and 
                 (req_data["semaphore_count"] > self.max_semaphore_attempts)):
                 fail_request = True 
                 semaphore_count += 1 
+                failure_reason = "Semaphore failure"
+                failure_detail = f"Unable to acquire semaphore after {self.max_semaphore_attempts} attempts"
 
             if fail_request:
                 req_data["status"] = "error"
                 req_data["result"] = {"valid": False, 
                         "response_data": None, 
-                        "failure_reason": "Timeout error",
-                        "failure_detail": "Failed to return message in time"
+                        "failure_reason": failure_reason,
+                        "failure_detail": failure_detail
                     }
                 if req_data["identifier"]:
                     identifiers_to_release.append(req_data["identifier"])

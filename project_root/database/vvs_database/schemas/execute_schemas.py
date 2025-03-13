@@ -50,7 +50,6 @@ class DataSourceRequest(BaseModel):
         
 class DataSourceResponseItem(BaseModel):
     model_config = ConfigDict(extra='allow')
-    # item_id: Optional[int]=None
     item: str
     external_id: Optional[Union[int, str]]
     embedding: List[float]
@@ -118,7 +117,6 @@ class AssemblyRequest(BaseModel):
 
 class AssemblyResult(BaseModel):
     model_config = ConfigDict(extra='allow')
-    # item_id: Optional[int]=None
     item: str 
     external_id: Optional[Union[int, str]]
         
@@ -133,9 +131,6 @@ class AssemblyResponse(BaseModel):
 class ItemInternal(ItemDataEmbed):
     score: Optional[float]
     parents: Optional[List[AssemblyItem]] = None 
-
-class RedisResult(BaseModel):
-    result_id: str 
 
 ExecuteRequestUnion = Union[
     ItemRequest,

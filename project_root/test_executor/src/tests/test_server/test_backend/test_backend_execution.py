@@ -45,6 +45,18 @@ async def test_backend_api_execute_cache(db_session, backend_client, redis_conne
     validate_execution_cache(redis_connection, request_data, plugin)
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding', 'assembly', 'mapper', 'data_source'])
+async def test_backend_api_execute_semaphore(db_session, backend_client, redis_connection, plugin_type):
+    plugin, request_data = await get_plugin_and_request(db_session, 
+                                                        backend_client, 
+                                                        plugin_type,
+                                                        f"mock_{plugin_type}_api_%", 
+                                                        3)
+    response = backend_execute_plugin(backend_client, request_data, 
+                                      plugin['id'], params={'use_semaphore' : True})
+    validate_api_response(plugin, response, 200)
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding'])
 @pytest.mark.parametrize("db_persist", [True, False])
 async def test_backend_api_execute_item_checkin(db_session, backend_client, plugin_type, db_persist):

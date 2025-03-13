@@ -68,7 +68,9 @@ class RedisService:
                     print(f"{self.log_id}: Key {key} json decode error")
                     pass  # Skip invalid JSON
 
-        print(f"{self.log_id}: Found {len(parsed_results.keys())} keys in cache")
+        n_found = len(parsed_results.keys())
+        pct_found = n_found / len(keys)
+        print(f"{self.log_id}: Found {n_found}/{len(keys)} keys in cache, {pct_found:.3f} hit percept")
         
         return parsed_results
     

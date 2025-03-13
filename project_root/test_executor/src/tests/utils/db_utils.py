@@ -60,6 +60,7 @@ async def validate_assembly_checkin(db_session, request_data, response_data, plu
 
         for assembly_result in response.result:
             assert assembly_result.item_id is not None 
+            assert assembly_result.assembly_id is not None 
             item_source = await crud.get_item_source(db_session, assembly_result.item_id, plugin['id'])
             assert item_source is not None, assembly_result
 

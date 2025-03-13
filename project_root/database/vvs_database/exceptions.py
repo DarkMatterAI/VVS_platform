@@ -17,7 +17,3 @@ class DuplicateError(DatabaseError):
 class ReferenceError(DatabaseError):
     """Raised when a reference constraint would be violated."""
     pass
-
-class SemaphoreException(Exception):
-    """Raised when unable to acquire Redis semaphore."""
-    pass

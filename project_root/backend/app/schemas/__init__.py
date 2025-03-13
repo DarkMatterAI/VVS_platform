@@ -14,7 +14,6 @@ from vvs_database.schemas import (
     ItemRequest,
     MapperRequest,
     AssemblyRequest,
-    RedisResult,
     ExecuteRequestUnion,
     BatchExecuteRequestUnion
 )

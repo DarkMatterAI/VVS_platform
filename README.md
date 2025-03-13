@@ -2,12 +2,6 @@
 VVS V2
 
 todos
-    execution refactor
-        redundant code in utils 
-        tests
-            test semaphore
-        test failure modes for executor
-            when should fail responses be logged?
     jobs
         qdrant upload
         search
@@ -47,7 +41,7 @@ plugin results table
 
 
 jobs table
-    job id, job json, status
+    job id, job type, job json, status
 
 results
     result id, job id, item_id, assembly id (optional)
@@ -96,95 +90,77 @@ locks/control of plugins/jobs
     concurrency         
 
 
-plugin execution flow
-    gather unique queries
-    create cache keys
-        filter/score/embedding
-            item id + plugin id
-        assembly
-            parent ids + plugin id
-        data/mapper
-            no cache
-    hit cache, gather uncached inputs
-    check cache miss against database 
-        filter/score/embedding
-            plugin results table
-        assembly
-            assembly components table
-        data source/mapper
-            no database check
-    execute plugin
-        break into batches
-        queue
-            post messages such that # of outstanding is never over concurrency
-        api
-            concurrent post requests gates by concurrency
-    check in results
-        data source
-            item checkin
-        score
-            score checkin
-        assembly
-            assembly checkin
-        filter/embed/mapper
-            no checkin
-    scatter to unique queries
-    scatter to inputs
-
-
-
-
-deletion concerns
-    all items in item table should have at least one external table entry
-    deleting a plugin should delete all records linked to that plugin
-
-    data source
-        delete plugin
-        delete external table refs
-        find hanging items, delete
-    
-    assembly delete
-        delete plugin
-        delete external table refs
-        delete assembly table refs
-        find hanging items, delete
-
-
 search iteration flow
-    start with query, gradient
-    check into search iteration table
-    generate gradient arc queries
-    run data queries
-    check results into postgres 
-    deduplicate results based on id
-    check into iteration results table
-        do before/after filter and score??
-    filter/remove
-    score results
-    check into score table
-    select update
-    compute grad
-    create next iteration
+    check time/inference limit
+    inputs
+        query embedding
+        gradient embedding
+        job id / info
+    data source
+        generate gradient arc queries
+        standard
+            data query with checkin
+        mapper
+            mapper
+            split data query with checkin
+            generate assembly pools
+            assembly with checkin
+        bb
+            deconcat
+            split data query with checkin
+            generate assembly pools
+            assembly with checkin
+        parse result into items format
+    check inference limit
+    filter
+        for each filter
+            compute embedding(s) as needed
+            execute filter (checkin optional)
+            subset for valid results
+    score
+        compute embedding(s) as needed
+        execute score with checkin
+    update
+        select best result
+        compute gradient around result 
+    save search iteration
+    check time/inference limit 
+    create next iteration if applicable 
 
-assembly search iteration flow
-    query, grad
-    check into iteration table 
-    generate grad arc queries
-    run data query
-        split queries
-        check results into postgres
-        assemble
-        check results into postgres
-        embed 
 
-job things to remember
-    inference budget
-    time limit 
+search crud
+    name
+    plugins
+        data plugins
+            data source
+            mapper/data sources/assembly
+            data sources/assembly
+        filters
+        score
+    update
+        topk
+        lrs
+        etc 
+    job params
+        filename
+        delete file
+        time
+            time limit
+            global time limit
+        inference
+            inference budget
+            global inference budget 
+    
+all plugin params
+    persist, cache, semaphore
+    runtime args 
+
+data params
+    k
 
 
-check mapper result contains correct number of embeddings
 
-use new embeddings to test multi-embedding backend 
+
 
 documentation notes
     backend
@@ -196,35 +172,6 @@ documentation notes
             reactions assume no reagents 
         tei
         triton 
-        
-
-plugin execution during job
-    generic/before
-        create hash keys
-        check cache
-        gather inputs
-        for score
-            check inference budget
-    api
-        acquire lock based on plugin concurrency
-        make request 
-        release lock
-    plugin
-        create counter for plugin
-        check counter is below concurrency
-        post message
-        increase counter
-        poll result
-        get result (or timeout)
-        decrease counter 
-    generic / after
-        save to cache
-        scatter 
-        for score
-            update inference budget (should be per item)
-        
-
-
 
 search job data model
     data source

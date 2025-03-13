@@ -130,8 +130,9 @@ class BasePluginExecutor:
                                        Dict[str, ExecuteResponseUnion],
                                        Dict[str, ExecuteRequestUnion]]:
         """Check request against cache and database"""
-        print(f"{self.log_id}: Checking records with {len(key_to_request.keys())} keys")
         unique_keys = list(key_to_request.keys())
+        n_keys = len(unique_keys)
+        print(f"{self.log_id}: Checking records with {n_keys} keys")
 
         # Check cache for records
         print(f"{self.log_id}: Checking cache")
