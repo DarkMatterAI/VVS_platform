@@ -31,7 +31,7 @@ async def test_server_endpoint(db_session, test_api_client, backend_client, plug
     validate_api_response(plugin, response, status_code)
 
 @pytest.mark.asyncio
-async def test_server_endpoint(db_session, test_api_client, backend_client):
+async def test_server_endpoint_fail(db_session, test_api_client, backend_client):
     batch_size = 3
     plugin_type = 'filter'
     plugin, request_data = await get_plugin_and_request(db_session, 

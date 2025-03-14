@@ -2,12 +2,27 @@
 VVS V2
 
 todos
+    data table for execution failures 
+        eventually add job id 
+    build core ops around executioner
+        data query
+        assembly data query
+        mapper data query 
+        bb data query
+        combined "decomposed data query assembly" 
+            mapper can feed into this 
+        filter execution
+        score execution
+        InternalItem data model
+        compute embeddings before ops
+        add "get required embeddings" to generic execution step?
     jobs
         qdrant upload
         search
             standard
             mapper
             bb
+        
 
 
 add cache flag to plugins?
@@ -45,16 +60,25 @@ jobs table
 
 results
     result id, job id, item_id, assembly id (optional)
+        score? can find with query but could be easier to just store again
+
+
+
+
 
 search iteration
-    (iteration id, parent iteration id, iteration (int), inference count, time,
-    json blob (query embedding, grad, etc), status)
-        status to indicate queue, running, fail, complete, etc
-        failure notes
-            inference/time runout, no valid results, etc
+    iteration id - id
+    seed iteration id - first iteration 
+    parent iteration id - previous iteration
+    iteration - int iteration count
+    inference count - int inference so far
+    time - int time elapsed
+    iteration blob - json blob with query, grad, etc
+    status - str queue, running, fail, complete, etc
+    failure notes - str, any details on failure 
 
 search iteration results
-    iteration id, item_id
+    iteration id, item_id, valid (item made it past all filters to score)
 
 
 search iteration

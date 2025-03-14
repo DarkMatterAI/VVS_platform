@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Enum, Table, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Enum, Table, DateTime, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -32,7 +32,9 @@ class Plugin(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     embeddings = relationship("EmbeddingPlugin", secondary=plugin_embeddings, back_populates="related_plugins")
-
+    execution_failures = relationship("PluginExecutionFailure", 
+                                     back_populates="plugin", 
+                                     cascade="all, delete-orphan")
     __mapper_args__ = {
         'polymorphic_on': type,
         'polymorphic_identity': 'plugin',
@@ -105,3 +107,16 @@ class AssemblyPlugin(Plugin):
     __mapper_args__ = {
         'polymorphic_identity': 'assembly',
     }
+
+class PluginExecutionFailure(Base):
+    __tablename__ = "plugin_execution_failures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    plugin_id = Column(Integer, ForeignKey("plugins.id", ondelete="CASCADE"), nullable=False)
+    failure_reason = Column(String, nullable=True)
+    failure_detail = Column(Text, nullable=True) 
+    request = Column(JSON, nullable=True)
+    
+    # Relationship to the plugin (optional)
+    plugin = relationship("Plugin", back_populates="execution_failures")

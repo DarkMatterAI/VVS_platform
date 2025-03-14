@@ -6,7 +6,8 @@ from tests.utils.db_utils import (
     validate_execution_cache,
     validate_item_checkin,
     validate_data_source_checkin,
-    validate_assembly_checkin
+    validate_assembly_checkin,
+    get_execution_failures
 )
 
 @pytest.mark.asyncio
@@ -105,10 +106,12 @@ async def test_backend_api_execution_error(db_session, backend_client):
                                                         batch_size)
     request_data = request_data[0]
     request_data['runtime_args'] = {'throw_error' : True}
+    initial_errors = await get_execution_failures(db_session, plugin['id'])
 
     response_data = backend_execute_plugin(backend_client, request_data, plugin['id'])
     validate_api_response(plugin, response_data, 200)
-
+    final_errors = await get_execution_failures(db_session, plugin['id'])
+    assert final_errors > initial_errors
 
 @pytest.mark.asyncio
 async def test_backend_api_execute_item_error_checkin(db_session, backend_client):
@@ -120,6 +123,8 @@ async def test_backend_api_execute_item_error_checkin(db_session, backend_client
                                                         f"mock_{plugin_type}_api_%",
                                                         3)
     request_data[0]['runtime_args'] = {'throw_error' : True}
+    initial_errors = await get_execution_failures(db_session, plugin['id'])
+    await db_session.commit()
 
     response_data = backend_execute_plugin(backend_client, request_data, plugin['id'],
                                            params={'db_persist' : True})
@@ -127,8 +132,7 @@ async def test_backend_api_execute_item_error_checkin(db_session, backend_client
 
     # error should prevent db persist 
     await validate_item_checkin(db_session, request_data, response_data, plugin, False)
-
-
-
+    final_errors = await get_execution_failures(db_session, plugin['id'])
+    assert final_errors > initial_errors
 
 

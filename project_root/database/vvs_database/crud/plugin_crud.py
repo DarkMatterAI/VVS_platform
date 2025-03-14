@@ -14,6 +14,7 @@ from vvs_database.models import (
     ScorePlugin,
     MapperPlugin, 
     AssemblyPlugin, 
+    PluginExecutionFailure,
     plugin_embeddings
 )
 
@@ -380,3 +381,22 @@ async def count_plugins_linked_to_embedding_class(db: AsyncSession, plugin_class
     result = await db.execute(query)
     count = result.scalar_one()
     return count
+
+async def get_execution_failures(
+    db: AsyncSession, 
+    plugin_id: int,
+    skip: int = 0, 
+    limit: int = 100,
+):
+    """Get plugins with filtering, pagination and eager loading."""
+    stmt = (
+        select(PluginExecutionFailure)
+        .filter(PluginExecutionFailure.plugin_id == plugin_id)
+    )
+
+    stmt = stmt.offset(skip).limit(limit)
+
+    result = await db.execute(stmt)
+    records = result.scalars().all()
+    
+    return records

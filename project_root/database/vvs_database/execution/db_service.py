@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List
+from typing import Dict, List, Tuple 
 from collections import defaultdict 
+import asyncio
 
 from vvs_database.crud import (
     get_plugin, 
@@ -9,7 +10,8 @@ from vvs_database.crud import (
     get_assemblies_by_component_keys,
     item_checkin,
     result_checkin,
-    assembly_checkin
+    assembly_checkin,
+    upsert_execution_failures
 )
 
 from vvs_database.schemas import (
@@ -227,7 +229,24 @@ class DatabaseService:
             item_id_to_assembly_id = {i.product_id: i.assembly_id for i in checkin_result['assemblies']}
             for response in results:
                 for result in response.result:
-                    # result.item_id = item_to_id.get(result.item, None)
                     result.item_id = item_to_id[result.item]
                     result.assembly_id = item_id_to_assembly_id[result.item_id]
         return checkin_result
+
+    async def log_failed_requests(self,
+                                  plugin: Plugin,
+                                  failed_requests: List[Tuple[ExecuteRequestUnion, Dict]]
+                                  ):
+        await asyncio.sleep(0)
+        inputs = [{
+            "plugin_id": plugin.id,
+            "failure_reason": response_dict["failure_reason"],
+            "failure_detail": response_dict["failure_detail"],
+            "request": request.model_dump()
+
+        } for (request, response_dict) in failed_requests]
+
+        records = []
+        if inputs:
+            records = await upsert_execution_failures(self.db, inputs)
+        return records 

@@ -1,4 +1,5 @@
 import uuid
+import json 
 from typing import List, Tuple, Dict, Optional, Any, Type
 
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
@@ -159,28 +160,53 @@ class BasePluginExecutor:
         print(f"{self.log_id}: {len(remaining_requests.keys())} keys remain after DB")
         return cached_results, db_results, remaining_requests
 
+    # async def execute_plugin(self, 
+    #                          remaining_requests: Dict[str, ExecuteRequestUnion]
+    #                          ) -> Dict[str, ExecuteResponseUnion]:
+    #     """Execute plugin request. Optionally cache/persist results"""
+    #     print(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
+    #     executed_results = {}
+    #     if remaining_requests:
+    #         raw_result = await self.execution_strategy.execute(self.plugin, remaining_requests)
+    #         for k,v in raw_result.items():
+    #             if v["valid"]:
+    #                 executed_results[k] = self.response_model.model_validate(v["response_data"])
+    #             else:
+    #                 print(f"{self.log_id}: Failed execution: plugin {self.plugin.id}, " \
+    #                       f"{v['failure_reason']}, {v['failure_detail']}")
+
+    #         await self.redis_service.set_results(executed_results)
+
+    #     return executed_results 
+
     async def execute_plugin(self, 
                              remaining_requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
         """Execute plugin request. Optionally cache/persist results"""
         print(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
         executed_results = {}
-        if remaining_requests:
-            raw_result = await self.execution_strategy.execute(self.plugin, remaining_requests)
-            for k,v in raw_result.items():
-                if v["valid"]:
-                    executed_results[k] = self.response_model.model_validate(v["response_data"])
-                else:
-                    print(f"{self.log_id}: Failed execution: plugin {self.plugin.id}, " \
-                          f"{v['failure_reason']}, {v['failure_detail']}")
+        if not remaining_requests:
+            return executed_results
 
-            await self.redis_service.set_results(executed_results)
+        raw_result = await self.execution_strategy.execute(self.plugin, remaining_requests)
+        failed_execution = []
+        for k,v in raw_result.items():
+            if v["valid"]:
+                try:
+                    response_data = self.response_model.model_validate(v["response_data"])
+                    executed_results[k] = response_data
+                except Exception as e:
+                    v["valid"] = False 
+                    v["failure_reasion"] = f"Model validation error: {self.plugin.type}"
+                    v["failure_detail"] = f"Response: {json.dumps(v['response_data'])}, Error: {str(e)}"
 
-        # if remaining_requests:
-        #     executed_results = await self.execution_strategy.execute(self.plugin, remaining_requests)
-        #     executed_results = {k: self.response_model.model_validate(v)
-        #                         for k, v in executed_results.items()}            
-        #     await self.redis_service.set_results(executed_results)
+            if not v["valid"]:
+                print(f"{self.log_id}: Failed execution: plugin {self.plugin.id}, " \
+                        f"{v['failure_reason']}, {v['failure_detail']}")
+                failed_execution.append((remaining_requests[k], v))
+
+        await self.db_service.log_failed_requests(self.plugin, failed_execution)
+        await self.redis_service.set_results(executed_results)
 
         return executed_results 
     

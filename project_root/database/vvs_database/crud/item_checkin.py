@@ -5,7 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List, Dict, Optional 
 
-from vvs_database.models import Item, ItemSource, ItemResult, Assembly, AssemblyComponent
+from vvs_database.models import (
+    Item, 
+    ItemSource, 
+    ItemResult, 
+    Assembly, 
+    AssemblyComponent, 
+    PluginExecutionFailure
+)
 from vvs_database import schemas 
 
 async def upsert_items(db: AsyncSession, new_items: List[dict]) -> List:
@@ -52,17 +59,6 @@ async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugi
     item_source_records_dict = {}
     item_source_records_response = []
 
-
-    # ins_stmt = pg_insert(Item)
-    # item_stmt = ins_stmt.values([{"item": item} for item in unique_items.keys()])
-    # item_stmt = item_stmt.on_conflict_do_update(
-    #     index_elements=["item"],
-    #     set_={"item": item_stmt.excluded.item}
-    # ).returning(Item.id, Item.item, Item.created_at)
-
-    # result = await db.execute(item_stmt)
-    # item_records = result.fetchall()
-
     # Prepare data for ItemSource using the returned item IDs
     if plugin_id is not None:
         item_source_data = []
@@ -76,29 +72,10 @@ async def item_checkin(db: AsyncSession, new_items: List[schemas.NewItem], plugi
             })
 
         item_source_records = await upsert_item_sources(db, item_source_data)
-        
-        # # Similarly, create the insert instance for the ItemSource table
-        # ins_stmt_source = pg_insert(ItemSource)
-        # source_stmt = ins_stmt_source.values(item_source_data)
-        # source_stmt = source_stmt.on_conflict_do_update(
-        #     index_elements=["item_id", "plugin_id"],
-        #     set_={"external_id": source_stmt.excluded.external_id}
-        # ).returning(
-        #     ItemSource.item_id,
-        #     ItemSource.external_id,
-        #     ItemSource.plugin_id,
-        #     ItemSource.created_at
-        # )
-
-        # result = await db.execute(source_stmt)
-        # item_source_records = result.fetchall()
 
         await db.commit()
 
-        # item_records_dict = {i.item: i for i in item_records}
         item_source_records_dict = {i.item_id: i for i in item_source_records}
-
-        # item_records_response = [item_records_dict[ni.item] for ni in new_items]
         item_source_records_response = [item_source_records_dict[i.id] for i in item_records_response]
     
     return {
@@ -275,3 +252,25 @@ async def assembly_checkin(db: AsyncSession,
         "item_sources": item_checkin_result["item_sources"],
         "assemblies": assemblies_result
     }
+
+async def upsert_execution_failures(db: AsyncSession, records: List[Dict]):
+    ins_stmt_source = pg_insert(PluginExecutionFailure)
+    source_stmt = ins_stmt_source.values(records)
+    
+    source_stmt = source_stmt.on_conflict_do_update(
+        constraint=PluginExecutionFailure.__table__.primary_key,
+        set_={"failure_reason": source_stmt.excluded.failure_reason,
+              "failure_detail": source_stmt.excluded.failure_detail,
+              "request": source_stmt.excluded.request}
+    ).returning(
+        PluginExecutionFailure.id,
+        PluginExecutionFailure.timestamp,
+        PluginExecutionFailure.plugin_id,
+        PluginExecutionFailure.failure_reason,
+        PluginExecutionFailure.failure_detail,
+        PluginExecutionFailure.request
+    )
+    result = await db.execute(source_stmt)
+    records = result.fetchall()
+    await db.commit()
+    return records 

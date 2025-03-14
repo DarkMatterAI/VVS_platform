@@ -11,6 +11,7 @@ from vvs_database.crud.plugin_crud import (
     count_plugins_by_class,
     count_plugins_linked_to_embedding_id,
     count_plugins_linked_to_embedding_class,
+    get_execution_failures,
 )
 
 from vvs_database.crud.item_crud import (
@@ -34,6 +35,7 @@ from vvs_database.crud.item_checkin import (
     item_checkin,
     result_checkin,
     assembly_checkin,
+    upsert_execution_failures,
 )
 
 from vvs_database.crud.assembly_crud import (
@@ -60,6 +62,7 @@ __all__ = [
     "count_plugins_by_class",
     "count_plugins_linked_to_embedding_id",
     "count_plugins_linked_to_embedding_class",
+    "get_execution_failures",
 
     # item crud 
     "create_item",
@@ -89,5 +92,6 @@ __all__ = [
     # item checkin 
     "item_checkin",
     "result_checkin",
-    "assembly_checkin"
+    "assembly_checkin",
+    "upsert_execution_failures",
 ]

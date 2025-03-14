@@ -392,7 +392,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
                 if elapsed > timeout:
                     fail_request = True 
                     timeout_count += 1
-                    failure_reason = "Timeout error"
+                    failure_reason = "Queue timeout error"
                     failure_detail = "Failed to return message response in time "
 
             # unable to acquire semaphore 

@@ -6,10 +6,11 @@ from tests.utils.db_utils import (
     validate_item_checkin,
     validate_data_source_checkin,
     validate_assembly_checkin,
-    response_dict_to_model
+    get_execution_failures
 )
 
 from vvs_database.execution import execute_plugin
+# from vvs_database import crud
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding', 'assembly', 'mapper', 'data_source'])
@@ -113,9 +114,14 @@ async def test_db_api_execution_error(db_session, backend_client, plugin_type):
     request_data = request_data[0]
     request_data.runtime_args = {'throw_error' : True}
 
+    initial_errors = await get_execution_failures(db_session, plugin['id'])
+
     response, checkin_response, valid_execution = await execute_plugin(db_session, plugin['id'], request_data, 
                                     cache=False, db_lookup=False, db_persist=False, use_semaphore=False, return_all=True)
     assert valid_execution[0] == False, valid_execution
+
+    final_errors = await get_execution_failures(db_session, plugin['id'])
+    assert final_errors > initial_errors
 
 @pytest.mark.asyncio
 async def test_db_api_execute_item_error_checkin(db_session, backend_client):
@@ -129,9 +135,14 @@ async def test_db_api_execute_item_error_checkin(db_session, backend_client):
                                                         to_model=True)
     request_data[0].runtime_args = {'throw_error' : True}
 
+    initial_errors = await get_execution_failures(db_session, plugin['id'])
+
     response_data = await execute_plugin(db_session, plugin['id'], request_data, 
                                     cache=False, db_lookup=True, use_semaphore=False, db_persist=db_persist)
     validate_response(plugin, response_data)
 
     # error should prevent db persist 
     await validate_item_checkin(db_session, request_data, response_data, plugin, False)
+
+    final_errors = await get_execution_failures(db_session, plugin['id'])
+    assert final_errors > initial_errors

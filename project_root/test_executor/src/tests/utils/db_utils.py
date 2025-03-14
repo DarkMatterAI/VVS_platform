@@ -74,3 +74,7 @@ async def validate_assembly_checkin(db_session, request_data, response_data, plu
             for i in range(len(request_parents)):
                 assert request_parents[i].item_id == record_parents[i].component_id
 
+async def get_execution_failures(db_session, plugin_id):
+    records = await crud.get_execution_failures(db_session, plugin_id, limit=5000)
+    return len(records)
+

@@ -6,6 +6,7 @@ from vvs_database.models.plugin_models import (
     ScorePlugin,
     MapperPlugin,
     AssemblyPlugin,
+    PluginExecutionFailure,
     plugin_embeddings
 )
 
@@ -25,6 +26,7 @@ __all__ = [
     "ScorePlugin",
     "MapperPlugin",
     "AssemblyPlugin",
+    "PluginExecutionFailure",
     "plugin_embeddings",
     "Item",
     "ItemSource",
