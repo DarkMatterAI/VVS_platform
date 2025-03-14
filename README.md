@@ -24,6 +24,12 @@ todos
             bb
         
 
+eventual job todos
+    add job id to execution failures
+    add job id to initial queries
+
+
+
 
 add cache flag to plugins?
     or do at runtime?

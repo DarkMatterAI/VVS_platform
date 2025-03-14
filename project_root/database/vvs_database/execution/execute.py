@@ -2,8 +2,7 @@ from typing import Optional, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from vvs_database.execution.db_service import DatabaseService
-from vvs_database.execution.redis import RedisService
+from vvs_database.execution.connections import DatabaseService, RedisService, RabbitMQService
 from vvs_database.schemas import BatchExecuteRequestUnion, ExecuteRequestUnion
 from vvs_database.execution.plugins.executor_factory import PluginExecutorFactory
 
@@ -31,12 +30,16 @@ class PluginExecutor:
         
         # Initialize Redis service
         redis_service = RedisService(redis_url, cache_ttl, cache)
+
+        # Initialize Rabbitmq service
+        rabbitmq_service = RabbitMQService()
         
         # Create appropriate executor using factory
         executor = PluginExecutorFactory.create_executor(
             plugin,
             self.db_service,
             redis_service,
+            rabbitmq_service,
             db_lookup,
             db_persist,
             use_semaphore,

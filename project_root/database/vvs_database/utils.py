@@ -1,12 +1,8 @@
 from sqlalchemy.orm import class_mapper
 import httpx 
-# import json 
 import asyncio
 
-# from aioredis import Redis
-
 from vvs_database import schemas, models
-# from vvs_database import settings 
 
 plugin_type_map = {
     schemas.PluginType.EMBEDDING : {

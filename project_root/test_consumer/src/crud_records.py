@@ -8,12 +8,12 @@ def ping_backend():
     transport = httpx.HTTPTransport(retries=5)
     client = httpx.Client(transport=transport)
     response = client.get(f"{backend_url}/", timeout=5)
-    assert response.status_code == 200 
+    assert response.status_code == 200, response.text 
 
 def create_plugin(create_data):
     print(f"Creating plugin with data {create_data}")
     response = httpx.post(f"{backend_url}/api/v1/plugins/", json=create_data, timeout=5)
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text 
     return response.json()
 
 def get_current_records():
@@ -30,7 +30,7 @@ def get_current_records():
 
     response = httpx.get(f"{backend_url}/api/v1/plugins/",
                                 params={'name' : 'mock_%_queue_%'})
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text 
     current_records = response.json()
     for record in current_records:
         plugin_type = record['type']
@@ -77,4 +77,4 @@ def delete_records(records):
         record_ids = records[plugin_type]
         for record_id in record_ids:
             response = httpx.delete(f"{backend_url}/api/v1/plugins/{record_id['id']}")
-            assert response.status_code == 200
+            assert response.status_code == 200, response.text 

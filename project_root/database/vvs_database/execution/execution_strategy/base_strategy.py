@@ -4,7 +4,7 @@ import asyncio
 
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
 from vvs_database.models import Plugin 
-from vvs_database.execution.redis import RedisService
+from vvs_database.execution.connections import RedisService
 
 class ExecutionStrategy:
     """Base class for plugin execution strategies"""

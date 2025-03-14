@@ -1,7 +1,6 @@
 from vvs_database.schemas import PluginType
 from vvs_database.models import Plugin
-from vvs_database.execution.redis import RedisService
-from vvs_database.execution.db_service import DatabaseService
+from vvs_database.execution.connections import DatabaseService, RedisService, RabbitMQService
 from vvs_database.execution.plugins.base_executor import BasePluginExecutor
 from vvs_database.execution.plugins.plugin_executors import EXECUTOR_DICT
 
@@ -13,6 +12,7 @@ class PluginExecutorFactory:
             plugin: Plugin,
             db_service: DatabaseService,
             redis_service: RedisService,
+            rabbitmq_service: RabbitMQService,
             db_lookup: bool = False,
             db_persist: bool = False,
             use_semaphore: bool = True,
@@ -25,6 +25,13 @@ class PluginExecutorFactory:
         executor_class = EXECUTOR_DICT.get(plugin_type)
         if executor_class is None:
             raise ValueError(f"Unknown plugin type: {plugin_type}")
-        executor = executor_class(plugin, db_service, redis_service, db_lookup, db_persist,
-                                  use_semaphore, max_semaphore_attempts, queue_polling_interval)
+        executor = executor_class(plugin, 
+                                  db_service, 
+                                  redis_service, 
+                                  rabbitmq_service,
+                                  db_lookup, 
+                                  db_persist,
+                                  use_semaphore, 
+                                  max_semaphore_attempts, 
+                                  queue_polling_interval)
         return executor 

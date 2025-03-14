@@ -42,6 +42,7 @@ from vvs_database.schemas.item_schemas import (
 )
 
 from vvs_database.schemas.execute_schemas import (
+    Embedding,
     EmbedResponse,
     DataSourceRequest,
     DataSourceResponseItem,
@@ -125,6 +126,7 @@ __all__ = [
     "NewAssembly",
 
     # Execute schemas
+    "Embedding",
     "EmbedResponse",
     "DataSourceRequest",
     "DataSourceResponseItem",

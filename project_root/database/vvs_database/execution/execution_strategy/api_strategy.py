@@ -6,7 +6,7 @@ from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
 from vvs_database.models import Plugin 
 from vvs_database.utils import make_post_request
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
-from vvs_database.execution.redis import RedisService
+from vvs_database.execution.connections import RedisService
 
 async def concurrency_bounded_func(semaphore, func, input, kwargs):
     """Run function within concurrency limit."""

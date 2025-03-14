@@ -5,8 +5,7 @@ from typing import List, Tuple, Dict, Optional, Any, Type
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
 from vvs_database.models import Plugin
 
-from vvs_database.execution.redis import RedisService
-from vvs_database.execution.db_service import DatabaseService
+from vvs_database.execution.connections import DatabaseService, RedisService, RabbitMQService
 from vvs_database.execution.execution_strategy import APIExecutionStrategy, QueueExecutionStrategy
 
 class BasePluginExecutor:
@@ -20,6 +19,7 @@ class BasePluginExecutor:
                  plugin: Plugin,
                  db_service: DatabaseService,
                  redis_service: RedisService,
+                 rabbitmq_service: RabbitMQService,
                  db_lookup: bool=False,
                  db_persist: bool=False,
                  use_semaphore: bool=True,
@@ -29,6 +29,7 @@ class BasePluginExecutor:
         self.plugin = plugin
         self.db_service = db_service
         self.redis_service = redis_service
+        self.rabbitmq_service = rabbitmq_service
         self.db_lookup = db_lookup
         self.db_persist = db_persist 
         self.use_semaphore = use_semaphore
@@ -49,6 +50,7 @@ class BasePluginExecutor:
         else:
             self.execution_strategy = QueueExecutionStrategy(
                 self.redis_service,
+                self.rabbitmq_service,
                 self.use_semaphore,
                 self.max_semaphore_attempts,
                 self.queue_polling_interval
@@ -65,6 +67,7 @@ class BasePluginExecutor:
         self.log_id = log_id 
         self.db_service.log_id = f"{self.log_id}:DB"
         self.redis_service.log_id = f"{self.log_id}:Redis"
+        self.rabbitmq_service.log_id = f"{self.log_id}:Rabbitmq"
         self.execution_strategy.log_id = f"{self.log_id}:Execute {self.plugin.execution_type}"
 
     async def close(self):
@@ -159,25 +162,6 @@ class BasePluginExecutor:
 
         print(f"{self.log_id}: {len(remaining_requests.keys())} keys remain after DB")
         return cached_results, db_results, remaining_requests
-
-    # async def execute_plugin(self, 
-    #                          remaining_requests: Dict[str, ExecuteRequestUnion]
-    #                          ) -> Dict[str, ExecuteResponseUnion]:
-    #     """Execute plugin request. Optionally cache/persist results"""
-    #     print(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
-    #     executed_results = {}
-    #     if remaining_requests:
-    #         raw_result = await self.execution_strategy.execute(self.plugin, remaining_requests)
-    #         for k,v in raw_result.items():
-    #             if v["valid"]:
-    #                 executed_results[k] = self.response_model.model_validate(v["response_data"])
-    #             else:
-    #                 print(f"{self.log_id}: Failed execution: plugin {self.plugin.id}, " \
-    #                       f"{v['failure_reason']}, {v['failure_detail']}")
-
-    #         await self.redis_service.set_results(executed_results)
-
-    #     return executed_results 
 
     async def execute_plugin(self, 
                              remaining_requests: Dict[str, ExecuteRequestUnion]
