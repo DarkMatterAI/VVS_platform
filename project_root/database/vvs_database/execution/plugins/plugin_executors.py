@@ -15,6 +15,8 @@ from vvs_database.schemas import (
 from vvs_database.schemas import DataSourceRequest, DataSourceResponse
 from vvs_database.execution.plugins.base_executor import BasePluginExecutor
 
+# TODO: update init to impose execution params (ie persist=True for score)
+
 class EmbeddingPluginExecutor(BasePluginExecutor):
     """Executor for embedding plugins"""
     

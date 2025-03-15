@@ -24,19 +24,20 @@ def backend_execute_plugin(backend_client, request_data, plugin_id, params=None)
                       "db_persist": False,
                       "use_semaphore": False,
                       "max_semaphore_attempts": 20,
-                      "queue_polling_interval": 0.2
+                      "queue_polling_interval": 0.2,
+                      "backoff_factor": 2.0
                       }
     if params is not None:
-        for k,v in params.items():
-            default_params[k] = v
+        default_params.update(params)
 
     if type(request_data) == list and len(request_data)==1:
         request_data = request_data[0]
-    
-    if type(request_data) == list:
-        endpoint = f"{endpoint}/batch"
 
-    response = backend_client.post(endpoint, json=request_data, params=default_params, timeout=30)
+    request_data = {
+        "execute_request": request_data,
+        "execute_params": default_params
+    }
+    response = backend_client.post(endpoint, json=request_data, timeout=30)
     return response 
 
 def backend_delete_plugin(backend_client, endpoint, plugin_record):

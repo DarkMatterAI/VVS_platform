@@ -15,7 +15,8 @@ from vvs_database.schemas import (
     MapperRequest,
     AssemblyRequest,
     ExecuteRequestUnion,
-    BatchExecuteRequestUnion
+    BatchExecuteRequestUnion,
+    ExecuteParams
 )
 
 from app.schemas.qdrant_plugin_schemas import (

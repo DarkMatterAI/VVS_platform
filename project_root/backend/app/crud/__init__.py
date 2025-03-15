@@ -7,7 +7,6 @@ from vvs_database.crud import (
     count_plugins_linked_to_embedding_class,
     delete_plugin_from_model
 )
-# from vvs_database.utils import get_redis_result, get_redis_result_batch
 
 from app.crud import qdrant_crud, qdrant_utils
 from app.crud.plugin_crud import (
@@ -30,8 +29,6 @@ __all__ = [
     "execute_plugin",
     "cleanup_unreferenced_items",
     "delete_plugin",
-    # "get_redis_result",
-    # "get_redis_result_batch"
 ]
 
 async def delete_plugin(db: AsyncSession, plugin_id: int):

@@ -41,35 +41,25 @@ async def update_plugin(db: AsyncSession, plugin_id: int, plugin: schemas.Plugin
     except Exception as e:
         handle_db_exception(e)
 
-async def execute_plugin(db: AsyncSession, 
-                         plugin_id: int,
-                         execute_request: Union[schemas.ExecuteRequestUnion, schemas.BatchExecuteRequestUnion],
-                         cache: bool=False,
-                         db_lookup: bool=False,
-                         db_persist: bool=False,
-                         use_semaphore: bool=True,
-                         max_semaphore_attempts: int=20,
-                         queue_polling_interval: float=0.2,
-                         ):
-    try:
-        response = await execution.execute_plugin(db, 
-                                                    plugin_id, 
-                                                    execute_request, 
-                                                    cache=cache,
-                                                    db_lookup=db_lookup,
-                                                    db_persist=db_persist,
-                                                    use_semaphore=use_semaphore,
-                                                    max_semaphore_attempts=max_semaphore_attempts,
-                                                    queue_polling_interval=queue_polling_interval)
-        return response 
-    except AssertionError as e:
-        raise HTTPException(status_code=502, detail=str(e))
-    except Exception as e:
-        handle_db_exception(e)
-
 async def cleanup_unreferenced_items(db: AsyncSession):
     try:
         await crud.cleanup_unreferenced_items(db)
+    except Exception as e:
+        handle_db_exception(e)
+
+async def execute_plugin(db: AsyncSession,
+                         plugin_id: int,
+                         execute_request: Union[schemas.ExecuteRequestUnion, schemas.BatchExecuteRequestUnion],
+                         execute_params: schemas.ExecuteParams
+                         ):
+    try:
+        response = await execution.execute_plugin(db, 
+                                                  plugin_id,
+                                                  execute_request,
+                                                  execute_params)
+        return response 
+    except AssertionError as e:
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
         handle_db_exception(e)
 

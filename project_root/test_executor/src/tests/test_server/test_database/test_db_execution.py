@@ -10,7 +10,7 @@ from tests.utils.db_utils import (
 )
 
 from vvs_database.execution import execute_plugin
-# from vvs_database import crud
+from vvs_database.schemas import ExecuteParams
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding', 'assembly', 'mapper', 'data_source'])
@@ -25,9 +25,8 @@ async def test_db_api_execute(db_session, backend_client, plugin_type, batch_siz
     if batch_size == 1:
         request_data = request_data[0]
 
-    response = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=False, db_lookup=False, db_persist=False, use_semaphore=False)
-    
+    execute_params = ExecuteParams(cache=False, db_lookup=False, db_persist=False, use_semaphore=False)
+    response = await execute_plugin(db_session, plugin['id'], request_data, execute_params)    
     validate_response(plugin, response)
 
 @pytest.mark.asyncio
@@ -40,8 +39,8 @@ async def test_db_api_execute_cache(db_session, backend_client, redis_connection
                                                         3, 
                                                         to_model=True)
 
-    response = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=True, db_lookup=False, db_persist=False, use_semaphore=False)
+    execute_params = ExecuteParams(cache=True, db_lookup=False, db_persist=False, use_semaphore=False)
+    response = await execute_plugin(db_session, plugin['id'], request_data, execute_params)
     validate_response(plugin, response)
     validate_execution_cache(redis_connection, request_data, plugin)
 
@@ -55,8 +54,8 @@ async def test_db_api_execute_semaphore(db_session, backend_client, redis_connec
                                                         3, 
                                                         to_model=True)
 
-    response = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=False, db_lookup=False, db_persist=False, use_semaphore=True)
+    execute_params = ExecuteParams(cache=False, db_lookup=False, db_persist=False, use_semaphore=True)
+    response = await execute_plugin(db_session, plugin['id'], request_data, execute_params)
     validate_response(plugin, response)
 
 @pytest.mark.asyncio
@@ -69,8 +68,8 @@ async def test_db_api_execute_item_checkin(db_session, backend_client, plugin_ty
                                                         f"mock_{plugin_type}_api_%",
                                                         3, 
                                                         to_model=True)
-    response_data = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=False, db_lookup=True, db_persist=db_persist, use_semaphore=False)
+    execute_params = ExecuteParams(cache=False, db_lookup=True, db_persist=db_persist, use_semaphore=False)
+    response_data = await execute_plugin(db_session, plugin['id'], request_data, execute_params)
     validate_response(plugin, response_data)
     await validate_item_checkin(db_session, request_data, response_data, plugin, db_persist)
 
@@ -83,8 +82,8 @@ async def test_db_api_execute_data_source_checkin(db_session, backend_client, db
                                                         f"mock_data_source_api_%",
                                                         3, 
                                                         to_model=True)
-    response_data = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=False, db_lookup=True, db_persist=db_persist, use_semaphore=False)
+    execute_params = ExecuteParams(cache=False, db_lookup=True, db_persist=db_persist, use_semaphore=False)
+    response_data = await execute_plugin(db_session, plugin['id'], request_data, execute_params)
     validate_response(plugin, response_data)
     await validate_data_source_checkin(db_session, response_data, plugin, db_persist)
 
@@ -96,8 +95,8 @@ async def test_db_api_execute_assembly_checkin(db_session, backend_client):
                                                         f"mock_assembly_api_%",
                                                         3, 
                                                         to_model=True)
-    response_data = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=False, db_lookup=True, db_persist=False, use_semaphore=False)
+    execute_params = ExecuteParams(cache=False, db_lookup=True, db_persist=False, use_semaphore=False)
+    response_data = await execute_plugin(db_session, plugin['id'], request_data, execute_params)
     validate_response(plugin, response_data)
     await validate_assembly_checkin(db_session, request_data, response_data, plugin)
 
@@ -116,8 +115,9 @@ async def test_db_api_execution_error(db_session, backend_client, plugin_type):
 
     initial_errors = await get_execution_failures(db_session, plugin['id'])
 
+    execute_params = ExecuteParams(cache=False, db_lookup=False, db_persist=False, use_semaphore=False)
     response, checkin_response, valid_execution = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=False, db_lookup=False, db_persist=False, use_semaphore=False, return_all=True)
+                                                                       execute_params, return_all=True)
     assert valid_execution[0] == False, valid_execution
 
     final_errors = await get_execution_failures(db_session, plugin['id'])
@@ -137,8 +137,8 @@ async def test_db_api_execute_item_error_checkin(db_session, backend_client):
 
     initial_errors = await get_execution_failures(db_session, plugin['id'])
 
-    response_data = await execute_plugin(db_session, plugin['id'], request_data, 
-                                    cache=False, db_lookup=True, use_semaphore=False, db_persist=db_persist)
+    execute_params = ExecuteParams(cache=False, db_lookup=True, db_persist=False, use_semaphore=db_persist)
+    response_data = await execute_plugin(db_session, plugin['id'], request_data, execute_params)
     validate_response(plugin, response_data)
 
     # error should prevent db persist 
