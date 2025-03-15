@@ -20,6 +20,7 @@ class BasePluginExecutor:
                  db_service: DatabaseService,
                  redis_service: RedisService,
                  rabbitmq_service: RabbitMQService,
+                 cache: bool=False,
                  db_lookup: bool=False,
                  db_persist: bool=False,
                  use_semaphore: bool=True,
@@ -30,6 +31,7 @@ class BasePluginExecutor:
         self.db_service = db_service
         self.redis_service = redis_service
         self.rabbitmq_service = rabbitmq_service
+        self.cache = cache 
         self.db_lookup = db_lookup
         self.db_persist = db_persist 
         self.use_semaphore = use_semaphore
@@ -115,7 +117,6 @@ class BasePluginExecutor:
         """Deduplicate requests based on their keys"""
         print(f"{self.log_id}: Deduplicating {len(requests)} requests")
         keys = [r.generate_key(plugin_id=self.plugin.id) for r in requests]
-        # keys = [self.generate_key(r) for r in requests]
         key_to_request = {}
         key_to_index = {}  # Maps keys to their original indices
         
@@ -127,6 +128,13 @@ class BasePluginExecutor:
         print(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
         
         return key_to_request, key_to_index
+    
+    async def get_cache_results(self, keys: List[str]) -> Dict[str, Any]:
+        if (not self.cache) or (not keys):
+            return {}
+        
+        results = await self.redis_service.get_results(keys)
+        return results 
     
     async def check_records(self, 
                             key_to_request: Dict[str, ExecuteRequestUnion]
@@ -140,7 +148,7 @@ class BasePluginExecutor:
 
         # Check cache for records
         print(f"{self.log_id}: Checking cache")
-        cached_results = await self.redis_service.get_cache_results(unique_keys)
+        cached_results = await self.get_cache_results(unique_keys)
         cached_results = {k: self.response_model.model_validate(v) 
                           for k, v in cached_results.items()}
         
@@ -150,11 +158,7 @@ class BasePluginExecutor:
         print(f"{self.log_id}: {len(uncached_requests.keys())} keys remain after cache, checking DB")
 
         # Check database for records
-        db_results = {}
-        if self.db_lookup:
-            db_results = await self.db_service.query_database(self.plugin, uncached_requests)
-            db_results = {k: self.response_model.model_validate(v) 
-                          for k, v in db_results.items()}
+        db_results = await self.query_database(self.plugin, uncached_requests)
         
         # Determine remaining requests to execute
         remaining_keys = [k for k in uncached_keys if k not in db_results]
@@ -190,7 +194,9 @@ class BasePluginExecutor:
                 failed_execution.append((remaining_requests[k], v))
 
         await self.db_service.log_failed_requests(self.plugin, failed_execution)
-        await self.redis_service.set_results(executed_results)
+
+        if self.cache:
+            await self.redis_service.set_results(executed_results)
 
         return executed_results 
     
@@ -224,6 +230,22 @@ class BasePluginExecutor:
                                ) -> Any:
         """Check in results to the database - must be implemented by subclasses"""
         raise NotImplementedError("Subclasses must implement check_in_results method")
+
+    async def query_database(self, 
+                             plugin: Plugin, 
+                             requests: Dict[str, ExecuteRequestUnion]
+                             ) -> Dict[str, ExecuteResponseUnion]:
+        print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
+        result = {}
+        if self.db_lookup:
+            if plugin.type.lower() in ['filter', 'score', 'embedding']:
+                result = await self.db_service.get_item_results(plugin, requests)
+            elif plugin.type.lower() == 'assembly':
+                result = await self.db_service.get_assembly_results(plugin, requests)
+
+            result = {k: self.response_model.model_validate(v) 
+                          for k, v in result.items()}
+        return result 
 
     async def execute(self, requests: List[ExecuteRequestUnion], log_id: Optional[str]=None):
         """Main execution flow that orchestrates the execution process"""

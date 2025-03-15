@@ -53,14 +53,14 @@ async def execute_plugin(db: AsyncSession,
                          ):
     try:
         response = await execution.execute_plugin(db, 
-                                                  plugin_id, 
-                                                  execute_request, 
-                                                  cache=cache,
-                                                  db_lookup=db_lookup,
-                                                  db_persist=db_persist,
-                                                  use_semaphore=use_semaphore,
-                                                  max_semaphore_attempts=max_semaphore_attempts,
-                                                  queue_polling_interval=queue_polling_interval)
+                                                    plugin_id, 
+                                                    execute_request, 
+                                                    cache=cache,
+                                                    db_lookup=db_lookup,
+                                                    db_persist=db_persist,
+                                                    use_semaphore=use_semaphore,
+                                                    max_semaphore_attempts=max_semaphore_attempts,
+                                                    queue_polling_interval=queue_polling_interval)
         return response 
     except AssertionError as e:
         raise HTTPException(status_code=502, detail=str(e))

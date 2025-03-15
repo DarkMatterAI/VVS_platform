@@ -105,18 +105,6 @@ class DatabaseService:
 
         return results 
 
-    async def query_database(self, 
-                             plugin: Plugin, 
-                             requests: Dict[str, ExecuteRequestUnion]
-                             ) -> Dict[str, ExecuteResponseUnion]:
-        print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
-        result = {}
-        if plugin.type.lower() in ['filter', 'score', 'embedding']:
-            result = await self.get_item_results(plugin, requests)
-        elif plugin.type.lower() == 'assembly':
-            result = await self.get_assembly_results(plugin, requests)
-        return result 
-
     async def check_in_item_results(self,
                                     plugin: Plugin,
                                     requests: List[ExecuteRequestUnion],

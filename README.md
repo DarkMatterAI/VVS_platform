@@ -28,7 +28,8 @@ should the backend even have an execute endpoint?
 
 issues with execution code
     we're currently writing an execution wrapper around the execution wrapper
-
+    should distinguish execute params from set-at-job-time request params
+        ie k, runtime args
 
 
 

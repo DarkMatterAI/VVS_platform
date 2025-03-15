@@ -1,6 +1,6 @@
 import pika
 import json 
-from typing import List 
+from typing import List
 
 from vvs_database.settings import settings 
 from vvs_database.schemas import ExecuteRequestUnion

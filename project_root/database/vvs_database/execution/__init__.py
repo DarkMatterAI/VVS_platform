@@ -1,2 +1,2 @@
-from vvs_database.execution.execute import PluginExecutor, execute_plugin
+from vvs_database.execution.execute import execute_plugin
 from vvs_database.execution.connections.redis import RedisService

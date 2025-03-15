@@ -16,15 +16,13 @@ class RedisService:
     def __init__(self, 
                  redis_url: Optional[str]=None, 
                  cache_ttl: Optional[int]=None,
-                 cache: bool=False,
                  ):
         
-        self.init(redis_url, cache_ttl, cache)
+        self.init(redis_url, cache_ttl)
 
     def init(self, 
              redis_url: Optional[str]=None, 
-             cache_ttl: Optional[int]=None,
-             cache: bool=False):
+             cache_ttl: Optional[int]=None):
         
         if redis_url is None:
             redis_url = settings.REDIS_URL
@@ -34,20 +32,12 @@ class RedisService:
 
         self.redis_url = redis_url
         self.cache_ttl = cache_ttl
-        self.cache = cache 
         self.redis = Redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
         self.semaphore_identifiers = {}  # Track acquired semaphores
         self.log_id = ''
 
     async def close(self):
         await self.redis.aclose()
-
-    async def get_cache_results(self, keys: List[str]) -> Dict[str, Any]:
-        if (not self.cache) or (not keys):
-            return {}
-        
-        results = await self.get_results(keys)
-        return results 
     
     async def get_results(self, keys: List[str], delete: bool=False) -> Dict[str, Any]:
         """Get multiple results from Redis cache"""
@@ -76,7 +66,9 @@ class RedisService:
     
     async def set_results(self, results: Dict[str, Any]) -> None:
         """Set multiple results in Redis cache"""
-        if (not self.cache) or (not results):
+        # if (not self.cache) or (not results):
+        #     return
+        if not results:
             return
         
         print(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
