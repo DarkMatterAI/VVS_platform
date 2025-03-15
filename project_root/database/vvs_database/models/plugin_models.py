@@ -111,6 +111,7 @@ class AssemblyPlugin(Plugin):
 class PluginExecutionFailure(Base):
     __tablename__ = "plugin_execution_failures"
 
+    # TODO: job id eventually
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     plugin_id = Column(Integer, ForeignKey("plugins.id", ondelete="CASCADE"), nullable=False)

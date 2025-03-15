@@ -2,8 +2,6 @@
 VVS V2
 
 todos
-    data table for execution failures 
-        eventually add job id 
     build core ops around executioner
         data query
         assembly data query
@@ -23,12 +21,34 @@ todos
             mapper
             bb
         
+should the backend even have an execute endpoint?
+    what would we actually use it for?
+    all job execution will go direct, ie no backend in the loop
+    backend mainly exists for crud 
+
+issues with execution code
+    we're currently writing an execution wrapper around the execution wrapper
+
+
+
 
 eventual job todos
     add job id to execution failures
-    add job id to initial queries
+    how to handle initial queries?
+        most likely add a `UserItem` table
+            item id, job id
+            auto delete on item or job delete
+    how to determine initial embedding for data source with multiple embeddings?
+        create query for each linked embedding?
 
-
+the embedding thing is annoying 
+    concepts
+        source embedding
+            main embedding used for update and whatnot
+    initial queries need to be embedded with source embedding
+    item request/mapper request require embeddings
+        mapper defined by source embedding
+        item (filter/score) may have any number of linked embeddings 
 
 
 add cache flag to plugins?

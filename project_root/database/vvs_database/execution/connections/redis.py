@@ -70,7 +70,7 @@ class RedisService:
 
         n_found = len(parsed_results.keys())
         pct_found = n_found / len(keys)
-        print(f"{self.log_id}: Found {n_found}/{len(keys)} keys in cache, {pct_found:.3f} hit percept")
+        print(f"{self.log_id}: Found {n_found}/{len(keys)} keys, {pct_found:.3f} hit percent")
         
         return parsed_results
     

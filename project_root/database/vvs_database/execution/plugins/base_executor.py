@@ -92,7 +92,7 @@ class BasePluginExecutor:
         return request
     
     def _get_request_unique_id(self, request: ExecuteRequestUnion) -> str:
-        """Get a unique identifier from the request - can be overridden by subclasses"""
+        """Get a unique identifier from the request"""
         if hasattr(request, 'item_data'):
             return str(request.item_data.item_id)
         return str(uuid.uuid4())
@@ -227,10 +227,12 @@ class BasePluginExecutor:
 
     async def execute(self, requests: List[ExecuteRequestUnion], log_id: Optional[str]=None):
         """Main execution flow that orchestrates the execution process"""
-        if not requests:
-            return [], None
-        
         self.init_log_id(log_id)
+
+        if not requests:
+            print(f"{self.log_id}: No requests - returning")
+            return [], None, []
+
         print(f"{self.log_id}: Executing {len(requests)} requests for plugin {self.plugin.id}")
         
         # Step 1: Validate requests
