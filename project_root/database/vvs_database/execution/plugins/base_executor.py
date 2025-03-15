@@ -2,10 +2,10 @@ import uuid
 import json 
 from typing import List, Tuple, Dict, Optional, Any, Type
 
-from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
+from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
 from vvs_database.models import Plugin
 
-from vvs_database.execution.connections import DatabaseService, RedisService, RabbitMQService, Connections
+from vvs_database.execution.connections import Connections
 from vvs_database.execution.execution_strategy import APIExecutionStrategy, QueueExecutionStrategy
 
 class BasePluginExecutor:
@@ -18,23 +18,11 @@ class BasePluginExecutor:
     def __init__(self,
                  plugin: Plugin,
                  connections: Connections,
-                 cache: bool=False,
-                 db_lookup: bool=False,
-                 db_persist: bool=False,
-                 use_semaphore: bool=True,
-                 max_semaphore_attempts: int=20,
-                 queue_polling_interval: float=0.2,
+                 execute_params: ExecuteParams,
                  ):
         self.plugin = plugin
-        self.db_service = connections.db_service
-        self.redis_service = connections.redis_service
-        self.rabbitmq_service = connections.rabbitmq_service
-        self.cache = cache 
-        self.db_lookup = db_lookup
-        self.db_persist = db_persist 
-        self.use_semaphore = use_semaphore
-        self.max_semaphore_attempts = max_semaphore_attempts
-        self.queue_polling_interval = queue_polling_interval
+        self.connections = connections 
+        self.execute_params = execute_params
         self.log_id = ''
         
         self._init_execution_strategy()
@@ -43,21 +31,17 @@ class BasePluginExecutor:
         """Initialize the appropriate execution strategy"""
         if self.plugin.execution_type == 'api':
             self.execution_strategy = APIExecutionStrategy(
-                self.redis_service,
-                self.use_semaphore,
-                self.max_semaphore_attempts
+                self.connections,
+                self.execute_params
             )
         else:
             self.execution_strategy = QueueExecutionStrategy(
-                self.redis_service,
-                self.rabbitmq_service,
-                self.use_semaphore,
-                self.max_semaphore_attempts,
-                self.queue_polling_interval
+                self.connections,
+                self.execute_params
             )
 
         if self.plugin.type.lower() == 'score':
-            self.db_persist = True 
+            self.execute_params.db_persist = True 
     
     def init_log_id(self, log_id: Optional[str]=None):
         """Initialize the logging ID for this execution"""
@@ -65,15 +49,12 @@ class BasePluginExecutor:
             log_id = str(uuid.uuid4())
 
         self.log_id = log_id 
-        self.db_service.log_id = f"{self.log_id}:DB"
-        self.redis_service.log_id = f"{self.log_id}:Redis"
-        self.rabbitmq_service.log_id = f"{self.log_id}:Rabbitmq"
+        self.connections.init_log_id(self.log_id)
         self.execution_strategy.log_id = f"{self.log_id}:Execute {self.plugin.execution_type}"
 
     async def close(self):
         """Close all resources"""
-        await self.redis_service.close()
-        await self.execution_strategy.close()
+        await self.connections.close()
 
     def populate_request_id(self, request: ExecuteRequestUnion) -> ExecuteRequestUnion:
         """Add request_id to request data if not present"""
@@ -128,10 +109,10 @@ class BasePluginExecutor:
         return key_to_request, key_to_index
     
     async def get_cache_results(self, keys: List[str]) -> Dict[str, Any]:
-        if (not self.cache) or (not keys):
+        if (not self.execute_params.cache) or (not keys):
             return {}
         
-        results = await self.redis_service.get_results(keys)
+        results = await self.connections.redis_service.get_results(keys)
         return results 
     
     async def check_records(self, 
@@ -191,10 +172,10 @@ class BasePluginExecutor:
                         f"{v['failure_reason']}, {v['failure_detail']}")
                 failed_execution.append((remaining_requests[k], v))
 
-        await self.db_service.log_failed_requests(self.plugin, failed_execution)
+        await self.connections.db_service.log_failed_requests(self.plugin, failed_execution)
 
-        if self.cache:
-            await self.redis_service.set_results(executed_results)
+        if self.execute_params.cache:
+            await self.connections.redis_service.set_results(executed_results)
 
         return executed_results 
     
@@ -235,11 +216,11 @@ class BasePluginExecutor:
                              ) -> Dict[str, ExecuteResponseUnion]:
         print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
         result = {}
-        if self.db_lookup:
+        if self.execute_params.db_lookup:
             if plugin.type.lower() in ['filter', 'score', 'embedding']:
-                result = await self.db_service.get_item_results(plugin, requests)
+                result = await self.connections.db_service.get_item_results(plugin, requests)
             elif plugin.type.lower() == 'assembly':
-                result = await self.db_service.get_assembly_results(plugin, requests)
+                result = await self.connections.db_service.get_assembly_results(plugin, requests)
 
             result = {k: self.response_model.model_validate(v) 
                           for k, v in result.items()}

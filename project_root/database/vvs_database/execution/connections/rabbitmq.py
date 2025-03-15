@@ -1,8 +1,8 @@
 import pika
 import json 
+import asyncio 
 from typing import List
 
-from vvs_database.settings import settings 
 from vvs_database.schemas import ExecuteRequestUnion, RabbitMQConnection
 
 class RabbitMQService():
@@ -51,6 +51,7 @@ class RabbitMQService():
                 self.channel.close()
             if self.connection and self.connection.is_open:
                 self.connection.close()
+            await asyncio.sleep(0)
         except Exception as e:
             print(f"{self.log_id}: Error closing RabbitMQ connections: {str(e)}")
 

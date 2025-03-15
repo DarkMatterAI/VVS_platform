@@ -2,15 +2,16 @@ from typing import Dict
 import uuid 
 import asyncio 
 
-from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
+from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
 from vvs_database.models import Plugin 
-from vvs_database.execution.connections import RedisService
+from vvs_database.execution.connections import Connections
 
 class ExecutionStrategy:
     """Base class for plugin execution strategies"""
 
-    def __init__(self, redis_service: RedisService):
-        self.redis_service = redis_service 
+    def __init__(self, 
+                 connections: Connections,
+                 execute_params: ExecuteParams):
         self.log_id = 'Execute'
     
     def populate_request_id(self, 
@@ -32,10 +33,7 @@ class ExecutionStrategy:
 
             request_key = f"request.{group_key}.{plugin_type}.{plugin_id}.{item_id}.{request_id}"
             request.request_data.request_id = request_key 
-        return request     
-
-    async def close(self):
-        await asyncio.sleep(0)
+        return request
     
     async def execute(self, 
                       plugin: Plugin, 

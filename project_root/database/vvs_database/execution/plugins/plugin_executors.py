@@ -27,8 +27,8 @@ class EmbeddingPluginExecutor(BasePluginExecutor):
                                valid_execution: List[bool],
                                ) -> Any:
         """Check in embedding results to database"""
-        if self.db_persist:
-            return await self.db_service.check_in_item_results(
+        if self.execute_params.db_persist:
+            return await self.connections.db_service.check_in_item_results(
             self.plugin, requests, results, valid_execution
         )
         return None 
@@ -45,8 +45,8 @@ class DataSourcePluginExecutor(BasePluginExecutor):
                                valid_execution: List[bool],
                                ) -> Any:
         """Check in data source results to database"""
-        return await self.db_service.check_in_data_source_results(
-            self.plugin, requests, results, valid_execution, self.db_persist
+        return await self.connections.db_service.check_in_data_source_results(
+            self.plugin, requests, results, valid_execution, self.execute_params.db_persist
         )
 
 class FilterPluginExecutor(BasePluginExecutor):
@@ -61,8 +61,8 @@ class FilterPluginExecutor(BasePluginExecutor):
                                valid_execution: List[bool],
                                ) -> Any:
         """Check in filter results to database"""
-        if self.db_persist:
-            return await self.db_service.check_in_item_results(
+        if self.execute_params.db_persist:
+            return await self.connections.db_service.check_in_item_results(
                 self.plugin, requests, results, valid_execution
             )
         return None 
@@ -80,7 +80,7 @@ class ScorePluginExecutor(BasePluginExecutor):
                                ) -> Any:
         """Check in score results to database"""
         # score always checks in, regardless of db_persist
-        return await self.db_service.check_in_item_results(
+        return await self.connections.db_service.check_in_item_results(
             self.plugin, requests, results, valid_execution
         )
 
@@ -111,7 +111,7 @@ class AssemblyPluginExecutor(BasePluginExecutor):
                                ) -> Any:
         """Check in assembly results to database"""
         # always check in assembly
-        return await self.db_service.check_in_assembly_results(
+        return await self.connections.db_service.check_in_assembly_results(
             self.plugin, requests, results, valid_execution
         )
 

@@ -1,14 +1,9 @@
-from typing import Optional, Union 
+from typing import Union 
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from vvs_database.execution.connections import get_connections, DatabaseService, RedisService, RabbitMQService
-from vvs_database.schemas import (
-    BatchExecuteRequestUnion, 
-    ExecuteRequestUnion, 
-    RedisConnection,
-    RabbitMQConnection
-)
+from vvs_database.execution.connections import get_connections
+from vvs_database.schemas import BatchExecuteRequestUnion, ExecuteRequestUnion, ExecuteParams
 from vvs_database.execution.plugins.executor_factory import PluginExecutorFactory
 
 async def execute_plugin(db: AsyncSession, 
@@ -20,6 +15,7 @@ async def execute_plugin(db: AsyncSession,
                          use_semaphore: bool = True,
                          max_semaphore_attempts: int = 20,
                          queue_polling_interval: float = 0.2,
+                         backoff_factor: float=2.0,
                          return_all: bool=False
                          ):
     """
@@ -40,6 +36,15 @@ async def execute_plugin(db: AsyncSession,
     Returns:
         The plugin execution response
     """
+
+    execute_params = ExecuteParams(cache=cache,
+                                   db_lookup=db_lookup,
+                                   db_persist=db_persist,
+                                   use_semaphore=use_semaphore,
+                                   max_semaphore_attempts=max_semaphore_attempts,
+                                   queue_polling_interval=queue_polling_interval,
+                                   backoff_factor=backoff_factor)
+
     # Handle single request vs. batch
     delist = False 
     if not isinstance(execute_request, list):
@@ -48,33 +53,12 @@ async def execute_plugin(db: AsyncSession,
 
     connections = get_connections(db)
     plugin = await connections.db_service.get_plugin(plugin_id)
-
-    # Execute the plugin
-    # db_service = DatabaseService(db)
-    # plugin = await db_service.get_plugin(plugin_id)
-    
-    # Initialize Redis service
-    # redis_connection = RedisConnection()
-    # redis_service = RedisService(redis_connection)
-    # redis_service = RedisService(redis_url=None, cache_ttl=None)
-
-    # Initialize Rabbitmq service
-    # rabbitmq_connection = RabbitMQConnection()
-    # rabbitmq_service = RabbitMQService(rabbitmq_connection)
     
     # Create appropriate executor using factory
     executor = PluginExecutorFactory.create_executor(
         plugin,
         connections,
-        # db_service,
-        # redis_service,
-        # rabbitmq_service,
-        cache,
-        db_lookup,
-        db_persist,
-        use_semaphore,
-        max_semaphore_attempts,
-        queue_polling_interval
+        execute_params
     )
     
     # Execute the plugin
@@ -82,20 +66,6 @@ async def execute_plugin(db: AsyncSession,
     
     # Clean up resources
     await executor.close()
-
-
-
-    # executor = PluginExecutor(db)
-    # response, checkin_response, valid_execution = await executor.execute_plugin(
-    #     plugin_id, 
-    #     execute_request, 
-    #     cache=cache,
-    #     db_lookup=db_lookup,
-    #     db_persist=db_persist,
-    #     use_semaphore=use_semaphore,
-    #     max_semaphore_attempts=max_semaphore_attempts,
-    #     queue_polling_interval=queue_polling_interval
-    # )
 
     # Return single response if input was single
     if delist:

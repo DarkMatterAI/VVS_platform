@@ -12,6 +12,15 @@ class Connections(BaseModel):
     redis_service: RedisService
     rabbitmq_service: RabbitMQService
 
+    def init_log_id(self, log_id: str):
+        self.db_service.log_id = f"{log_id}:DB"
+        self.redis_service.log_id = f"{log_id}:Redis"
+        self.rabbitmq_service.log_id = f"{log_id}:Rabbitmq"
+
+    async def close(self):
+        await self.redis_service.close()
+        await self.rabbitmq_service.close()
+
 def get_connections(db_session: AsyncSession,
                     redis_connection: Optional[RedisConnection]=None,
                     rabbitmq_connection: Optional[RabbitMQConnection]=None):

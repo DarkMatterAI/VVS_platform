@@ -128,6 +128,15 @@ class AssemblyResponse(BaseModel):
     def failure_response(cls):
         return cls(valid=False, result=None)
     
+class ExecuteParams(BaseModel):
+    cache: bool=False 
+    db_lookup: bool=False
+    db_persist: bool=False
+    use_semaphore: bool=True
+    max_semaphore_attempts: int=20
+    queue_polling_interval: float=0.2
+    backoff_factor: float=2.0
+    
 class ItemInternal(ItemDataEmbed):
     score: Optional[float]
     parents: Optional[List[AssemblyItem]] = None 
