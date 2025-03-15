@@ -74,6 +74,12 @@ from vvs_database.schemas.assembly_schemas import (
     NewAssembly
 )
 
+from vvs_database.schemas.connection_schemas import (
+    RabbitMQConnection,
+    RedisConnection,
+    PostgresConnection
+)
+
 __all__ = [
     # Enums
     "PluginType",
@@ -145,4 +151,9 @@ __all__ = [
     "BatchExecuteRequestUnion",
     "ItemResponseUnion",
     "ExecuteResponseUnion",
+
+    # connections
+    "RabbitMQConnection",
+    "RedisConnection",
+    "PostgresConnection"
 ]

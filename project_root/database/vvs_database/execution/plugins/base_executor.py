@@ -5,7 +5,7 @@ from typing import List, Tuple, Dict, Optional, Any, Type
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion
 from vvs_database.models import Plugin
 
-from vvs_database.execution.connections import DatabaseService, RedisService, RabbitMQService
+from vvs_database.execution.connections import DatabaseService, RedisService, RabbitMQService, Connections
 from vvs_database.execution.execution_strategy import APIExecutionStrategy, QueueExecutionStrategy
 
 class BasePluginExecutor:
@@ -17,9 +17,7 @@ class BasePluginExecutor:
     
     def __init__(self,
                  plugin: Plugin,
-                 db_service: DatabaseService,
-                 redis_service: RedisService,
-                 rabbitmq_service: RabbitMQService,
+                 connections: Connections,
                  cache: bool=False,
                  db_lookup: bool=False,
                  db_persist: bool=False,
@@ -28,9 +26,9 @@ class BasePluginExecutor:
                  queue_polling_interval: float=0.2,
                  ):
         self.plugin = plugin
-        self.db_service = db_service
-        self.redis_service = redis_service
-        self.rabbitmq_service = rabbitmq_service
+        self.db_service = connections.db_service
+        self.redis_service = connections.redis_service
+        self.rabbitmq_service = connections.rabbitmq_service
         self.cache = cache 
         self.db_lookup = db_lookup
         self.db_persist = db_persist 

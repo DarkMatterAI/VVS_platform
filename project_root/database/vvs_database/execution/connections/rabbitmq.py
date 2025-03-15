@@ -3,13 +3,27 @@ import json
 from typing import List
 
 from vvs_database.settings import settings 
-from vvs_database.schemas import ExecuteRequestUnion
+from vvs_database.schemas import ExecuteRequestUnion, RabbitMQConnection
 
 class RabbitMQService():
-    def __init__(self):
+    def __init__(self, rabbitmq_connection: RabbitMQConnection):
+        self.init(rabbitmq_connection)
+
+    def init(self, rabbitmq_connection: RabbitMQConnection):
         self.connection = None 
         self.channel = None 
         self.log_id = ''
+        self.rabbitmq_connection = rabbitmq_connection
+        self.rabbitmq_params = pika.ConnectionParameters(
+            host=rabbitmq_connection.host,
+            port=rabbitmq_connection.port,
+            credentials=pika.PlainCredentials(
+                username=rabbitmq_connection.username,
+                password=rabbitmq_connection.password
+            ),
+            heartbeat=30,
+            blocked_connection_timeout=10
+        )
 
     def init_rabbitmq_connection(self):
         """Initialize connection to RabbitMQ"""
@@ -23,17 +37,7 @@ class RabbitMQService():
         
         try:
             print(f"{self.log_id}: Trying to connect to RabbitMQ")
-            rabbitmq_params = pika.ConnectionParameters(
-                host=settings.RABBITMQ_HOST,
-                port=settings.RABBITMQ_PORT,
-                credentials=pika.PlainCredentials(
-                    settings.RABBITMQ_DEFAULT_USER,
-                    settings.RABBITMQ_DEFAULT_PASS
-                ),
-                heartbeat=30,
-                blocked_connection_timeout=10
-            )
-            self.connection = pika.BlockingConnection(rabbitmq_params)
+            self.connection = pika.BlockingConnection(self.rabbitmq_params)
             self.channel = self.connection.channel()
             print(f"{self.log_id}: Successfully connected to RabbitMQ")
         except Exception as e:
@@ -70,7 +74,7 @@ class RabbitMQService():
                 message_json = json.dumps(message.model_dump())
 
                 self.channel.basic_publish(
-                    exchange=settings.RABBITMQ_EXCHANGE_NAME,
+                    exchange=self.rabbitmq_connection.exchange,
                     routing_key=request_id,
                     body=message_json,
                     properties=pika.BasicProperties(delivery_mode=2)

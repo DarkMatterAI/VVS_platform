@@ -23,7 +23,8 @@ from vvs_database.schemas import (
     ExecuteResponseUnion,
     NewItem,
     NewResult,
-    NewAssembly
+    NewAssembly,
+    PostgresConnection
 )
 from vvs_database.models import Plugin
 

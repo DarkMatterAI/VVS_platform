@@ -2,8 +2,13 @@ from typing import Optional, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from vvs_database.execution.connections import DatabaseService, RedisService, RabbitMQService
-from vvs_database.schemas import BatchExecuteRequestUnion, ExecuteRequestUnion
+from vvs_database.execution.connections import get_connections, DatabaseService, RedisService, RabbitMQService
+from vvs_database.schemas import (
+    BatchExecuteRequestUnion, 
+    ExecuteRequestUnion, 
+    RedisConnection,
+    RabbitMQConnection
+)
 from vvs_database.execution.plugins.executor_factory import PluginExecutorFactory
 
 async def execute_plugin(db: AsyncSession, 
@@ -41,22 +46,29 @@ async def execute_plugin(db: AsyncSession,
         execute_request = [execute_request]
         delist = True 
 
+    connections = get_connections(db)
+    plugin = await connections.db_service.get_plugin(plugin_id)
+
     # Execute the plugin
-    db_service = DatabaseService(db)
-    plugin = await db_service.get_plugin(plugin_id)
+    # db_service = DatabaseService(db)
+    # plugin = await db_service.get_plugin(plugin_id)
     
     # Initialize Redis service
-    redis_service = RedisService(redis_url=None, cache_ttl=None)
+    # redis_connection = RedisConnection()
+    # redis_service = RedisService(redis_connection)
+    # redis_service = RedisService(redis_url=None, cache_ttl=None)
 
     # Initialize Rabbitmq service
-    rabbitmq_service = RabbitMQService()
+    # rabbitmq_connection = RabbitMQConnection()
+    # rabbitmq_service = RabbitMQService(rabbitmq_connection)
     
     # Create appropriate executor using factory
     executor = PluginExecutorFactory.create_executor(
         plugin,
-        db_service,
-        redis_service,
-        rabbitmq_service,
+        connections,
+        # db_service,
+        # redis_service,
+        # rabbitmq_service,
         cache,
         db_lookup,
         db_persist,

@@ -8,36 +8,29 @@ from redis.asyncio import Redis
 from typing import Optional, List, Dict, Any, Union 
 
 from vvs_database.settings import settings 
+from vvs_database.schemas import RedisConnection
 
         
 class RedisService:
     """Redis service for caching, receiving message responses, and managing concurrency"""
 
-    def __init__(self, 
-                 redis_url: Optional[str]=None, 
-                 cache_ttl: Optional[int]=None,
-                 ):
-        
-        self.init(redis_url, cache_ttl)
-
-    def init(self, 
-             redis_url: Optional[str]=None, 
-             cache_ttl: Optional[int]=None):
-        
-        if redis_url is None:
-            redis_url = settings.REDIS_URL
-
-        if cache_ttl is None:
-            cache_ttl = int(os.getenv('REDIS_MESSAGE_TTL', 3600))
-
-        self.redis_url = redis_url
-        self.cache_ttl = cache_ttl
-        self.redis = Redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        self.semaphore_identifiers = {}  # Track acquired semaphores
+    def __init__(self, redis_connection: RedisConnection):
+        self.init(redis_connection)
+    
+    def init(self, redis_connection: RedisConnection):
+        self.redis_url = redis_connection.redis_url
+        self.cache_ttl = redis_connection.cache_ttl
+        self.redis = None 
+        self.semaphore_identifiers = {}
         self.log_id = ''
 
+    def init_redis_connection(self):
+        if self.redis is None:
+            self.redis = Redis.from_url(self.redis_url, encoding="utf-8", decode_responses=True)
+
     async def close(self):
-        await self.redis.aclose()
+        if self.redis is not None:
+            await self.redis.aclose()
     
     async def get_results(self, keys: List[str], delete: bool=False) -> Dict[str, Any]:
         """Get multiple results from Redis cache"""
@@ -45,6 +38,7 @@ class RedisService:
         if not keys:
             return {}
         
+        self.init_redis_connection()
         results = await self.redis.mget(keys)
         
         parsed_results = {}
@@ -66,13 +60,12 @@ class RedisService:
     
     async def set_results(self, results: Dict[str, Any]) -> None:
         """Set multiple results in Redis cache"""
-        # if (not self.cache) or (not results):
-        #     return
         if not results:
             return
         
         print(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
             
+        self.init_redis_connection()
         pipeline = self.redis.pipeline()
         
         for key, result in results.items():
@@ -113,8 +106,8 @@ class RedisService:
         semaphore_key = f"semaphore:{name}"
         counter_key = f"{semaphore_key}:counter"
         owner_key = f"{semaphore_key}:owner"
-        
         current_backoff = initial_backoff
+        self.init_redis_connection()
         
         for attempt in range(max_attempts):
             print(f"{self.log_id}: Acquiring semaphore for {name} - attempt {attempt}")
@@ -180,6 +173,7 @@ class RedisService:
             
         semaphore_key = f"semaphore:{name}"
         owner_key = f"{semaphore_key}:owner"
+        self.init_redis_connection()
         
         # Remove our lock from both sets
         async with self.redis.pipeline(transaction=True) as pipe:
