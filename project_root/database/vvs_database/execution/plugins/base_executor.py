@@ -1,5 +1,6 @@
 import uuid
 import json 
+import asyncio 
 from typing import List, Tuple, Dict, Optional, Any, Type
 
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
@@ -18,17 +19,19 @@ class BasePluginExecutor:
     def __init__(self,
                  plugin: Plugin,
                  connections: Connections,
-                 execute_params: ExecuteParams,
-                 ):
+                 execute_params: ExecuteParams):
+        
+        self._init_execution_strategy(plugin, connections, execute_params)
+    
+    def _init_execution_strategy(self,
+                                 plugin: Plugin,
+                                 connections: Connections,
+                                 execute_params: ExecuteParams):
+        """Initialize the appropriate execution strategy"""
+        self.log_id = ''
         self.plugin = plugin
         self.connections = connections 
-        self.execute_params = execute_params
-        self.log_id = ''
-        
-        self._init_execution_strategy()
-    
-    def _init_execution_strategy(self):
-        """Initialize the appropriate execution strategy"""
+        self.execute_params = self.update_params(execute_params)
         if self.plugin.execution_type == 'api':
             self.execution_strategy = APIExecutionStrategy(
                 self.connections,
@@ -40,8 +43,8 @@ class BasePluginExecutor:
                 self.execute_params
             )
 
-        if self.plugin.type.lower() == 'score':
-            self.execute_params.db_persist = True 
+    def update_params(self, execute_params: ExecuteParams):
+        return execute_params 
     
     def init_log_id(self, log_id: Optional[str]=None):
         """Initialize the logging ID for this execution"""
@@ -208,22 +211,16 @@ class BasePluginExecutor:
                                valid_execution: List[bool],
                                ) -> Any:
         """Check in results to the database - must be implemented by subclasses"""
-        raise NotImplementedError("Subclasses must implement check_in_results method")
-
+        await asyncio.sleep(0)
+        return None 
+    
     async def query_database(self, 
                              plugin: Plugin, 
                              requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
-        print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
+        """Query database for existing results - must be implemented by subclasses"""
         result = {}
-        if self.execute_params.db_lookup:
-            if plugin.type.lower() in ['filter', 'score', 'embedding']:
-                result = await self.connections.db_service.get_item_results(plugin, requests)
-            elif plugin.type.lower() == 'assembly':
-                result = await self.connections.db_service.get_assembly_results(plugin, requests)
-
-            result = {k: self.response_model.model_validate(v) 
-                          for k, v in result.items()}
+        await asyncio.sleep(0)
         return result 
 
     async def execute(self, requests: List[ExecuteRequestUnion], log_id: Optional[str]=None):

@@ -21,7 +21,10 @@ def validate_execution_cache(redis_connection, request_data, plugin):
     for request in request_data:
         cache_key = request.generate_key(plugin['id'])
         cache_response = redis_connection.get(cache_key)
-        assert cache_response is not None
+        if plugin['type'] in ['data_source', 'mapper']:
+            assert cache_response is None 
+        else:
+            assert cache_response is not None
 
 async def validate_item_checkin(db_session, request_data, response_data, plugin, db_persist):
     request_data = request_dict_to_model(request_data, plugin)

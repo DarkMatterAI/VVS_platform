@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Dict
 from vvs_database.schemas import (
     PluginType,
     ItemRequest,
@@ -12,17 +12,13 @@ from vvs_database.schemas import (
     AssemblyRequest, 
     AssemblyResponse
 )
+
+from vvs_database.models import Plugin
+from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
 from vvs_database.schemas import DataSourceRequest, DataSourceResponse
 from vvs_database.execution.plugins.base_executor import BasePluginExecutor
 
-# TODO: update init to impose execution params (ie persist=True for score)
-
-class EmbeddingPluginExecutor(BasePluginExecutor):
-    """Executor for embedding plugins"""
-    
-    request_model = ItemRequest
-    response_model = EmbedResponse
-    
+class ItemPluginExecutor(BasePluginExecutor):
     async def check_in_results(self, 
                                requests: List[ItemRequest], 
                                results: List[EmbedResponse],
@@ -35,11 +31,34 @@ class EmbeddingPluginExecutor(BasePluginExecutor):
         )
         return None 
 
+    async def query_database(self, 
+                             plugin: Plugin, 
+                             requests: Dict[str, ExecuteRequestUnion]
+                             ) -> Dict[str, ExecuteResponseUnion]:
+        print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
+        result = {}
+        if self.execute_params.db_lookup:
+            result = await self.connections.db_service.get_item_results(plugin, requests)
+            result = {k: self.response_model.model_validate(v) for k, v in result.items()}
+        return result 
+
+
+class EmbeddingPluginExecutor(ItemPluginExecutor):
+    """Executor for embedding plugins"""
+    
+    request_model = ItemRequest
+    response_model = EmbedResponse
+    
 class DataSourcePluginExecutor(BasePluginExecutor):
     """Executor for data source plugins"""
     
     request_model = DataSourceRequest
     response_model = DataSourceResponse
+
+    def update_params(self, execute_params: ExecuteParams):
+        execute_params.cache = False
+        execute_params.db_lookup = False 
+        return execute_params 
     
     async def check_in_results(self, 
                                requests: List[DataSourceRequest], 
@@ -51,54 +70,33 @@ class DataSourcePluginExecutor(BasePluginExecutor):
             self.plugin, requests, results, valid_execution, self.execute_params.db_persist
         )
 
-class FilterPluginExecutor(BasePluginExecutor):
+class FilterPluginExecutor(ItemPluginExecutor):
     """Executor for filter plugins"""
     
     request_model = ItemRequest
     response_model = FilterResponse
-    
-    async def check_in_results(self, 
-                               requests: List[ItemRequest], 
-                               results: List[FilterResponse],
-                               valid_execution: List[bool],
-                               ) -> Any:
-        """Check in filter results to database"""
-        if self.execute_params.db_persist:
-            return await self.connections.db_service.check_in_item_results(
-                self.plugin, requests, results, valid_execution
-            )
-        return None 
 
-class ScorePluginExecutor(BasePluginExecutor):
+class ScorePluginExecutor(ItemPluginExecutor):
     """Executor for score plugins"""
     
     request_model = ItemRequest
     response_model = ScoreResponse
-    
-    async def check_in_results(self, 
-                               requests: List[ItemRequest], 
-                               results: List[ScoreResponse],
-                               valid_execution: List[bool],
-                               ) -> Any:
-        """Check in score results to database"""
-        # score always checks in, regardless of db_persist
-        return await self.connections.db_service.check_in_item_results(
-            self.plugin, requests, results, valid_execution
-        )
+
+    def update_params(self, execute_params: ExecuteParams):
+        execute_params.db_persist = True 
+        return execute_params 
 
 class MapperPluginExecutor(BasePluginExecutor):
     """Executor for mapper plugins"""
     
     request_model = MapperRequest
     response_model = MapperResponse
-    
-    async def check_in_results(self, 
-                               requests: List[MapperRequest], 
-                               results: List[MapperResponse],
-                               valid_execution: List[bool],
-                               ) -> Any:
-        """Check in mapper results to database - mapper doesn't save results"""
-        return None
+
+    def update_params(self, execute_params: ExecuteParams):
+        execute_params.cache = False
+        execute_params.db_lookup = False 
+        execute_params.db_persist = False  
+        return execute_params 
 
 class AssemblyPluginExecutor(BasePluginExecutor):
     """Executor for assembly plugins"""
@@ -116,6 +114,18 @@ class AssemblyPluginExecutor(BasePluginExecutor):
         return await self.connections.db_service.check_in_assembly_results(
             self.plugin, requests, results, valid_execution
         )
+    
+    async def query_database(self, 
+                             plugin: Plugin, 
+                             requests: Dict[str, ExecuteRequestUnion]
+                             ) -> Dict[str, ExecuteResponseUnion]:
+        print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
+        result = {}
+        if self.execute_params.db_lookup:
+            result = await self.connections.db_service.get_assembly_results(plugin, requests)
+            result = {k: self.response_model.model_validate(v) for k, v in result.items()}
+        return result 
+
 
 EXECUTOR_DICT = {
     PluginType.EMBEDDING : EmbeddingPluginExecutor,
