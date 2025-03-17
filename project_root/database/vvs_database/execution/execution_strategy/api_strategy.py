@@ -72,7 +72,7 @@ class APIExecutionStrategy(ExecutionStrategy):
         log_id = self.log_id 
 
         request_list = [{"key": key,
-                         "request": self.populate_request_id(plugin, request)}
+                         "request": request} #self.populate_request_id(plugin, request)}
                          for key,request in requests.items()]
         request_batches = self.batch_requests(request_list, batch_size)
 

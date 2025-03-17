@@ -20,11 +20,6 @@ todos
             standard
             mapper
             bb
-        
-should the backend even have an execute endpoint?
-    what would we actually use it for?
-    all job execution will go direct, ie no backend in the loop
-    backend mainly exists for crud 
 
 issues with execution code
     we're currently writing an execution wrapper around the execution wrapper

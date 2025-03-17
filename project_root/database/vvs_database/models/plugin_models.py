@@ -1,9 +1,12 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Enum, Table, DateTime, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from typing import Optional
+import uuid
 
 from vvs_database.core import Base
 from vvs_database.schemas.enums import PluginType, PluginExecutionType, PluginClass
+from vvs_database.schemas.execute_schemas import RequestData, ExecuteRequestUnion
 
 plugin_embeddings = Table('plugin_embeddings', Base.metadata,
     Column('plugin_id', Integer, ForeignKey('plugins.id'), primary_key=True),
@@ -40,6 +43,26 @@ class Plugin(Base):
         'polymorphic_identity': 'plugin',
         'polymorphic_load': 'selectin'
     }
+
+    def get_request_data(self):
+        return RequestData(request_id=None,
+                           plugin_id=self.id,
+                           plugin_name=self.name)
+    
+    def get_request_key(self, item_id: Optional[int]=None):
+        unique_id = str(uuid.uuid4()) if item_id is None else str(item_id)
+        request_id = str(uuid.uuid4())
+        request_key = f"request.{self.group_key}.{self.type}.{self.id}.{unique_id}.{request_id}"
+        return request_key 
+    
+    def populate_request_data(self, request: ExecuteRequestUnion):
+        request_data = self.get_request_data()
+        item_id = None 
+        if hasattr(request, 'item_data'):
+            item_id = request.item_data.item_id
+        request_data.request_id = self.get_request_key(item_id)
+        request.request_data = request_data
+        return request 
 
 class EmbeddingPlugin(Plugin):
     __tablename__ = "embedding_plugins"

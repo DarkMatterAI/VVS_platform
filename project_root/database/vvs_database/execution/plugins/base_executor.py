@@ -58,28 +58,6 @@ class BasePluginExecutor:
     async def close(self):
         """Close all resources"""
         await self.connections.close()
-
-    def populate_request_id(self, request: ExecuteRequestUnion) -> ExecuteRequestUnion:
-        """Add request_id to request data if not present"""
-        if request.request_data.request_id is None:
-            group_key = self.plugin.group_key 
-            plugin_type = self.plugin.type 
-            plugin_id = self.plugin.id  
-            request_id = str(uuid.uuid4())
-
-            unique_id = self._get_request_unique_id(request)
-
-            request_key = f"request.{group_key}.{plugin_type}.{plugin_id}.{unique_id}.{request_id}"
-            request.request_data.request_id = request_key 
-            request.request_data.plugin_id = self.plugin.id
-            request.request_data.plugin_name = self.plugin.name
-        return request
-    
-    def _get_request_unique_id(self, request: ExecuteRequestUnion) -> str:
-        """Get a unique identifier from the request"""
-        if hasattr(request, 'item_data'):
-            return str(request.item_data.item_id)
-        return str(uuid.uuid4())
         
     def validate_requests(self, 
                           requests: List[ExecuteRequestUnion]
@@ -89,7 +67,8 @@ class BasePluginExecutor:
         processed_requests = []
         for request in requests:
             request = self.request_model.model_validate(request)
-            request = self.populate_request_id(request)
+            request = self.plugin.populate_request_data(request)
+            # request = self.populate_request_id(request)
             processed_requests.append(request)
         return processed_requests
 

@@ -1,6 +1,4 @@
 import asyncio 
-import pika
-import json 
 import time 
 import random 
 
@@ -153,8 +151,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
             Dictionary tracking the state of each request
         """
         request_tracker = {}
-        for key, request in requests.items():
-            request_obj = self.populate_request_id(plugin, request)
+        for key, request_obj in requests.items():
             request_id = request_obj.request_data.request_id
             request_tracker[key] = {
                 "request": request_obj,
