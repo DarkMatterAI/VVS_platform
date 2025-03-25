@@ -9,3 +9,4 @@ httpx
 redis
 aioredis
 pika
+numpy

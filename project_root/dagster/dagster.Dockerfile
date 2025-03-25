@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-COPY requirements_webserver.txt ./requirements.txt
+COPY dagster_requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
 

@@ -7,28 +7,45 @@ run_coordinator:
   class: QueuedRunCoordinator
   config:
     max_concurrent_runs: 25
+    # tag_concurrency_limits:
+    #   - key: "operation"
+    #     value: "example"
+    #     limit: 5
 
 run_launcher:
   module: dagster_docker
   class: DockerRunLauncher
   config:
     env_vars:
-      - DEPLOY
-      - DAGSTER_POSTGRES_USER
-      - DAGSTER_POSTGRES_PASSWORD
-      - DAGSTER_POSTGRES_DB
-      - PGPORT
+      - BACKEND_API_STR
       - REDIS_HOST
       - REDIS_PORT
       - REDIS_PASSWORD
       - REDIS_DB
       - REDIS_MESSAGE_TTL
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_DB_TEST
+      - PGPORT
+      - RABBITMQ_HOST
+      - RABBITMQ_PORT
+      - RABBITMQ_DEFAULT_USER
+      - RABBITMQ_DEFAULT_PASS
+      - RABBITMQ_EXCHANGE_NAME
     network: vvs_v2_network
     container_kwargs:
       auto_remove: True
       volumes: # Make docker client accessible to any launched containers as well
         - /var/run/docker.sock:/var/run/docker.sock
         - /tmp/io_manager_storage:/tmp/io_manager_storage
+
+run_monitoring:
+  enabled: true
+  start_timeout_seconds: 20
+  cancel_timeout_seconds: 180
+  max_resume_run_attempts: 3
+  poll_interval_seconds: 60
 
 run_storage:
   module: dagster_postgres.run_storage
@@ -37,11 +54,11 @@ run_storage:
     postgres_db:
       hostname: postgresql
       username:
-        env: DAGSTER_POSTGRES_USER
+        env: POSTGRES_USER
       password:
-        env: DAGSTER_POSTGRES_PASSWORD
+        env: POSTGRES_PASSWORD
       db_name:
-        env: DAGSTER_POSTGRES_DB
+        env: POSTGRES_DB
       port:
         env: PGPORT
 
@@ -52,11 +69,11 @@ schedule_storage:
     postgres_db:
       hostname: postgresql
       username:
-        env: DAGSTER_POSTGRES_USER
+        env: POSTGRES_USER
       password:
-        env: DAGSTER_POSTGRES_PASSWORD
+        env: POSTGRES_PASSWORD
       db_name:
-        env: DAGSTER_POSTGRES_DB
+        env: POSTGRES_DB
       port:
         env: PGPORT
 
@@ -67,10 +84,10 @@ event_log_storage:
     postgres_db:
       hostname: postgresql
       username:
-        env: DAGSTER_POSTGRES_USER
+        env: POSTGRES_USER
       password:
-        env: DAGSTER_POSTGRES_PASSWORD
+        env: POSTGRES_PASSWORD
       db_name:
-        env: DAGSTER_POSTGRES_DB
+        env: POSTGRES_DB
       port:
         env: PGPORT

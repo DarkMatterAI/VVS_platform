@@ -2,6 +2,13 @@
 VVS V2
 
 todos
+    logging
+        replace print with proper logger
+        add timestamps, etc
+        clean up excessive logging in executor 
+        for redis cache, distinguish cache check from message response check
+        will need unified logging id for multiple ops
+        probably need job id on requests?
     build core ops around executioner
         data query
         assembly data query

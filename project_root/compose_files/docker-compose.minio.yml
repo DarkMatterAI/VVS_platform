@@ -1,0 +1,25 @@
+services:
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio
+    env_file:
+      - ../.env
+    command: server /data --console-address ":${MINIO_UI_PORT}"
+    # expose:
+      # - ${MINIO_API_PORT}
+      # - ${MINIO_UI_PORT}
+    ports:
+      - ${MINIO_API_PORT}:${MINIO_API_PORT}
+      - ${MINIO_UI_PORT}:${MINIO_UI_PORT}
+    networks:
+      - vvs_v2_network
+    volumes:
+       - ${MINIO_STORAGE}:/data
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+

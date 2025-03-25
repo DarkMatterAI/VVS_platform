@@ -44,8 +44,8 @@ class Plugin(Base):
         'polymorphic_load': 'selectin'
     }
 
-    def get_request_data(self):
-        return RequestData(request_id=None,
+    def get_request_data(self, request_id: Optional[str]=None):
+        return RequestData(request_id=request_id,
                            plugin_id=self.id,
                            plugin_name=self.name)
     
@@ -56,11 +56,12 @@ class Plugin(Base):
         return request_key 
     
     def populate_request_data(self, request: ExecuteRequestUnion):
-        request_data = self.get_request_data()
+        # request_data = self.get_request_data()
         item_id = None 
         if hasattr(request, 'item_data'):
             item_id = request.item_data.item_id
-        request_data.request_id = self.get_request_key(item_id)
+        request_id = self.get_request_key(item_id)
+        request_data = self.get_request_data(request_id)
         request.request_data = request_data
         return request 
 

@@ -1,8 +1,8 @@
 services:
   dagster_code_server:
     build:
-      context: ../dagster 
-      dockerfile: code_server.Dockerfile 
+      context: ../ 
+      dockerfile: dagster/code_server.Dockerfile 
     container_name: dagster_code_server
     image: docker_dagster_code_server
     restart: always
@@ -12,11 +12,14 @@ services:
       DAGSTER_CURRENT_IMAGE: "docker_dagster_code_server"
     networks:
       - vvs_v2_network
+    depends_on:
+      - postgresql
+      - minio
 
   dagster_webserver:
     build:
       context: ../dagster 
-      dockerfile: webserver.Dockerfile 
+      dockerfile: dagster.Dockerfile 
     entrypoint:
       - dagster-webserver
       - -h
@@ -37,6 +40,11 @@ services:
       - /tmp/io_manager_storage:/tmp/io_manager_storage
     networks:
       - vvs_v2_network
+    # depends_on:
+    #   postgresql:
+    #     condition: service_healthy
+    #   dagster_code_server:
+    #     condition: service_started
     depends_on:
       - postgresql
       - dagster_code_server
@@ -44,7 +52,7 @@ services:
   dagster_daemon:
     build:
       context: ../dagster
-      dockerfile: webserver.Dockerfile
+      dockerfile: dagster.Dockerfile
     entrypoint:
       - dagster-daemon
       - run
@@ -60,3 +68,4 @@ services:
     depends_on:
       - postgresql
       - dagster_code_server
+

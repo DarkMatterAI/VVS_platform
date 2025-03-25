@@ -21,7 +21,8 @@ services:
       - vvs_v2_network
     depends_on:
       - postgresql
-      - dagster_code_server
+      - minio
+      # - dagster_code_server
     deploy:
       replicas: ${BACKEND_REPLICAS:-${DEFAULT_REPLICAS}}
 

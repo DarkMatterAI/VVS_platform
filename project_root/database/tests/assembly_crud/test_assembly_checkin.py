@@ -2,6 +2,19 @@ import pytest
 
 from vvs_database import crud 
 
+def validate_assembly(assembly_data, result, plugin):
+    assemblies = result["assemblies"]
+    items = result["items"]
+    assert len(assembly_data) == len(assemblies)
+    for request, assembly, item in zip(assembly_data, assemblies, items):
+        assert assembly.product_id == item.id 
+        assert assembly.plugin_id == plugin.id 
+        assert request["item"] == item.item 
+        request_comp = {i["assembly_index"] : i["item_id"] for i in request["components"]}
+        response_comp = {i.assembly_index : i for i in assembly.components}
+        for assembly_index, item_id in request_comp.items():
+            assert response_comp[assembly_index].component_id == item_id
+
 @pytest.mark.asyncio
 async def test_assembly_checkin_basic(assembly_checkin, create_item, create_test_assembly_plugin):
     # Create components that will be part of the assembly
@@ -25,20 +38,21 @@ async def test_assembly_checkin_basic(assembly_checkin, create_item, create_test
     
     # Execute assembly checkin
     result = await assembly_checkin(assembly_data, plugin.id)
+    validate_assembly(assembly_data, result, plugin)
     
-    # Verify the results
-    assemblies = result["assemblies"]
-    assert len(assemblies) == 1
+    # # Verify the results
+    # assemblies = result["assemblies"]
+    # assert len(assemblies) == 1
     
-    assembly = assemblies[0]
-    assert assembly.product_id == result["items"][0].id
-    assert assembly.plugin_id == plugin.id
+    # assembly = assemblies[0]
+    # assert assembly.product_id == result["items"][0].id
+    # assert assembly.plugin_id == plugin.id
     
-    # Verify components
-    components = sorted(assembly.components, key=lambda x: x.assembly_index)
-    assert len(components) == 2
-    assert components[0].component_id == component1.id
-    assert components[1].component_id == component2.id
+    # # Verify components
+    # components = sorted(assembly.components, key=lambda x: x.assembly_index)
+    # assert len(components) == 2
+    # assert components[0].component_id == component1.id
+    # assert components[1].component_id == component2.id
 
 @pytest.mark.asyncio
 async def test_assembly_checkin_multiple(assembly_checkin, create_item, create_test_assembly_plugin):
@@ -72,30 +86,57 @@ async def test_assembly_checkin_multiple(assembly_checkin, create_item, create_t
     
     # Execute assembly checkin
     result = await assembly_checkin(assembly_data, plugin.id)
+    validate_assembly(assembly_data, result, plugin)
     
-    # Verify the results
-    assemblies = result["assemblies"]
-    assert len(assemblies) == 2
+    # # Verify the results
+    # assemblies = result["assemblies"]
+    # assert len(assemblies) == 2
     
-    # First assembly
-    assert assemblies[0].product_id == result["items"][0].id
-    assert assemblies[0].plugin_id == plugin.id
+    # # First assembly
+    # assert assemblies[0].product_id == result["items"][0].id
+    # assert assemblies[0].plugin_id == plugin.id
     
-    # Second assembly
-    assert assemblies[1].product_id == result["items"][1].id
-    assert assemblies[1].plugin_id == plugin.id
+    # # Second assembly
+    # assert assemblies[1].product_id == result["items"][1].id
+    # assert assemblies[1].plugin_id == plugin.id
     
-    # Components for first assembly
-    components1 = sorted(assemblies[0].components, key=lambda x: x.assembly_index)
-    assert len(components1) == 2
-    assert components1[0].component_id == component1.id
-    assert components1[1].component_id == component2.id
+    # # Components for first assembly
+    # components1 = sorted(assemblies[0].components, key=lambda x: x.assembly_index)
+    # assert len(components1) == 2
+    # assert components1[0].component_id == component1.id
+    # assert components1[1].component_id == component2.id
     
-    # Components for second assembly
-    components2 = sorted(assemblies[1].components, key=lambda x: x.assembly_index)
-    assert len(components2) == 2
-    assert components2[0].component_id == component2.id
-    assert components2[1].component_id == component3.id
+    # # Components for second assembly
+    # components2 = sorted(assemblies[1].components, key=lambda x: x.assembly_index)
+    # assert len(components2) == 2
+    # assert components2[0].component_id == component2.id
+    # assert components2[1].component_id == component3.id
+
+@pytest.mark.asyncio
+async def test_assembly_checkin_input_duplicates(assembly_checkin, create_item, create_test_assembly_plugin):
+    # Create components that will be part of the assembly
+    component1 = await create_item()
+    component2 = await create_item()
+    
+    # Create an assembly plugin
+    plugin = await create_test_assembly_plugin(num_parents=2)
+    
+    # Prepare assembly data
+    assembly_data = [
+        {
+            "item": "Assembly Result 1",
+            "external_id": "ext-assembly-1",
+            "components": [
+                {"item_id": component1.id, "assembly_index": 0},
+                {"item_id": component2.id, "assembly_index": 1}
+            ]
+        }
+        for i in range(3)
+    ]
+    
+    # Execute assembly checkin
+    result = await assembly_checkin(assembly_data, plugin.id)
+    validate_assembly(assembly_data, result, plugin)
 
 @pytest.mark.asyncio
 async def test_assembly_checkin_deduplication(db_session,
@@ -123,10 +164,12 @@ async def test_assembly_checkin_deduplication(db_session,
     
     # First check-in
     result1 = await assembly_checkin(assembly_data, plugin.id)
+    validate_assembly(assembly_data, result1, plugin)
     assembly1_id = result1["assemblies"][0].assembly_id
     
     # Second check-in with the same data
     result2 = await assembly_checkin(assembly_data, plugin.id)
+    validate_assembly(assembly_data, result2, plugin)
     assembly2_id = result2["assemblies"][0].assembly_id
     
     # Verify that both check-ins resulted in the same assembly
@@ -173,7 +216,9 @@ async def test_assembly_checkin_same_components_different_order(assembly_checkin
     
     # Check in both assemblies
     result1 = await assembly_checkin(assembly_data1, plugin.id)
+    validate_assembly(assembly_data1, result1, plugin)
     result2 = await assembly_checkin(assembly_data2, plugin.id)
+    validate_assembly(assembly_data2, result2, plugin)
     
     # Verify that they are different assemblies
     assembly1_id = result1["assemblies"][0].assembly_id
@@ -205,10 +250,11 @@ async def test_assembly_checkin_existing_item(assembly_checkin, create_item, cre
     
     # Execute assembly checkin
     result = await assembly_checkin(assembly_data, plugin.id)
+    validate_assembly(assembly_data, result, plugin)
     
-    # Verify the results
-    assemblies = result["assemblies"]
-    assert len(assemblies) == 1
+    # # Verify the results
+    # assemblies = result["assemblies"]
+    # assert len(assemblies) == 1
     
     # Verify the product ID matches the existing item
     assert result["items"][0].id == existing_product.id
@@ -255,10 +301,11 @@ async def test_assembly_checkin_with_varying_component_counts(assembly_checkin, 
     
     # Execute assembly checkin
     result = await assembly_checkin(assembly_data, plugin.id)
+    validate_assembly(assembly_data, result, plugin)
     
     # Verify the results
     assemblies = result["assemblies"]
-    assert len(assemblies) == 3
+    # assert len(assemblies) == 3
     
     # Verify component counts
     assert len(assemblies[0].components) == 2

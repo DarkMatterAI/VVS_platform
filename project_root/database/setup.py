@@ -5,7 +5,6 @@ setup(
     version="0.1.0",
     description="Database interface library for PostgreSQL",
     author="Your Team",
-    # packages=find_packages(),
     packages=find_packages() + ['tests'],
     package_data={
         'tests': ['*.py'],
@@ -18,7 +17,8 @@ setup(
         "psycopg2-binary",
         "httpx",
         "aioredis",
-        "pika"
+        "pika",
+        "numpy"
     ],
     extras_require={
         "test": [

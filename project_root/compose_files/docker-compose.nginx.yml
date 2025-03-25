@@ -14,7 +14,8 @@ services:
       - TEI_PORT=${TEI_PORT}
       - PLUGIN_INTEGRATION_SERVER_PORT=${PLUGIN_INTEGRATION_SERVER_PORT}
       - TRITON_HTTP_PORT=${TRITON_HTTP_PORT}
-    command: /bin/bash -c "envsubst '$$BACKEND_PORT $$DAGSTER_WEBSERVER_PORT $$TEI_PORT $$QDRANT_PORT $$PLUGIN_INTEGRATION_SERVER_PORT $$TRITON_HTTP_PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+      - MINIO_UI_PORT=${MINIO_UI_PORT}
+    command: /bin/bash -c "envsubst '$$BACKEND_PORT $$DAGSTER_WEBSERVER_PORT $$MINIO_UI_PORT $$TEI_PORT $$QDRANT_PORT $$PLUGIN_INTEGRATION_SERVER_PORT $$TRITON_HTTP_PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
     networks:
       - vvs_v2_network
     depends_on:

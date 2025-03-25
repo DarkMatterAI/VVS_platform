@@ -43,6 +43,8 @@ from vvs_database.schemas.item_schemas import (
 
 from vvs_database.schemas.execute_schemas import (
     Embedding,
+    ItemData,
+    ItemDataEmbed,
     EmbedResponse,
     DataSourceRequest,
     DataSourceResponseItem,
@@ -134,6 +136,8 @@ __all__ = [
 
     # Execute schemas
     "Embedding",
+    "ItemData",
+    "ItemDataEmbed",
     "EmbedResponse",
     "DataSourceRequest",
     "DataSourceResponseItem",

@@ -27,4 +27,10 @@ class Settings(BaseSettings):
     RABBITMQ_DEFAULT_PASS: str = os.getenv('RABBITMQ_DEFAULT_PASS')
     RABBITMQ_EXCHANGE_NAME: str = os.getenv('RABBITMQ_EXCHANGE_NAME')
 
+    S3_ACCESS_KEY: str = os.getenv('S3_ACCESS_KEY')
+    S3_SECRET_KEY: str = os.getenv('S3_SECRET_KEY')
+    S3_BUCKET: str = os.getenv('S3_BUCKET')
+    S3_SECURE_CONNECTION: bool = os.getenv('S3_SECURE_CONNECTION') == 'true'
+    S3_URL: str = os.getenv('S3_URL')
+
 settings = Settings()
