@@ -64,7 +64,7 @@ async def get_plugin(db: AsyncSession, plugin_id: int, with_error: bool=True, re
     if response_model:
         plugin = utils.get_plugin_response_model(plugin)
 
-    # required for sqlalchemy to close transactions 
+    # required for sqlalchemy to close transaction after refresh
     await db.commit()
     
     return plugin

@@ -48,6 +48,18 @@ from vvs_database.crud.assembly_crud import (
     delete_assembly
 )
 
+from vvs_database.crud.job_crud import (
+    create_job,
+    get_job,
+    update_job,
+    delete_job,
+    create_job_plugin,
+    bulk_create_job_plugins,
+    get_job_plugin,
+    get_job_plugins,
+    delete_job_plugin
+)
+
 __all__ = [
     # plugin crud 
     "get_embeddings",
@@ -94,4 +106,15 @@ __all__ = [
     "result_checkin",
     "assembly_checkin",
     "upsert_execution_failures",
+
+    # job crud
+    "create_job",
+    "get_job",
+    "update_job",
+    "delete_job",
+    "create_job_plugin",
+    "bulk_create_job_plugins",
+    "get_job_plugin",
+    "get_job_plugins",
+    "delete_job_plugin"
 ]

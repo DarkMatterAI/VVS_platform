@@ -18,6 +18,11 @@ from vvs_database.models.item_models import (
     AssemblyComponent
 )
 
+from vvs_database.models.job_models import (
+    Job, 
+    JobPlugin
+)
+
 __all__ = [
     "Plugin",
     "EmbeddingPlugin",
@@ -32,5 +37,7 @@ __all__ = [
     "ItemSource",
     "ItemResult",
     "Assembly",
-    "AssemblyComponent"
+    "AssemblyComponent",
+    "Job",
+    "JobPlugin",
 ]

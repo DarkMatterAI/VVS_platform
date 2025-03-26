@@ -38,6 +38,8 @@ class Plugin(Base):
     execution_failures = relationship("PluginExecutionFailure", 
                                      back_populates="plugin", 
                                      cascade="all, delete-orphan")
+    jobs = relationship("JobPlugin", back_populates="plugin", cascade="all, delete-orphan")
+    
     __mapper_args__ = {
         'polymorphic_on': type,
         'polymorphic_identity': 'plugin',

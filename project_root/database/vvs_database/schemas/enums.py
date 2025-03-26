@@ -24,3 +24,16 @@ class DistanceMetric(str, Enum):
     Cosine = 'Cosine'
     Euclid = 'Euclid'
     Dot = 'Dot'
+
+class JobStatus(str, Enum):
+    CREATED = 'created'
+    QUEUED = 'queued'
+    RUNNING = 'running'
+    COMPLETE = 'complete'
+    COMPLETE_WITH_ERRORS = 'complete_with_errors'
+    FAILED = 'failed'
+    CANCELLED = 'cancelled'
+
+class JobType(str, Enum):
+    TEST_JOB = 'test_job'
+    QDRANT_UPLOAD = 'qdrant_upload'
