@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Enum, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, ForeignKey, JSON, Enum, DateTime, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -12,6 +12,7 @@ class Job(Base):
     job_type = Column(Enum(JobType), nullable=False)
     job_json = Column(JSON, nullable=True)
     status = Column(Enum(JobStatus), nullable=False, default=JobStatus.CREATED)
+    status_detail = Column(JSON, nullable=True) 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

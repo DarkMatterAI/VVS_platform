@@ -19,10 +19,14 @@ from vvs_database.exceptions import NotFoundError
 async def create_job(db: AsyncSession,
                      job_type: JobType,
                      job_json: Optional[Dict[str, Any]] = None,
-                     status: JobStatus = JobStatus.CREATED
+                     status: JobStatus = JobStatus.CREATED,
+                     status_detail: Optional[Dict[str, Any]] = None,
                     ) -> Job:
     """Create a new job."""
-    job = Job(job_type=job_type, job_json=job_json, status=status)
+    job = Job(job_type=job_type, 
+              job_json=job_json, 
+              status=status,
+              status_detail=status_detail)
     db.add(job)
     await db.commit()
     return job
@@ -60,8 +64,9 @@ async def get_job(db: AsyncSession,
 
 async def update_job(db: AsyncSession,
                      job_id: int,
+                     job_json: Optional[Dict[str, Any]] = None,
                      status: Optional[JobStatus] = None,
-                     job_json: Optional[Dict[str, Any]] = None
+                     status_detail: Optional[Dict[str, Any]] = None
                     ) -> Optional[Job]:
     """Update a job's status and/or job_json."""
     update_data = {}
@@ -69,6 +74,8 @@ async def update_job(db: AsyncSession,
         update_data["status"] = status
     if job_json is not None:
         update_data["job_json"] = job_json
+    if status_detail is not None:
+        update_data["status_detail"] = status_detail
     
     if not update_data:
         return await get_job(db, job_id)

@@ -1,9 +1,9 @@
 services:
   backend:
-    unit_test: False 
+    unit_test: True 
     integration_test: False 
   qdrant_plugin:
-    integration_test: True   
+    integration_test: False   
   tei_plugin:
     integration_test: False 
   rdkit_plugin:
@@ -14,9 +14,9 @@ services:
     integration_test: False 
 temp_services:
   test_consumer:
-    enabled: True
+    enabled: False
   test_server:
-    enabled: True
+    enabled: False
 
 # services:
 #   backend:

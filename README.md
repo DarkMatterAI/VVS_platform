@@ -13,6 +13,11 @@ todos
         will need unified logging id for multiple ops
         probably need job id on requests?
         integrate with dagster 
+    integration stuff
+        dagster log swap
+        job id on lots of things
+            execution print out
+            execution failure log 
     jobs
         qdrant upload
         search

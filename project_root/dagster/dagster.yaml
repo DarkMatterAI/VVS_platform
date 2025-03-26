@@ -17,6 +17,7 @@ run_launcher:
   class: DockerRunLauncher
   config:
     env_vars:
+      - DEPLOY
       - BACKEND_API_STR
       - REDIS_HOST
       - REDIS_PORT
@@ -33,12 +34,17 @@ run_launcher:
       - RABBITMQ_DEFAULT_USER
       - RABBITMQ_DEFAULT_PASS
       - RABBITMQ_EXCHANGE_NAME
+      - MINIO_API_PORT
+      - S3_PROFILE_NAME
+      - S3_REGION
+      - S3_USE_SSL
+      - S3_VERIFY_SSL
       - S3_ACCESS_KEY
       - S3_SECRET_KEY
-      - S3_URL
-      - S3_URL_DAGSTER
+      - S3_SESSION_TOKEN
       - S3_BUCKET
       - S3_UPLOAD_PREFIX
+      - S3_URL
     network: vvs_v2_network
     container_kwargs:
       auto_remove: True

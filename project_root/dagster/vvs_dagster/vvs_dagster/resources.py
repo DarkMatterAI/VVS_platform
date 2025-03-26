@@ -24,10 +24,15 @@ class PostgresResource(dg.ConfigurableResource):
         db_service = DatabaseService(session)
         return db_service
     
-S3 = S3Resource(aws_access_key_id=dg.EnvVar('S3_ACCESS_KEY'),
+S3 = S3Resource(region_name=dg.EnvVar('S3_REGION'),
+                endpoint_url=dg.EnvVar('S3_URL'),
+                # TODO: get s3 env vars working 
+                # profile_name=dg.EnvVar('S3_PROFILE_NAME'),
+                # use_ssl=dg.EnvVar('S3_USE_SSL'),
+                # verify=dg.EnvVar('S3_VERIFY_SSL'),
+                aws_access_key_id=dg.EnvVar('S3_ACCESS_KEY'),
                 aws_secret_access_key=dg.EnvVar('S3_SECRET_KEY'),
-                endpoint_url=dg.EnvVar('S3_URL_DAGSTER'))
-    
+                aws_session_token=dg.EnvVar('S3_SESSION_TOKEN'))
 
 RESOURCE_DEFAULTS = {
     "postgres_resource": PostgresResource(postgres_user=dg.EnvVar("POSTGRES_USER"),

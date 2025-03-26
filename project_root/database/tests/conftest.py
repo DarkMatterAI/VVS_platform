@@ -188,9 +188,14 @@ async def assembly_checkin(db_session):
 async def create_job(db_session):
     async def _create_job(job_type=schemas.JobType.TEST_JOB, 
                           job_json=None,
-                          job_status=schemas.JobStatus.CREATED
+                          job_status=schemas.JobStatus.CREATED,
+                          job_status_detail=None
                           ):
-        job = await crud.create_job(db_session, job_type, job_json, job_status)
+        job = await crud.create_job(db_session, 
+                                    job_type=job_type, 
+                                    job_json=job_json, 
+                                    status=job_status,
+                                    status_detail=job_status_detail)
         return job 
     return _create_job 
 
@@ -198,9 +203,10 @@ async def create_job(db_session):
 async def create_job_plugin(db_session, create_job, create_test_embedding):    
     async def _create_job_plugin_source(job_type=schemas.JobType.TEST_JOB, 
                                         job_json=None,
-                                        job_status=schemas.JobStatus.CREATED
+                                        job_status=schemas.JobStatus.CREATED,
+                                        job_status_detail=None
                                         ):
-        job = await create_job(job_type, job_json, job_status)
+        job = await create_job(job_type, job_json, job_status, job_status_detail)
         plugin = await create_test_embedding()
         job_plugin = await crud.create_job_plugin(db_session, job.id, plugin.id)
         return job, plugin, job_plugin

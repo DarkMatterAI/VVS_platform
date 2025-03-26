@@ -1,7 +1,19 @@
 import os 
 from pydantic_settings import BaseSettings
+from typing import Optional 
+
+def set_s3_url():
+    deploy = os.getenv('DEPLOY', 'LOCAL')
+    if deploy == 'LOCAL':
+        minio_port = os.getenv('MINIO_API_PORT')
+        s3_url = f"http://minio:{minio_port}"
+        os.environ['S3_URL'] = s3_url
+
+set_s3_url()
 
 class Settings(BaseSettings):
+    DEPLOY: str = os.getenv('DEPLOY', 'LOCAL')
+
     API_STR: str = os.getenv('BACKEND_API_STR', '/api/v1')
 
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
@@ -27,11 +39,17 @@ class Settings(BaseSettings):
     RABBITMQ_DEFAULT_PASS: str = os.getenv('RABBITMQ_DEFAULT_PASS')
     RABBITMQ_EXCHANGE_NAME: str = os.getenv('RABBITMQ_EXCHANGE_NAME')
 
+    S3_PROFILE_NAME: Optional[str] = os.getenv('S3_PROFILE_NAME')
+    S3_REGION: Optional[str] = os.getenv('S3_REGION')
+    S3_USE_SSL: bool = os.getenv('S3_USE_SSL', 'false') == 'true'
+    S3_VERIFY_SSL: bool = os.getenv('S3_VERIFY_SSL', 'false') == 'true'
     S3_ACCESS_KEY: str = os.getenv('S3_ACCESS_KEY')
     S3_SECRET_KEY: str = os.getenv('S3_SECRET_KEY')
+    S3_SESSION_TOKEN: Optional[str] = os.getenv('S3_SESSION_TOKEN')
     S3_BUCKET: str = os.getenv('S3_BUCKET')
     S3_UPLOAD_PREFIX: str = os.getenv('S3_UPLOAD_PREFIX')
-    S3_SECURE_CONNECTION: bool = os.getenv('S3_SECURE_CONNECTION') == 'true'
+    S3_SECURE_CONNECTION: bool = os.getenv('S3_SECURE_CONNECTION', 'false') == 'true'
     S3_URL: str = os.getenv('S3_URL')
 
 settings = Settings()
+
