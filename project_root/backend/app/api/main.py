@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 from app import utils  
-from app.api.routes import plugin_crud, plugin_execute, core
+from app.api.routes import plugin_crud, plugin_execute, job_crud, core
 
 api_router = APIRouter()
 api_router.include_router(plugin_crud.router, prefix="/plugins", tags=["plugins"])
 api_router.include_router(plugin_execute.router, prefix="/execute", tags=["execute"])
+api_router.include_router(job_crud.router, prefix="/jobs", tags=["jobs"])
 api_router.include_router(core.router)
 
 config = utils.read_config()['plugins']

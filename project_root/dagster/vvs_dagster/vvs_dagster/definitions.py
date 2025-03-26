@@ -8,5 +8,6 @@ defs = Definitions(
     assets=all_assets,
     resources=resources.RESOURCE_DEFAULTS,
     jobs=[test_job.get_plugin_job,
+          test_job.get_job_job,
           qdrant_upload_job.qdrant_upload_job]
 )

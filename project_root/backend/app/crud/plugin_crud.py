@@ -3,19 +3,20 @@ from fastapi import HTTPException
 from typing import Union 
 
 from app import schemas
+from app.utils import handle_db_exception
 from vvs_database import crud, execution
-from vvs_database.exceptions import ValidationError, NotFoundError, ReferenceError
-from pydantic import ValidationError as PydanticValidationError
+# from vvs_database.exceptions import ValidationError, NotFoundError, ReferenceError
+# from pydantic import ValidationError as PydanticValidationError
 
-def handle_db_exception(e):
-    if isinstance(e, ValidationError) or isinstance(e, PydanticValidationError):
-        raise HTTPException(status_code=422, detail=str(e))
-    elif isinstance(e, NotFoundError):
-        raise HTTPException(status_code=404, detail=str(e))
-    elif isinstance(e, ReferenceError):
-        raise HTTPException(status_code=400, detail=str(e))
-    else:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+# def handle_db_exception(e):
+#     if isinstance(e, ValidationError) or isinstance(e, PydanticValidationError):
+#         raise HTTPException(status_code=422, detail=str(e))
+#     elif isinstance(e, NotFoundError):
+#         raise HTTPException(status_code=404, detail=str(e))
+#     elif isinstance(e, ReferenceError):
+#         raise HTTPException(status_code=400, detail=str(e))
+#     else:
+#         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 async def get_plugin(db: AsyncSession, 
                      plugin_id: int, 

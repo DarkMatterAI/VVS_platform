@@ -2,6 +2,8 @@ import httpx
 from fastapi import HTTPException
 import yaml
 from vvs_database.utils import make_post_request
+from vvs_database.exceptions import ValidationError, NotFoundError, ReferenceError
+from pydantic import ValidationError as PydanticValidationError
 
 def read_config():
     """Read application configuration from YAML file."""
@@ -51,4 +53,14 @@ async def fastapi_post_request(data, url, timeout, retries, retry_sleep=0):
             status_code=500,
             detail=f"Internal Server Error: {str(e)}"
         )
+
+def handle_db_exception(e):
+    if isinstance(e, ValidationError) or isinstance(e, PydanticValidationError):
+        raise HTTPException(status_code=422, detail=str(e))
+    elif isinstance(e, NotFoundError):
+        raise HTTPException(status_code=404, detail=str(e))
+    elif isinstance(e, ReferenceError):
+        raise HTTPException(status_code=400, detail=str(e))
+    else:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 

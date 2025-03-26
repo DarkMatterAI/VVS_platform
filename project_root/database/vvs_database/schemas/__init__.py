@@ -86,6 +86,10 @@ from vvs_database.schemas.connection_schemas import (
     PostgresConnection
 )
 
+from vvs_database.schemas.job_schemas import (
+    JobDBResponse
+)
+
 __all__ = [
     # Enums
     "PluginType",
@@ -167,5 +171,8 @@ __all__ = [
     # connections
     "RabbitMQConnection",
     "RedisConnection",
-    "PostgresConnection"
+    "PostgresConnection",
+
+    # job schemas
+    "JobDBResponse",
 ]

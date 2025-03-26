@@ -18,6 +18,8 @@ from app.crud.plugin_crud import (
     cleanup_unreferenced_items
 )
 
+from app.crud.job_crud import get_job
+
 __all__ = [
     "get_plugin", 
     "get_plugins",
@@ -29,6 +31,7 @@ __all__ = [
     "execute_plugin",
     "cleanup_unreferenced_items",
     "delete_plugin",
+    "get_job"
 ]
 
 async def delete_plugin(db: AsyncSession, plugin_id: int):

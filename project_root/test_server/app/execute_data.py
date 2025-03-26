@@ -30,7 +30,7 @@ def data_source_response(requests: List[schemas.DataSourceRequest]):
             distance = ((query_embedding - embedding)**2).sum()**0.5
             response['result'].append({
                 'item' : ''.join(np.random.choice([i for i in string.ascii_lowercase], 16)),
-                'external_id' : np.random.randint(1e8),
+                'external_id' : str(np.random.randint(1e8)),
                 'embedding' : embedding.tolist(),
                 'distance' : float(distance)
             })

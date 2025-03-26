@@ -3,8 +3,18 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from vvs_database.models.job_models import Job, JobPlugin
+from vvs_database.models import (
+    DataSourcePlugin, 
+    FilterPlugin, 
+    ScorePlugin,
+    MapperPlugin, 
+    Job,
+    JobPlugin
+)
+
+
 from vvs_database.schemas.enums import JobStatus, JobType
+from vvs_database.exceptions import NotFoundError
 
 async def create_job(db: AsyncSession,
                      job_type: JobType,
@@ -19,7 +29,8 @@ async def create_job(db: AsyncSession,
 
 async def get_job(db: AsyncSession,
                   job_id: int,
-                  load_plugins: bool = False
+                  load_plugins: bool = False,
+                  with_error: bool = False 
                  ) -> Optional[Job]:
     """Get a job by ID with optional loading of plugins relationship."""
     query = select(Job).filter(Job.id == job_id)
@@ -31,13 +42,20 @@ async def get_job(db: AsyncSession,
         result = await db.execute(query)
     
     result = result.scalar_one_or_none()
+
+    if with_error and (result is None):
+        raise NotFoundError(f"Plugin with ID {job_id} not found")
     
     if load_plugins and (result is not None):
         await db.refresh(result, ["plugins"])
         for jp in result.plugins:
             await db.refresh(jp, ["plugin"])
+            plugin = jp.plugin 
+            await db.refresh(plugin)
+            if isinstance(plugin, (DataSourcePlugin, FilterPlugin, ScorePlugin, MapperPlugin)):
+                await db.refresh(plugin, ["embeddings"])
         await db.commit()
-            
+
     return result
 
 async def update_job(db: AsyncSession,

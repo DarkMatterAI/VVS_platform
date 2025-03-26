@@ -41,6 +41,6 @@ class AssemblyComponent(BaseModel):
     assembly_index: int 
 
 class NewAssembly(BaseModel):
-    external_id: Optional[Union[int, str]]
+    external_id: Optional[str]
     item: str
     components: List[AssemblyComponent]

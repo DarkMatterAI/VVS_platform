@@ -58,7 +58,7 @@ def qdrant_upsert(qdrant_client, data_record, embedding_records, n_points):
         collection_name=collection_name,
         points=models.Batch(
             ids=[i+1 for i in range(n_points)],
-            payloads=[{'item': f"item_{i}", 'external_id': i} for i in range(n_points)],
+            payloads=[{'item': f"item_{i}", 'external_id': str(i)} for i in range(n_points)],
             vectors={embedding_names[i]:np.random.rand(n_points, embedding_sizes[i]).tolist()
                      for i in range(len(embedding_records))}
         )

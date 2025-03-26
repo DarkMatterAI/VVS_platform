@@ -16,7 +16,8 @@ from vvs_database.schemas import (
     AssemblyRequest,
     ExecuteRequestUnion,
     BatchExecuteRequestUnion,
-    ExecuteParams
+    ExecuteParams,
+    JobDBResponse
 )
 
 from app.schemas.qdrant_plugin_schemas import (

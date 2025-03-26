@@ -10,7 +10,8 @@ class RequestData(BaseModel):
 class ItemData(BaseModel):
     """Data for item in a request"""
     item_id: int
-    external_id: Optional[Union[int, str]]
+    # external_id: Optional[Union[int, str]]
+    external_id: Optional[str]
     item: str 
         
 class Embedding(BaseModel):
@@ -51,7 +52,8 @@ class DataSourceRequest(BaseModel):
 class DataSourceResponseItem(BaseModel):
     model_config = ConfigDict(extra='allow')
     item: str
-    external_id: Optional[Union[int, str]]
+    # external_id: Optional[Union[int, str]]
+    external_id: Optional[str]
     embedding: List[float]
     distance: Optional[float]
         
@@ -118,7 +120,7 @@ class AssemblyRequest(BaseModel):
 class AssemblyResult(BaseModel):
     model_config = ConfigDict(extra='allow')
     item: str 
-    external_id: Optional[Union[int, str]]
+    external_id: Optional[str]
         
 class AssemblyResponse(BaseModel):
     valid: bool
