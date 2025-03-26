@@ -17,6 +17,7 @@ from vvs_database.models import Plugin
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
 from vvs_database.schemas import DataSourceRequest, DataSourceResponse
 from vvs_database.execution.plugins.base_executor import BasePluginExecutor
+from vvs_database import logging 
 
 class ItemPluginExecutor(BasePluginExecutor):
     async def check_in_results(self, 
@@ -35,7 +36,7 @@ class ItemPluginExecutor(BasePluginExecutor):
                              plugin: Plugin, 
                              requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
-        print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
+        logging.info(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
         result = {}
         if self.execute_params.db_lookup:
             result = await self.connections.db_service.get_item_results(plugin, requests)
@@ -119,7 +120,7 @@ class AssemblyPluginExecutor(BasePluginExecutor):
                              plugin: Plugin, 
                              requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
-        print(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
+        logging.info(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
         result = {}
         if self.execute_params.db_lookup:
             result = await self.connections.db_service.get_assembly_results(plugin, requests)

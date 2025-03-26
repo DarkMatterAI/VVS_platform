@@ -3,20 +3,17 @@ import logging
 
 from app import utils
 from app import crud 
-from vvs_database import settings 
+from vvs_database import settings, logging 
 from app.core.database import get_db 
 from app.core.plugin_records.records_config import PLUGIN_CREATE_DICT
-
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger(__name__)
 
 async def _init_records(db):
     config = utils.read_config()['plugins']
     
     for plugin_name, plugin_data in config.items():
         if plugin_name not in PLUGIN_CREATE_DICT:
-            logger.warning(f"Plugin {plugin_name} enambed in config but " \
-                           f"no initial records were found")
+            logging.warning(f"Plugin {plugin_name} enambed in config but " \
+                            f"no initial records were found")
             continue 
 
         plugin_enabled = plugin_data.get('enabled', False)
@@ -25,11 +22,11 @@ async def _init_records(db):
         if (not plugin_enabled) and (current_record_count>0):
             if (plugin_name=='tei_plugin') or (plugin_name=='triton_plugin'):
                 linked_record_count = await crud.count_plugins_linked_to_embedding_class(db, plugin_class)
-                logger.warning(f"Plugin {plugin_name} is disabled but " \
-                               f"{current_record_count} records exist in the database " \
-                               f"with {linked_record_count} linked records impacted")
+                logging.warning(f"Plugin {plugin_name} is disabled but " \
+                                f"{current_record_count} records exist in the database " \
+                                f"with {linked_record_count} linked records impacted")
             else:
-                logger.warning(f"Plugin {plugin_name} is disabled but " \
+                logging.warning(f"Plugin {plugin_name} is disabled but " \
                                f"{current_record_count} records exist in the database")
                 
         if plugin_enabled:
@@ -40,13 +37,13 @@ async def init_records():
     lock = redis.lock("records_init_lock", timeout=60)
 
     try:
-        print('Acquiring redis lock for records init')
+        logging.info('Acquiring redis lock for records init')
         await lock.acquire()
         async for db in get_db():
             await _init_records(db)
             break 
     finally:
-        print('Releasing redis lock')
+        logging.info('Releasing redis lock')
         await lock.release()
         await redis.close()
             

@@ -2,7 +2,7 @@ from sqlalchemy.orm import class_mapper
 import httpx 
 import asyncio
 
-from vvs_database import schemas, models
+from vvs_database import schemas, models, logging 
 
 plugin_type_map = {
     schemas.PluginType.EMBEDDING : {
@@ -80,7 +80,6 @@ def get_plugin_response_model(plugin: models.Plugin):
 def validate_updates(plugin: models.Plugin, update_data: dict):
     """Validate that plugin updates are consistent with the model schema."""
     plugin_dict = object_as_dict(plugin)
-    print(plugin_dict)
     remap_embeddings(plugin, plugin_dict)
     plugin_dict.update(update_data)
     plugin_type_map[plugin.type]['response_model'].model_validate(plugin_dict)
@@ -93,7 +92,7 @@ async def make_post_request(data, url, timeout, retries, retry_sleep=0, log_id=N
         log_id = f"{log_id}: "
     async with httpx.AsyncClient() as client:
         for attempt in range(retries + 1):
-            print(f"{log_id}Post Request to {url} attempt {attempt+1}")
+            logging.info(f"{log_id}Post Request to {url} attempt {attempt+1}")
             try:
                 response = await client.post(url, json=data, timeout=timeout)
                 response.raise_for_status()
@@ -131,5 +130,5 @@ async def make_post_request(data, url, timeout, retries, retry_sleep=0, log_id=N
                     raise httpx.RequestError(f"Request to {url} failed: {str(e)}")
                 
             if retry_sleep > 0:
-                print(f"{log_id}Post request failed, sleeping for {retry_sleep} seconds")
+                logging.info(f"{log_id}Post request failed, sleeping for {retry_sleep} seconds")
                 await asyncio.sleep(retry_sleep) 

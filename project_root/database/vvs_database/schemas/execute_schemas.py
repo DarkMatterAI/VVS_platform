@@ -136,10 +136,18 @@ class ExecuteParams(BaseModel):
     max_semaphore_attempts: int=20
     queue_polling_interval: float=0.2
     backoff_factor: float=2.0
-    
-class ItemInternal(ItemDataEmbed):
-    score: Optional[float]
-    parents: Optional[List[AssemblyItem]] = None 
+
+class ExecutePlugin(BaseModel):
+    # model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra='allow')
+    plugin_id: int
+    # plugin: Optional[Plugin]=None
+    execute_params: ExecuteParams
+    runtime_args: Optional[dict]=None
+
+class ExecuteDataSource(ExecutePlugin):
+    k: int 
+    assembly_index: int
 
 ExecuteRequestUnion = Union[
     ItemRequest,

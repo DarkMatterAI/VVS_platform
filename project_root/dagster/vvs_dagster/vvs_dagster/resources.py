@@ -1,7 +1,11 @@
 import dagster as dg
+from dagster_aws.s3 import S3Resource, S3PickleIOManager
+
+# from typing import Optional
 
 from vvs_database.core import get_engine, get_session_factory
 from vvs_database.execution.connections.database import DatabaseService
+# from vvs_database.schemas import ExecutePlugin, ExecuteParams
 
 class PostgresResource(dg.ConfigurableResource):
     postgres_user: str 
@@ -19,55 +23,18 @@ class PostgresResource(dg.ConfigurableResource):
         session = self.get_db()
         db_service = DatabaseService(session)
         return db_service
+    
+S3 = S3Resource(aws_access_key_id=dg.EnvVar('S3_ACCESS_KEY'),
+                aws_secret_access_key=dg.EnvVar('S3_SECRET_KEY'),
+                endpoint_url=dg.EnvVar('S3_URL_DAGSTER'))
+    
 
 RESOURCE_DEFAULTS = {
     "postgres_resource": PostgresResource(postgres_user=dg.EnvVar("POSTGRES_USER"),
                                           postgres_password=dg.EnvVar("POSTGRES_PASSWORD"),
-                                          postgres_db=dg.EnvVar("POSTGRES_DB"))
+                                          postgres_db=dg.EnvVar("POSTGRES_DB")),
+    "s3_resource": S3,
+    "io_manager": S3PickleIOManager(s3_resource=S3,
+                                    s3_bucket=dg.EnvVar('S3_BUCKET')),
 }
 
-
-
-    # import dagster as dg
-    # import requests
-
-    # from requests import Response
-
-    # class MyConnectionResource(dg.ConfigurableResource):
-    #     username: str
-
-    #     def request(self, endpoint: str) -> Response:
-    #         return requests.get(
-    #             f"https://my-api.com/{endpoint}",
-    #             headers={"user-agent": "dagster"},
-    #         )
-
-    # @dg.asset
-    # def data_from_service(my_conn: MyConnectionResource) -> dict[str, Any]:
-    #     return my_conn.request("/fetch_data").json()
-
-    # defs = dg.Definitions(
-    #     assets=[data_from_service],
-    #     resources={
-    #         "my_conn": MyConnectionResource(username="my_user"),
-    #     },
-    # )
-
-
-    # POSTGRES_USER: str = os.getenv('POSTGRES_USER')
-    # POSTGRES_PASSWORD: str = os.getenv('POSTGRES_PASSWORD')
-    # POSTGRES_DB: str = os.getenv('POSTGRES_DB')
-    # POSTGRES_DB_TEST: str = os.getenv('POSTGRES_DB_TEST')
-
-    # SQLALCHEMY_DATABASE_URL: str = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql/{POSTGRES_DB}"
-
-
-# engine = get_engine(settings.SQLALCHEMY_DATABASE_URL)
-# AsyncSessionLocal = get_session_factory(engine)
-
-# async def get_db():
-#     async with AsyncSessionLocal() as session:
-#         try:
-#             yield session
-#         finally:
-#             await session.close()

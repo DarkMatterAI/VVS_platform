@@ -5,6 +5,7 @@ from typing import List, Tuple, Dict, Optional, Any, Type
 
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
 from vvs_database.models import Plugin
+from vvs_database import logging 
 
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.execution_strategy import APIExecutionStrategy, QueueExecutionStrategy
@@ -63,7 +64,7 @@ class BasePluginExecutor:
                           requests: List[ExecuteRequestUnion]
                           ) -> List[ExecuteRequestUnion]:
         """Validate request schema"""
-        print(f"{self.log_id}: Validating {len(requests)} requests")
+        logging.info(f"{self.log_id}: Validating {len(requests)} requests")
         processed_requests = []
         for request in requests:
             request = self.request_model.model_validate(request)
@@ -75,7 +76,7 @@ class BasePluginExecutor:
                     requests: List[ExecuteRequestUnion]
                     ) -> Tuple[Dict[str, ExecuteRequestUnion], Dict[str, List[int]]]:
         """Deduplicate requests based on their keys"""
-        print(f"{self.log_id}: Deduplicating {len(requests)} requests")
+        logging.info(f"{self.log_id}: Deduplicating {len(requests)} requests")
         keys = [r.generate_key(plugin_id=self.plugin.id) for r in requests]
         key_to_request = {}
         key_to_index = {}  # Maps keys to their original indices
@@ -85,7 +86,7 @@ class BasePluginExecutor:
                 key_to_request[key] = request
             key_to_index.setdefault(key, []).append(i)
 
-        print(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
+        logging.info(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
         
         return key_to_request, key_to_index
     
@@ -104,10 +105,10 @@ class BasePluginExecutor:
         """Check request against cache and database"""
         unique_keys = list(key_to_request.keys())
         n_keys = len(unique_keys)
-        print(f"{self.log_id}: Checking records with {n_keys} keys")
+        logging.info(f"{self.log_id}: Checking records with {n_keys} keys")
 
         # Check cache for records
-        print(f"{self.log_id}: Checking cache")
+        logging.info(f"{self.log_id}: Checking cache")
         cached_results = await self.get_cache_results(unique_keys)
         cached_results = {k: self.response_model.model_validate(v) 
                           for k, v in cached_results.items()}
@@ -115,7 +116,7 @@ class BasePluginExecutor:
         uncached_keys = [k for k in unique_keys if k not in cached_results]
         uncached_requests = {k: key_to_request[k] for k in uncached_keys}
 
-        print(f"{self.log_id}: {len(uncached_requests.keys())} keys remain after cache, checking DB")
+        logging.info(f"{self.log_id}: {len(uncached_requests.keys())} keys remain after cache, checking DB")
 
         # Check database for records
         db_results = await self.query_database(self.plugin, uncached_requests)
@@ -124,14 +125,14 @@ class BasePluginExecutor:
         remaining_keys = [k for k in uncached_keys if k not in db_results]
         remaining_requests = {k: key_to_request[k] for k in remaining_keys}
 
-        print(f"{self.log_id}: {len(remaining_requests.keys())} keys remain after DB")
+        logging.info(f"{self.log_id}: {len(remaining_requests.keys())} keys remain after DB")
         return cached_results, db_results, remaining_requests
 
     async def execute_plugin(self, 
                              remaining_requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
         """Execute plugin request. Optionally cache/persist results"""
-        print(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
+        logging.info(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
         executed_results = {}
         if not remaining_requests:
             return executed_results
@@ -149,7 +150,7 @@ class BasePluginExecutor:
                     v["failure_detail"] = f"Response: {json.dumps(v['response_data'])}, Error: {str(e)}"
 
             if not v["valid"]:
-                print(f"{self.log_id}: Failed execution: plugin {self.plugin.id}, " \
+                logging.error(f"{self.log_id}: Failed execution: plugin {self.plugin.id}, " \
                         f"{v['failure_reason']}, {v['failure_detail']}")
                 failed_execution.append((remaining_requests[k], v))
 
@@ -206,10 +207,10 @@ class BasePluginExecutor:
         self.init_log_id(log_id)
 
         if not requests:
-            print(f"{self.log_id}: No requests - returning")
+            logging.info(f"{self.log_id}: No requests - returning")
             return [], None, []
 
-        print(f"{self.log_id}: Executing {len(requests)} requests for plugin {self.plugin.id}")
+        logging.info(f"{self.log_id}: Executing {len(requests)} requests for plugin {self.plugin.id}")
         
         # Step 1: Validate requests
         requests = self.validate_requests(requests)

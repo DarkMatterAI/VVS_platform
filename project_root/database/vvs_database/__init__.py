@@ -7,6 +7,7 @@ from vvs_database.settings import settings
 from vvs_database.models import *
 from vvs_database.schemas import *
 import vvs_database.testing
+import vvs_database.logging
 
 __all__ = [
     "Base",

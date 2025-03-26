@@ -5,26 +5,26 @@ from fastapi import HTTPException
 
 from app import schemas 
 
-from vvs_database import crud
+from vvs_database import crud, logging
 from app.crud import qdrant_utils 
 from app.crud.plugin_crud import create_plugin
 
 async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate):
-    print('Parsing qdrant create')
+    logging.info('Parsing qdrant create')
     plugin_data = plugin.model_dump(exclude_unset=True)
     qdrant_config = plugin_data['qdrant_config']
     embedding_ids = [i['embedding_id'] for i in qdrant_config['vectors_config']]
 
-    print("Pulling embedding records")
+    logging.info("Pulling embedding records")
     embedding_records = await crud.get_embeddings(db, embedding_ids)
     embedding_record_dict = {i.id:i for i in embedding_records}
 
-    print('Validating embedding ids')
+    logging.info('Validating embedding ids')
     if len(embedding_records) != len(embedding_ids):
         invalid_ids = set(embedding_ids) - set(e.id for e in embedding_records)
         raise HTTPException(status_code=400, detail=f"Invalid embedding IDs: {invalid_ids}")
 
-    print('Validating create record')
+    logging.info('Validating create record')
     create_record = {
         'name' : plugin_data['name'],
         'type' : 'data_source',
@@ -41,10 +41,10 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
     }
     create_record = schemas.DataSourcePluginCreate(**create_record)
 
-    print("Creating on backend")
+    logging.info("Creating on backend")
     create_record = await create_plugin(db, create_record)
 
-    print("Creating qdrant create record")
+    logging.info("Creating qdrant create record")
     vectors_config = qdrant_config.pop('vectors_config')
     vector_create_config = {}
     for vector_config in vectors_config:
@@ -55,19 +55,19 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
         vector_create_config[f"embedding_{embedding_id}"] = vector_config
 
     qdrant_config['vectors_config'] = vector_create_config
-    print(qdrant_config)
+    logging.info(qdrant_config)
 
-    print("Creating on qdrant")
+    logging.info("Creating on qdrant")
     try:
         collection_info = await qdrant_utils.qdrant_create(create_record, qdrant_config)
     except Exception as e:
-        print(f"Qdrant create failed: {e}")
-        print("Deleting record")
+        logging.warning(f"Qdrant create failed: {e}")
+        logging.info("Deleting record")
         await crud.delete_plugin_from_model(db, create_record)
         raise HTTPException(status_code=502, 
                             detail=f"Qdrant create failed with on qdrant side with exception {e}")
     
-    print("Updating record config")
+    logging.info("Updating record config")
     record_config = {'qdrant_config' : qdrant_config, 
                      'collection_info' : collection_info,
                      'snapshot' : None 
@@ -85,16 +85,16 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
 async def delete_qdrant(db: AsyncSession, db_plugin):
     plugin_id = db_plugin.id 
     
-    print("Deleting qdrant collection")
+    logging.info("Deleting qdrant collection")
     try:
         delete_response = await qdrant_utils.qdrant_delete(db_plugin)
-        print(delete_response)
+        logging.info(delete_response)
         assert delete_response 
     except Exception as e:
         raise HTTPException(status_code=502, 
                             detail=f"Qdrant delete failed with exception {e}")
 
-    print("Deleting database record")
+    logging.info("Deleting database record")
     response = await crud.delete_plugin_from_model(db, db_plugin)
     return response 
 
@@ -103,7 +103,7 @@ async def update_collection_data(db: AsyncSession, plugin_id: int):
     if not db_plugin:
         return None 
     
-    print("Getting collection data")
+    logging.info("Getting collection data")
     try:
         collection_info = await qdrant_utils.qdrant_get_collection(db_plugin)
     except Exception as e:

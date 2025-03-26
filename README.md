@@ -2,6 +2,9 @@
 VVS V2
 
 todos
+    dagster
+        io managers, local vs prod 
+        concurrency
     logging
         replace print with proper logger
         add timestamps, etc
@@ -9,18 +12,7 @@ todos
         for redis cache, distinguish cache check from message response check
         will need unified logging id for multiple ops
         probably need job id on requests?
-    build core ops around executioner
-        data query
-        assembly data query
-        mapper data query 
-        bb data query
-        combined "decomposed data query assembly" 
-            mapper can feed into this 
-        filter execution
-        score execution
-        InternalItem data model
-        compute embeddings before ops
-        add "get required embeddings" to generic execution step?
+        integrate with dagster 
     jobs
         qdrant upload
         search
@@ -28,10 +20,6 @@ todos
             mapper
             bb
 
-issues with execution code
-    we're currently writing an execution wrapper around the execution wrapper
-    should distinguish execute params from set-at-job-time request params
-        ie k, runtime args
 
 
 
@@ -43,45 +31,6 @@ eventual job todos
             auto delete on item or job delete
     how to determine initial embedding for data source with multiple embeddings?
         create query for each linked embedding?
-
-the embedding thing is annoying 
-    concepts
-        source embedding
-            main embedding used for update and whatnot
-    initial queries need to be embedded with source embedding
-    item request/mapper request require embeddings
-        mapper defined by source embedding
-        item (filter/score) may have any number of linked embeddings 
-
-
-add cache flag to plugins?
-    or do at runtime?
-runtime args for plugins
-    could be used by plugins and job executor
-
-table to track plugin usage?
-    just plugin, request id, execute time, number of inputs 
-
-item table
-    id, item_id, timestamp
-
-external table
-    id (item table), external_id, source plugin id (data or assembly), timestamp
-
-score table
-    item_id, score plugin id, score
-
-assembly table
-    assembly_id, item_id (product item), assembly plugin id
-
-assembly components table
-    assembly_id, item_id (parent item), assembly index
-
-
-plugin results table
-    item_id, plugin_id, valid, score, embedding (json)
-
-
 
 
 jobs table
@@ -289,4 +238,27 @@ iteration approach
 
 
 
+
+# async def qdrant_query(db_record, request):
+#     async with get_qdrant_client() as client:
+#         collection_name = f"data_source_{db_record.id}"
+#         embedding_name = f"embedding_{request['id']}"
+#         qdrant_results = await client.query_points(
+#             collection_name=collection_name,
+#             query=request['embedding'],
+#             using=embedding_name,
+#             limit=request['k'],
+#             with_vectors=True
+#         )
+
+#         results = [] 
+#         for result in qdrant_results.points:
+#             result_data = {
+#                 'external_id' : result.payload.get('external_id', 0),
+#                 'item' : result.payload.get('item', ''),
+#                 'embedding' : result.vector[embedding_name],
+#                 'distance' : result.score
+#             }
+#             results.append(result_data)
+#         return results
 

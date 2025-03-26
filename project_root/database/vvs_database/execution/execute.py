@@ -1,4 +1,4 @@
-from typing import Union 
+from typing import Union, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,8 @@ async def execute_plugin(db: AsyncSession,
                          plugin_id: int, 
                          execute_request: Union[ExecuteRequestUnion, BatchExecuteRequestUnion],
                          execute_params: ExecuteParams,
-                         return_all: bool=False
+                         return_all: bool=False,
+                         log_id: Optional[str]=None
                          ):
     """
     Execute a plugin and optionally check in the results to the database.
@@ -21,6 +22,7 @@ async def execute_plugin(db: AsyncSession,
         execute_request: Request data for the plugin
         execute_params: Execution parameters 
         return_all: Return checkin/valid execution data
+        log_id: Log id for execution
         
     Returns:
         The plugin execution response
@@ -43,7 +45,7 @@ async def execute_plugin(db: AsyncSession,
     )
     
     # Execute the plugin
-    response, checkin_response, valid_execution = await executor.execute(execute_request)
+    response, checkin_response, valid_execution = await executor.execute(execute_request, log_id=log_id)
     
     # Clean up resources
     await executor.close()

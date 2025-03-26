@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload, undefer_group, aliased
 from sqlalchemy import insert, delete, func, and_
 from typing import List, Optional, Dict, Any, Tuple, Union
 
-from vvs_database import utils, schemas  
+from vvs_database import utils, schemas
 from vvs_database.exceptions import ValidationError, NotFoundError, ReferenceError
 from vvs_database.models import (
     Plugin, 

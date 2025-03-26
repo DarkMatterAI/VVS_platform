@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     S3_ACCESS_KEY: str = os.getenv('S3_ACCESS_KEY')
     S3_SECRET_KEY: str = os.getenv('S3_SECRET_KEY')
     S3_BUCKET: str = os.getenv('S3_BUCKET')
+    S3_UPLOAD_PREFIX: str = os.getenv('S3_UPLOAD_PREFIX')
     S3_SECURE_CONNECTION: bool = os.getenv('S3_SECURE_CONNECTION') == 'true'
     S3_URL: str = os.getenv('S3_URL')
 

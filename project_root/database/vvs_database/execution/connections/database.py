@@ -27,6 +27,7 @@ from vvs_database.schemas import (
     PostgresConnection
 )
 from vvs_database.models import Plugin
+from vvs_database import logging 
 
 class DatabaseService:
     """Service for database operations related to plugin execution"""
@@ -36,7 +37,6 @@ class DatabaseService:
         self.log_id = 'DB'
 
     async def get_plugin(self, plugin_id: int) -> Plugin:
-        print(f"{self.log_id}: Getting plugin {plugin_id}")
         response = await get_plugin(self.db, plugin_id)
         return response 
     
@@ -44,7 +44,7 @@ class DatabaseService:
                                plugin: Plugin, 
                                requests: Dict[str, ItemRequest]
                                ) -> Dict[str, ItemResponseUnion]:
-        print(f"{self.log_id}: Looking up item results for {len(requests.keys())} requests")
+        logging.info(f"{self.log_id}: Looking up item results for {len(requests.keys())} requests")
         plugin_id = plugin.id 
         item_ids = [r.item_data.item_id for r in requests.values()]
         records = await get_item_results(self.db, item_ids, plugin_id)
@@ -65,7 +65,7 @@ class DatabaseService:
                                    plugin: Plugin, 
                                    requests: Dict[str, AssemblyRequest]
                                    ) -> Dict[str, AssemblyResponse]:
-        print(f"{self.log_id}: Looking up assembly results for {len(requests.keys())} requests")
+        logging.info(f"{self.log_id}: Looking up assembly results for {len(requests.keys())} requests")
         # get component keys
         key_to_component = {}
         for key, request in requests.items():
@@ -112,7 +112,7 @@ class DatabaseService:
                                     results: List[ExecuteResponseUnion],
                                     valid_execution: List[bool]
                                     ):
-        print(f"{self.log_id}: Checking in {len(requests)} item results")
+        logging.info(f"{self.log_id}: Checking in {len(requests)} item results")
         new_results = []
 
         for request, response, valid_ex in zip(requests, results, valid_execution):
@@ -137,7 +137,7 @@ class DatabaseService:
                                            valid_execution: List[bool],
                                            persist: bool=False
                                            ):
-        print(f"{self.log_id}: Checking in {len(requests)} data source results")
+        logging.info(f"{self.log_id}: Checking in {len(requests)} data source results")
         new_items = []
         embeddings = defaultdict(list)
         checkin_result = None
@@ -168,7 +168,6 @@ class DatabaseService:
                         item.item_id = item_to_id.get(item.item, None)
 
         if persist and (checkin_result is not None):
-            print(f"{self.log_id}: Saving data source embeddings")
             item_records = checkin_result['items']
             item_records_dict = {i.item: i for i in item_records}
 
@@ -189,7 +188,7 @@ class DatabaseService:
                                         results: List[ExecuteResponseUnion],
                                         valid_execution: List[bool],
                                         ):
-        print(f"{self.log_id}: Checking in {len(requests)} assembly results")
+        logging.info(f"{self.log_id}: Checking in {len(requests)} assembly results")
         new_assemblies = []
         checkin_result = None
 

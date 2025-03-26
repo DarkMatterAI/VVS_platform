@@ -7,7 +7,8 @@ from typing import Dict, List, Tuple
 from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
 from vvs_database.models import Plugin 
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
-from vvs_database.execution.connections import Connections #RedisService, RabbitMQService
+from vvs_database.execution.connections import Connections
+from vvs_database import logging 
 
 class QueueExecutionStrategy(ExecutionStrategy):
     """Strategy for executing queue-based plugins"""
@@ -37,7 +38,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         4. Poll Redis for results and release semaphores during backoff period
         5. Repeat until all requests are processed or timeout
         """
-        print(f"{self.log_id}: Queueing {len(requests.keys())} requests via RabbitMQ")
+        logging.info(f"{self.log_id}: Queueing {len(requests.keys())} requests via RabbitMQ")
         if not requests:
             return {}
 
@@ -60,7 +61,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         # Main execution loop - continue until all requests processed or timed out
         pending_count = self._count_pending_requests(request_tracker)
         while pending_count > 0:
-            print(f"{self.log_id}: Publishing messages: {pending_count} outstanding")
+            logging.info(f"{self.log_id}: Publishing messages: {pending_count} outstanding")
             
             # 1. Try to acquire semaphores for pending requests (just once per iteration)
             await self._acquire_available_locks(request_tracker, semaphore_name, max_concurrency, 
@@ -82,7 +83,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
                             self._mark_failed_messages(request_tracker)
                             
                 except Exception as e:
-                    print(f"{self.log_id}: Error in queue publishing: {str(e)}")
+                    logging.info(f"{self.log_id}: Error in queue publishing: {str(e)}")
                     queue_errors += 1
                     if queue_errors >= max_queue_errors:
                         self._mark_failed_messages(request_tracker)
@@ -91,13 +92,13 @@ class QueueExecutionStrategy(ExecutionStrategy):
             pending_before = pending_count 
             pending_count = self._count_pending_requests(request_tracker)
             acquired_this_round = pending_before - pending_count
-            print(f"{self.log_id}: Published {acquired_this_round} messages")
+            logging.info(f"{self.log_id}: Published {acquired_this_round} messages")
 
             backoff_time = max(self.execute_params.queue_polling_interval, base_backoff * (1 + random.random() * 0.2))
             
             # 4. Poll for results and handle timeouts during backoff period
             backoff_start = time.time()
-            print(f"{self.log_id}: Backoff time {backoff_time}")
+            logging.info(f"{self.log_id}: Backoff time {backoff_time}")
 
             remaining_backoff = float('inf') # init to inf to guarantee one poll
             while remaining_backoff > self.execute_params.queue_polling_interval and pending_count > 0:
@@ -106,7 +107,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
                 remaining_backoff = backoff_time - (time.time() - backoff_start)
                 pending_count = self._count_pending_requests(request_tracker)
 
-            print(f"{self.log_id}: {pending_count} requests still pending/processing/queued")
+            logging.info(f"{self.log_id}: {pending_count} requests still pending/processing/queued")
         
         # Compile final results
         return self._compile_results(request_tracker)
@@ -188,7 +189,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
     
     def _mark_failed_messages(self, request_tracker):
         """Mark messages that failed to queue as error"""
-        print(f"{self.log_id}: Too many queue errors, marking failed messages as error")
+        logging.info(f"{self.log_id}: Too many queue errors, marking failed messages as error")
         for req_data in request_tracker.values():
             if req_data["status"] == "processing" and req_data["queued_at"] is None:
                 req_data["status"] = "error"
@@ -220,7 +221,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
                     req_data["identifier"] = None
             return # early exit without semaphore 
 
-        print(f"{self.log_id}: Acquiring locks")
+        logging.info(f"{self.log_id}: Acquiring locks")
         lock_count = 0
         for key, req_data in request_tracker.items():
             if req_data["status"] == "pending":
@@ -246,7 +247,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
                     # early exit if we acquire all locks 
                     break 
 
-        print(f"{self.log_id}: Acquired {lock_count} locks")
+        logging.info(f"{self.log_id}: Acquired {lock_count} locks")
     
     async def _poll_for_results(self, request_tracker):
         """
@@ -258,7 +259,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         Returns:
             List of semaphore identifiers to release
         """
-        print(f"{self.log_id}: Polling results")
+        logging.info(f"{self.log_id}: Polling results")
 
         # Collect request IDs to poll
         processing_requests = {
@@ -288,7 +289,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
                     identifiers_to_release.append(req_data["identifier"])
                     req_data["identifier"] = None  # Mark as scheduled for release
         
-        print(f"{self.log_id}: Found {len(identifiers_to_release)} results")
+        logging.info(f"{self.log_id}: Found {len(identifiers_to_release)} results")
         return identifiers_to_release
     
     async def _check_for_timeouts(self, request_tracker, timeout):
@@ -302,7 +303,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         Returns:
             List of semaphore identifiers to release
         """
-        print(f"{self.log_id}: Checking timeouts")
+        logging.info(f"{self.log_id}: Checking timeouts")
         timeout_count = 0
         semaphore_count = 0
         current_time = time.time()
@@ -341,7 +342,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
                     identifiers_to_release.append(req_data["identifier"])
                     req_data["identifier"] = None  # Mark as scheduled for release
 
-        print(f"{self.log_id}: Found {timeout_count} message timeouts, {semaphore_count} semaphore timeouts")
+        logging.info(f"{self.log_id}: Found {timeout_count} message timeouts, {semaphore_count} semaphore timeouts")
         
         return identifiers_to_release
     

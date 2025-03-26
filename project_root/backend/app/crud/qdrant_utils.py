@@ -2,6 +2,7 @@ import os
 import time 
 from qdrant_client import AsyncQdrantClient, models
 from vvs_database.crud import get_plugins 
+from vvs_database import logging 
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import Union, Mapping, Optional
@@ -56,20 +57,20 @@ async def qdrant_create(db_record, qdrant_config):
                                                   **qdrant_config)
         
         collection_info = await client.get_collection(collection_name)
-        print('Qdrant create successful')
+        logging.info('Qdrant create successful')
         return collection_info.model_dump()
     
 async def qdrant_delete_collection(collection_name):
     async with get_qdrant_client() as client:
-        print(f"Deleting qdrant collection {collection_name}")
+        logging.info(f"Deleting qdrant collection {collection_name}")
         response = await client.delete_collection(collection_name)
-        print(f"Delete collection {collection_name} response: {response}")
+        logging.info(f"Delete collection {collection_name} response: {response}")
         if not response:
             collections = await client.get_collections()
             collections = collections.model_dump()
             collection_names = [i['name'] for i in collections['collections']]
             if collection_name not in collection_names:
-                print(f"Collection {collection_name} does not exist on qdrant, assuming already deleted")
+                logging.info(f"Collection {collection_name} does not exist on qdrant, assuming already deleted")
                 response = True 
         return response 
     
@@ -95,7 +96,7 @@ async def get_collection_names(retries):
                 collection_names = [i['name'] for i in collections['collections']]
                 return collection_names 
             except:
-                print("Failed to connect to qdrant, sleeping")
+                logging.info("Failed to connect to qdrant, sleeping")
                 time.sleep(1)
         return None 
 
@@ -104,7 +105,7 @@ async def restore_snapshot(db_record, snapshot_name):
         collection_name = f"data_source_{db_record.id}"
         snapshot_path = f"{os.environ.get('QDRANT__STORAGE__SNAPSHOTS_PATH', 'qdrant_snapshots')}/{collection_name}"
         snapshot_location = f"file:///qdrant/{snapshot_path}/{snapshot_name}"
-        print(f"Recovering snapshot file {snapshot_location}")
+        logging.info(f"Recovering snapshot file {snapshot_location}")
         snapshot_response = await client.recover_snapshot(collection_name, snapshot_location)
         return snapshot_response
 
@@ -135,29 +136,4 @@ async def delete_orphan_collections(db):
             res = await qdrant_delete_collection(collection_name)
             response.append({'collection_name' : collection_name, 'deleted' : res})
     return response 
-
-
-# async def qdrant_query(db_record, request):
-#     async with get_qdrant_client() as client:
-#         collection_name = f"data_source_{db_record.id}"
-#         embedding_name = f"embedding_{request['id']}"
-#         qdrant_results = await client.query_points(
-#             collection_name=collection_name,
-#             query=request['embedding'],
-#             using=embedding_name,
-#             limit=request['k'],
-#             with_vectors=True
-#         )
-
-#         results = [] 
-#         for result in qdrant_results.points:
-#             result_data = {
-#                 'external_id' : result.payload.get('external_id', 0),
-#                 'item' : result.payload.get('item', ''),
-#                 'embedding' : result.vector[embedding_name],
-#                 'distance' : result.score
-#             }
-#             results.append(result_data)
-#         return results
-
 

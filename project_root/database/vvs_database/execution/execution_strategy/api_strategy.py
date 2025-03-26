@@ -6,7 +6,8 @@ from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, Exec
 from vvs_database.models import Plugin 
 from vvs_database.utils import make_post_request
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
-from vvs_database.execution.connections import Connections #RedisService
+from vvs_database.execution.connections import Connections
+from vvs_database import logging
 
 async def concurrency_bounded_func(semaphore, func, input, kwargs):
     """Run function within concurrency limit."""
@@ -57,7 +58,7 @@ class APIExecutionStrategy(ExecutionStrategy):
                       plugin: Plugin, 
                       requests: Dict[str, ExecuteRequestUnion]
                       ) -> Dict[str, ExecuteResponseUnion]:
-        print(f"{self.log_id}: Executing {len(requests.keys())} requests")
+        logging.info(f"{self.log_id}: Executing {len(requests.keys())} requests")
         if not requests:
             return {}
 
@@ -98,7 +99,7 @@ class APIExecutionStrategy(ExecutionStrategy):
 
             try:
                 if not success:
-                    print(f"{self.log_id}: Failed to acquire semaphore")
+                    logging.error(f"{self.log_id}: Failed to acquire semaphore")
                     detail = f"Unable to acquire semaphore after {self.execute_params.max_semaphore_attempts} attempts"
                     self._add_failure_result(batch, "Semaphore failure", detail)
                 else:
@@ -116,7 +117,7 @@ class APIExecutionStrategy(ExecutionStrategy):
                 return batch 
 
             except Exception as e:
-                print(f"{self.log_id}: Post request to {url} failed - {str(e)}")
+                logging.error(f"{self.log_id}: Post request to {url} failed - {str(e)}")
                 self._add_failure_result(batch, "Post request failure", f"{str(e)}")
                 batch = batch[0] if is_single_item else batch 
                 return batch 

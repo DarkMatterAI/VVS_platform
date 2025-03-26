@@ -4,6 +4,7 @@ import asyncio
 from typing import List
 
 from vvs_database.schemas import ExecuteRequestUnion, RabbitMQConnection
+from vvs_database import logging
 
 class RabbitMQService():
     def __init__(self, rabbitmq_connection: RabbitMQConnection):
@@ -36,12 +37,12 @@ class RabbitMQService():
             return 
         
         try:
-            print(f"{self.log_id}: Trying to connect to RabbitMQ")
+            logging.info(f"{self.log_id}: Trying to connect to RabbitMQ")
             self.connection = pika.BlockingConnection(self.rabbitmq_params)
             self.channel = self.connection.channel()
-            print(f"{self.log_id}: Successfully connected to RabbitMQ")
+            logging.info(f"{self.log_id}: Successfully connected to RabbitMQ")
         except Exception as e:
-            print(f"{self.log_id}: Failed to connect to RabbitMQ: {str(e)}")
+            logging.info(f"{self.log_id}: Failed to connect to RabbitMQ: {str(e)}")
             raise 
 
     async def close(self):
@@ -53,7 +54,7 @@ class RabbitMQService():
                 self.connection.close()
             await asyncio.sleep(0)
         except Exception as e:
-            print(f"{self.log_id}: Error closing RabbitMQ connections: {str(e)}")
+            logging.error(f"{self.log_id}: Error closing RabbitMQ connections: {str(e)}")
 
     def publish_messages(self, messages: List[ExecuteRequestUnion]) -> List[str]:
         """
@@ -81,9 +82,9 @@ class RabbitMQService():
                     properties=pika.BasicProperties(delivery_mode=2)
                 )
                 successful_ids.append(request_id)
-                print(f"{self.log_id}: Message published to {request_id}")
+                logging.info(f"{self.log_id}: Message published to {request_id}")
             return successful_ids
         
         except pika.exceptions.AMQPError as e:
-            print(f"{self.log_id}: Error publishing message: {e}")
+            logging.error(f"{self.log_id}: Error publishing message: {e}")
             return successful_ids

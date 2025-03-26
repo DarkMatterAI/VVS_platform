@@ -13,7 +13,6 @@ router = APIRouter()
 
 @router.post("/", response_model=PluginInDBUnion)
 async def create_plugin(plugin: RDKitPluginCreate, db: AsyncSession = Depends(get_db)):
-    print(plugin.root)
     response = await crud.create_plugin(db=db, plugin=plugin.root, response_model=True)
     return response 
 

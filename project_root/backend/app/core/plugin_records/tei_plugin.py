@@ -1,13 +1,8 @@
 import os 
-import logging 
-
 from app import crud 
 from app import schemas, utils 
 
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger(__name__)
-
-
+from vvs_database import logging 
 
 TEI_EMBEDDING = {
     "name": f"TEI Embedding {os.environ.get('TEI_MODEL_ID', '')}",
@@ -35,20 +30,20 @@ async def init_tei_records(db):
             continue 
 
         num_linked_records = await crud.count_plugins_linked_to_embedding_id(db, record.id)
-        logger.warning(f"Found stale TEI plugin {record.id} " \
+        logging.warning(f"Found stale TEI plugin {record.id} " \
                        f"with {num_linked_records} linked records")
 
     if found_existing:
         return 
     
-    print("Creating TEI embedding record")
+    logging.info("Creating TEI embedding record")
     try:
         _ = schemas.DistanceMetric(TEI_EMBEDDING['distance_metric'])
     except:
-        logger.warning(f"TEI embedding invalid distance metric {TEI_EMBEDDING['distance_metric']} - skipping")
+        logging.warning(f"TEI embedding invalid distance metric {TEI_EMBEDDING['distance_metric']} - skipping")
         return 
 
-    print("Checking TEI vector size")    
+    logging.info("Checking TEI vector size")    
     try:
         request_data = {
             'request_data' : {
@@ -67,7 +62,7 @@ async def init_tei_records(db):
                                                  TEI_EMBEDDING['endpoint_url'],
                                                  timeout=10, retries=20, retry_sleep=1)
     except:
-        logger.warning(f"Request to TEI server failed - aborting")
+        logging.warning(f"Request to TEI server failed - aborting")
         return 
 
     TEI_EMBEDDING['vector_length'] = len(response['embedding'])
@@ -75,6 +70,6 @@ async def init_tei_records(db):
     record = schemas.EmbeddingPluginCreate(**TEI_EMBEDDING)
     try:
         response = await crud.create_plugin(db=db, plugin=record)
-        print(f"Successfully created TEI record {response.id}")
+        logging.info(f"Successfully created TEI record {response.id}")
     except:
-        logger.warning(f"Creating TEI record failed")
+        logging.warning(f"Creating TEI record failed")

@@ -9,6 +9,8 @@ dependencies = [
     "dagster-postgres",
     "dagster-docker",
     "dagster-cloud",
+    "dagster-aws",
+    "pandas"
 ]
 
 [project.optional-dependencies]

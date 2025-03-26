@@ -2,6 +2,7 @@ import os
 from app import crud 
 from app import schemas
 from app.core.plugin_records.enamine_smarts import ENAMINE_CREATE
+from vvs_database import logging 
 
 RDKIT_FILTERS = [
     {
@@ -26,20 +27,20 @@ RDKIT_FILTERS = [
 
 
 async def init_rdkit_records(db):
-    print("Creating RDKit filters")
+    logging.info("Creating RDKit filters")
     for record in RDKIT_FILTERS:
         current_record = await crud.get_plugins(db, filter_params={'name' : record['name']})
         if not current_record:
-            print(f"Creating RDKit filter record {record['name']}")
+            logging.info(f"Creating RDKit filter record {record['name']}")
             record = schemas.FilterPluginCreate(**record)
             response = await crud.create_plugin(db=db, plugin=record)
-            print(response)
+            logging.info(response)
 
-    print('Creating Enamine assemblies')
+    logging.info('Creating Enamine assemblies')
     for record in ENAMINE_CREATE:
         current_record = await crud.get_plugins(db, filter_params={'name' : record['name']})
         if not current_record:
-            print(f"Creating RDKit assembly record {record['name']}")
+            logging.info(f"Creating RDKit assembly record {record['name']}")
             record = schemas.AssemblyPluginCreate(**record)
             response = await crud.create_plugin(db=db, plugin=record)
-            print(response)
+            logging.info(response)

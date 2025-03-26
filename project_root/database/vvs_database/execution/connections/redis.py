@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 from typing import Optional, List, Dict, Any, Union 
 
 from vvs_database.schemas import RedisConnection
+from vvs_database import logging
 
         
 class RedisService:
@@ -33,7 +34,7 @@ class RedisService:
     
     async def get_results(self, keys: List[str], delete: bool=False) -> Dict[str, Any]:
         """Get multiple results from Redis cache"""
-        print(f"{self.log_id}: Checking redis with {len(keys)} keys")
+        logging.info(f"{self.log_id}: Checking redis with {len(keys)} keys")
         if not keys:
             return {}
         
@@ -48,12 +49,12 @@ class RedisService:
                     if delete:
                         await self.redis.delete(key)
                 except json.JSONDecodeError:
-                    print(f"{self.log_id}: Key {key} json decode error")
+                    logging.error(f"{self.log_id}: Key {key} json decode error")
                     pass  # Skip invalid JSON
 
         n_found = len(parsed_results.keys())
         pct_found = n_found / len(keys)
-        print(f"{self.log_id}: Found {n_found}/{len(keys)} keys, {pct_found:.3f} hit percent")
+        logging.info(f"{self.log_id}: Found {n_found}/{len(keys)} keys, {pct_found:.3f} hit percent")
         
         return parsed_results
     
@@ -62,7 +63,7 @@ class RedisService:
         if not results:
             return
         
-        print(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
+        logging.info(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
             
         self.init_redis_connection()
         pipeline = self.redis.pipeline()
@@ -99,7 +100,7 @@ class RedisService:
         Returns:
             bool: True if semaphore was acquired, False otherwise
         """
-        print(f"{self.log_id}: Acquiring semaphore for {name}")
+        logging.info(f"{self.log_id}: Acquiring semaphore for {name}")
 
         identifier = str(uuid.uuid4())
         semaphore_key = f"semaphore:{name}"
@@ -109,7 +110,7 @@ class RedisService:
         self.init_redis_connection()
         
         for attempt in range(max_attempts):
-            print(f"{self.log_id}: Acquiring semaphore for {name} - attempt {attempt}")
+            logging.info(f"{self.log_id}: Acquiring semaphore for {name} - attempt {attempt}")
             now = time.time()
 
             async with self.redis.pipeline(transaction=True) as pipe:
@@ -117,28 +118,26 @@ class RedisService:
                 pipe.zinterstore(owner_key, {owner_key: 1, semaphore_key: 0})
                 pipe.incr(counter_key)
                 counter = (await pipe.execute())[-1]
-                print(f"{self.log_id}: Counter {counter}")
 
                 pipe.zadd(semaphore_key, {identifier: now})
                 pipe.zadd(owner_key, {identifier: counter})
                 pipe.zrank(owner_key, identifier)
                 rank = (await pipe.execute())[-1]
-                print(f"{self.log_id}: Rank {rank}")
 
                 if rank is not None and rank < max_locks:
                     # self.semaphore_identifiers[name] = identifier
-                    print(f"{self.log_id}: Successfully acquired semaphore for {name}")
+                    logging.info(f"{self.log_id}: Successfully acquired semaphore for {name}")
                     return True, identifier 
                 else:
-                    print(f"{self.log_id}: Unable to acquire semaphore for {name}")
-                    print(f"{self.log_id}: Removing identifier")
+                    logging.info(f"{self.log_id}: Unable to acquire semaphore for {name}")
+                    logging.info(f"{self.log_id}: Removing identifier")
                     pipe.zrem(semaphore_key, identifier)
                     pipe.zrem(owner_key, identifier)
                     await pipe.execute()
 
                     # Last attempt? Exit now
                     if attempt == max_attempts - 1:
-                        print(f"{self.log_id}: Failed to acquire semaphore for {name}")
+                        logging.error(f"{self.log_id}: Failed to acquire semaphore for {name}")
                         return False, ""
                     
                     # Add jitter (±20%) to prevent thundering herd
@@ -146,7 +145,7 @@ class RedisService:
                     sleep_time = current_backoff * jitter
                     
                     # Sleep with backoff
-                    print(f"{self.log_id}: Sleeping for {sleep_time}")
+                    logging.info(f"{self.log_id}: Sleeping for {sleep_time}")
                     await asyncio.sleep(sleep_time)
                     
                     # Increase backoff for next attempt
@@ -168,7 +167,7 @@ class RedisService:
         if type(identifiers) == str:
             identifiers = [identifiers]
 
-        print(f"{self.log_id}: Releasing {len(identifiers)} locks for {name}")
+        logging.info(f"{self.log_id}: Releasing {len(identifiers)} locks for {name}")
             
         semaphore_key = f"semaphore:{name}"
         owner_key = f"{semaphore_key}:owner"
@@ -182,5 +181,5 @@ class RedisService:
             results = await pipe.execute()
 
         released = sum(results[::2])  # Every other result is from zrem on semaphore_key
-        print(f"{self.log_id}: Released {released} locks for {name}")
+        logging.info(f"{self.log_id}: Released {released} locks for {name}")
         return released 
