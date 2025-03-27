@@ -7,6 +7,7 @@ import asyncio
 import pika 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from vvs_database.crud import get_s3_client, upload_file, delete_file, check_file_exists
 
 @pytest_asyncio.fixture(scope="session")
 def event_loop():
@@ -88,4 +89,24 @@ def triton_client():
     with httpx.Client(base_url=f"http://triton_plugin:{os.environ['TRITON_HTTP_PORT']}") as client:
         yield client
 
+@pytest.fixture(scope="session")
+def s3_client():
+    s3_client = get_s3_client()
+    yield s3_client
+    s3_client.close()
+
+@pytest.fixture(scope="session")
+def upload_test_files(s3_client):
+    uploaded_files = []
+    def _upload_test_files(filename):
+        basename = os.path.basename(filename)
+        if basename not in uploaded_files:
+            with open(filename, 'rb') as file_obj:
+                result = upload_file(basename, file_obj, s3_client)
+            assert check_file_exists(basename, s3_client)
+            uploaded_files.append(basename)
+    yield _upload_test_files
+    for filename in uploaded_files:
+        delete_file(filename, s3_client)
+        assert not check_file_exists(filename, s3_client)
 

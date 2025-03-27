@@ -62,6 +62,13 @@ from vvs_database.crud.job_crud import (
     create_qdrant_upload_job,
 )
 
+from vvs_database.crud.s3_crud import (
+    get_s3_client,
+    init_bucket,
+    upload_file,
+    delete_file,
+)
+
 __all__ = [
     # plugin crud 
     "get_embeddings",
@@ -121,4 +128,10 @@ __all__ = [
     "get_job_plugins",
     "delete_job_plugin",
     "create_qdrant_upload_job",
+
+    # s3
+    "get_s3_client",
+    "init_bucket",
+    "upload_file",
+    "delete_file",
 ]

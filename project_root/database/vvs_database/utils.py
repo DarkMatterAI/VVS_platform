@@ -1,10 +1,8 @@
 from sqlalchemy.orm import class_mapper
 import httpx 
 import asyncio
-import boto3 
-from botocore.exceptions import ClientError
 
-from vvs_database import schemas, models, logging, settings 
+from vvs_database import schemas, models, logging
 
 plugin_type_map = {
     schemas.PluginType.EMBEDDING : {
@@ -135,28 +133,3 @@ async def make_post_request(data, url, timeout, retries, retry_sleep=0, log_id=N
                 logging.info(f"{log_id}Post request failed, sleeping for {retry_sleep} seconds")
                 await asyncio.sleep(retry_sleep) 
 
-def get_s3_client():
-    s3_client = boto3.client(
-        's3',
-        endpoint_url=settings.S3_URL,
-        aws_access_key_id=settings.S3_ACCESS_KEY,
-        aws_secret_access_key=settings.S3_SECRET_KEY,
-        aws_session_token=settings.S3_SESSION_TOKEN,
-        config=boto3.session.Config(signature_version='s3v4'),
-        verify=settings.S3_VERIFY_SSL
-    )
-    return s3_client 
-
-def check_file_exists(filename, use_prefix=True, s3_client=None):
-    if s3_client is None:
-        s3_client = get_s3_client()
-
-    if use_prefix:
-        filename = f"{settings.S3_UPLOAD_PREFIX}/{filename}"
-        
-    try:
-        s3_client.head_object(Bucket=settings.S3_BUCKET, 
-                              Key=filename)
-        return True
-    except ClientError:
-        return False

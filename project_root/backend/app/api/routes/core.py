@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile
-from app.core.database import get_s3_client, upload_file
+from fastapi import APIRouter
 
 import time 
 
@@ -13,9 +12,3 @@ async def read_root():
 async def slow_test():
     time.sleep(1)
     return {"Hello": "World"}
-
-@router.post("/upload")
-def upload_file_endpoint(file: UploadFile,
-                         s3_client=Depends(get_s3_client)):
-    result = upload_file(file, s3_client)
-    return result 

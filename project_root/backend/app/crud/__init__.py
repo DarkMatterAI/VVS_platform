@@ -6,7 +6,9 @@ from vvs_database.crud import (
     count_plugins_by_class,
     count_plugins_linked_to_embedding_class,
     delete_plugin_from_model,
-    get_jobs
+    get_jobs,
+    upload_file,
+    delete_file
 )
 
 from app.crud import qdrant_crud, qdrant_utils
@@ -31,6 +33,8 @@ __all__ = [
     "count_plugins_by_class", 
     "count_plugins_linked_to_embedding_class",
     "get_jobs",
+    "upload_file",
+    "delete_file",
     "create_plugin",
     "update_plugin",
     "execute_plugin",

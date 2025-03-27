@@ -26,6 +26,8 @@ class CreateQdrantUploadJob(BaseModel):
     @model_validator(mode='after')
     def check_consistency(self):
         if (self.filename is None) and (self.items is None):
-            raise ValueError("One of filename, items must be provided")
+            raise ValueError("Expected one of filename, items, found none")
+        if (self.filename is not None) and (self.items is not None):
+            raise ValueError("Expected one of filename, items, found both")
         return self
 

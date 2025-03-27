@@ -33,7 +33,7 @@ done
 if [ ${#integration_test_present[@]} -gt 0 ] || [ ${#profiles[@]} -gt 0 ]; then
     if [ ${#profiles[@]} -gt 0 ]; then
         echo "Starting temp services"
-        docker compose up -d "${profiles[@]}"
+        docker compose up -d "${profiles[@]}" --build
     fi
 
     echo "Copying config files to ./test_executor/src/"

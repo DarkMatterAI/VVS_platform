@@ -16,6 +16,7 @@ from vvs_database.crud.plugin_crud import (
     build_filters,
     get_plugin
 )
+from vvs_database.crud.s3_crud import check_file_exists
 from vvs_database.schemas import (
     PluginClass,
     JobStatus, 
@@ -23,7 +24,6 @@ from vvs_database.schemas import (
     CreateQdrantUploadJob
 )
 from vvs_database.exceptions import NotFoundError, ValidationError
-from vvs_database import utils 
 
 async def create_job(db: AsyncSession,
                      job_type: JobType,
@@ -195,7 +195,7 @@ async def delete_job_plugin(db: AsyncSession,
 async def validate_qdrant_upload_create(db: AsyncSession, 
                                         create_data: CreateQdrantUploadJob):
     if create_data.filename is not None:
-        file_exists = utils.check_file_exists(create_data.filename)
+        file_exists = check_file_exists(create_data.filename)
         if not file_exists:
             raise ValidationError(f'Filename {create_data.filename} not found')
                                               

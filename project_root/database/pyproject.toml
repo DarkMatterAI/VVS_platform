@@ -17,6 +17,7 @@ dependencies = [
     "aioredis",
     "pika",
     "numpy",
+    "boto3",
 ]
 
 [project.optional-dependencies]

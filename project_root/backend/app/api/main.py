@@ -1,12 +1,19 @@
 from fastapi import APIRouter
 from app import utils  
-from app.api.routes import plugin_crud, plugin_execute, job_crud, core
+from app.api.routes import (
+    plugin_crud, 
+    plugin_execute, 
+    job_crud, 
+    core,
+    s3_crud
+)
 
 api_router = APIRouter()
+api_router.include_router(core.router)
+api_router.include_router(s3_crud.router, prefix="/files", tags=["files"])
 api_router.include_router(plugin_crud.router, prefix="/plugins", tags=["plugins"])
 api_router.include_router(plugin_execute.router, prefix="/execute", tags=["execute"])
 api_router.include_router(job_crud.router, prefix="/jobs", tags=["jobs"])
-api_router.include_router(core.router)
 
 config = utils.read_config()['plugins']
 if config.get('rdkit_plugin', {}).get('enabled', False):
