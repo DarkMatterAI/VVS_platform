@@ -6,7 +6,7 @@ from tests.utils.request_data import (
     validate_api_response,
 )
 from tests.utils.rabbitmq_utils import rabbitmq_publish, poll_redis
-from tests.utils.backend_utils import backend_execute_plugin, backend_delete_plugin
+from tests.utils.backend_utils import backend_execute_plugin
 from tests.utils.db_utils import validate_item_checkin
 
 
@@ -22,7 +22,6 @@ async def test_rdkit_filter_consumer(db_session, rabbitmq_connection, redis_conn
     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
     response = [i['response_data'] for i in response]
     validate_response(plugin, response)
-    backend_delete_plugin(backend_client, '/api/v1/plugins', plugin)
 
 @pytest.mark.asyncio
 async def test_rdkit_filter_backend(db_session, backend_client, rdkit_test_filter):
@@ -32,5 +31,4 @@ async def test_rdkit_filter_backend(db_session, backend_client, rdkit_test_filte
                                       plugin['id'], params={'db_persist' : True})
     validate_api_response(plugin, response, 200)
     await validate_item_checkin(db_session, request_data, response.json(), plugin, True)
-    backend_delete_plugin(backend_client, '/api/v1/plugins', plugin)
 

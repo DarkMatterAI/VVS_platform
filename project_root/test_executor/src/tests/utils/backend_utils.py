@@ -40,8 +40,11 @@ def backend_execute_plugin(backend_client, request_data, plugin_id, params=None)
     response = backend_client.post(endpoint, json=request_data, timeout=30)
     return response 
 
-def backend_delete_plugin(backend_client, endpoint, plugin_record):
+def backend_delete_plugin(backend_client, endpoint, plugin_record, ignore_404=False):
     endpoint = f"{endpoint}/{plugin_record['id']}"
     response = backend_client.delete(endpoint)
-    assert response.status_code == 200 
+    if ignore_404:
+        assert response.status_code in [200, 404]
+    else:
+        assert response.status_code == 200 
 

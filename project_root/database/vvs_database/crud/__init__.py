@@ -65,6 +65,7 @@ from vvs_database.crud.job_crud import (
 from vvs_database.crud.s3_crud import (
     get_s3_client,
     init_bucket,
+    check_file_exists,
     upload_file,
     delete_file,
 )
@@ -132,6 +133,7 @@ __all__ = [
     # s3
     "get_s3_client",
     "init_bucket",
+    "check_file_exists",
     "upload_file",
     "delete_file",
 ]

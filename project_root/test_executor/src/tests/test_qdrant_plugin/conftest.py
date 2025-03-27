@@ -24,7 +24,7 @@ def qdrant_client():
     client.close()
 
 @pytest.fixture(scope="function")
-def test_embedding(backend_client):
+def test_embedding(backend_client, plugin_cleanup):
     def _test_embedding():
         response = backend_client.post(
             f"{plugin_api_str}/",
@@ -42,14 +42,18 @@ def test_embedding(backend_client):
                 "config": {}
             }
         )
-        assert response.status_code == 200
-        return response.json()
+        response.raise_for_status()
+        response = response.json()
+        plugin_cleanup(response)
+        return response 
+    
+    return _test_embedding 
 
-    return _test_embedding
 
 @pytest.fixture(scope="function")
-def test_data_source(backend_client):
-    def _test_data_source(embedding_records):
+def test_data_source(backend_client, test_embedding, plugin_cleanup):
+    def _test_data_source(n_embeddings):
+        embedding_records = [test_embedding() for i in range(n_embeddings)]
         response = backend_client.post(
             f"{api_str}/",
             json={
@@ -66,7 +70,11 @@ def test_data_source(backend_client):
                 }
             }
         )
-        assert response.status_code == 200, response.text
-        return response.json()
+        response.raise_for_status()
+        response = response.json()
+        plugin_cleanup(response)
+        return response, embedding_records 
 
-    return _test_data_source
+    return  _test_data_source
+
+

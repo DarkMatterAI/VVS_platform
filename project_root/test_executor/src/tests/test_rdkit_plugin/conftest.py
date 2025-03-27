@@ -30,7 +30,7 @@ SYNTON_NAMES = [
 ]
 
 @pytest.fixture(scope="function")
-def rdkit_test_filter(backend_client):
+def rdkit_test_filter(backend_client, plugin_cleanup):
     def _create_filter():
         response = backend_client.post(
             f"{api_str}/",
@@ -47,12 +47,14 @@ def rdkit_test_filter(backend_client):
             }
         )
         assert response.status_code == 200
-        return response.json()
+        response = response.json()
+        plugin_cleanup(response)
+        return response 
 
     return _create_filter
 
 @pytest.fixture(scope="function")
-def rdkit_test_assembly(backend_client):
+def rdkit_test_assembly(backend_client, plugin_cleanup):
     def _create_assembly():
         response = backend_client.post(
             f"{api_str}/",
@@ -73,12 +75,14 @@ def rdkit_test_assembly(backend_client):
             }
         )
         assert response.status_code == 200
-        return response.json()
+        response = response.json()
+        plugin_cleanup(response)
+        return response 
 
     return _create_assembly
 
 @pytest.fixture(scope="function")
-def synton_test_assembly(backend_client):
+def synton_test_assembly(backend_client, plugin_cleanup):
     def _create_assembly():
         response = backend_client.post(
             f"{api_str}/",
@@ -98,7 +102,9 @@ def synton_test_assembly(backend_client):
             }
         )
         assert response.status_code == 200
-        return response.json()
+        response = response.json()
+        plugin_cleanup(response)
+        return response 
 
     return _create_assembly
 

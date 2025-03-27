@@ -2,7 +2,7 @@ import pytest
 
 from tests.utils.request_data import generate_rdkit_assembly_request, validate_response, validate_api_response
 from tests.utils.rabbitmq_utils import rabbitmq_publish, poll_redis
-from tests.utils.backend_utils import backend_execute_plugin, backend_delete_plugin
+from tests.utils.backend_utils import backend_execute_plugin
 from tests.utils.db_utils import validate_assembly_checkin
 
 TEST_PARENTS = [
@@ -20,7 +20,6 @@ async def test_rdkit_synton_assembly_consumer(db_session, rabbitmq_connection, r
     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
     response = [i['response_data'] for i in response]
     response = validate_response(plugin, response)
-    backend_delete_plugin(backend_client, '/api/v1/plugins', plugin)
 
 
 @pytest.mark.asyncio
@@ -30,5 +29,4 @@ async def test_rdkit_assembly_backend(db_session, backend_client, synton_test_as
     response = backend_execute_plugin(backend_client, request_data, plugin['id'])
     validate_api_response(plugin, response, 200)
     await validate_assembly_checkin(db_session, request_data, response.json(), plugin)
-    backend_delete_plugin(backend_client, '/api/v1/plugins', plugin)
 

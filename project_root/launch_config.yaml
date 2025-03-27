@@ -4,6 +4,6 @@ plugins:
   tei_plugin:
     enabled: False
   rdkit_plugin:
-    enabled: False
+    enabled: True
   triton_plugin:
     enabled: True

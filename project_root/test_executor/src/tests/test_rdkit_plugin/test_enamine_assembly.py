@@ -3,7 +3,7 @@ import pytest
 from tests.utils.backend_utils import backend_get_plugins_by_filter
 from tests.utils.request_data import generate_rdkit_assembly_request, validate_response, validate_api_response
 from tests.utils.rabbitmq_utils import rabbitmq_publish, poll_redis
-from tests.utils.backend_utils import backend_execute_plugin, backend_delete_plugin
+from tests.utils.backend_utils import backend_execute_plugin
 from tests.utils.db_utils import validate_assembly_checkin
 
 reaction_data = [

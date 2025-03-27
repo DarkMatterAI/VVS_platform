@@ -8,6 +8,7 @@ import pika
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from vvs_database.crud import get_s3_client, upload_file, delete_file, check_file_exists
+from tests.utils.backend_utils import backend_delete_plugin
 
 @pytest_asyncio.fixture(scope="session")
 def event_loop():
@@ -74,6 +75,23 @@ def backend_client():
     with httpx.Client(base_url=f"http://backend:{os.environ['BACKEND_PORT']}") as client:
         yield client
 
+@pytest.fixture(scope="function")
+def plugin_cleanup(backend_client):
+    embedding_records = []
+    other_records = []
+    def _add_record(record):
+        if record['type'] == 'embedding':
+            embedding_records.append(record)
+        else:
+            other_records.append(record)
+    yield _add_record 
+
+    # delete embeddings last
+    for record_list in [other_records, embedding_records]:
+        for record in record_list:
+            backend_delete_plugin(backend_client, '/api/v1/plugins', record, ignore_404=True)
+
+
 @pytest.fixture(scope="session")
 def test_api_client():
     with httpx.Client(base_url=f"http://test_server:{os.environ['TEST_SERVER_PORT']}") as client:
@@ -98,7 +116,10 @@ def s3_client():
 @pytest.fixture(scope="session")
 def upload_test_files(s3_client):
     uploaded_files = []
-    def _upload_test_files(filename):
+    local_path = '/code/test_files'
+    def _upload_test_files(filename: str):
+        if not filename.startswith(local_path):
+            filename = f"{local_path}/{filename}"
         basename = os.path.basename(filename)
         if basename not in uploaded_files:
             with open(filename, 'rb') as file_obj:
