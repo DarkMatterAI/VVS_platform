@@ -29,5 +29,7 @@ class CreateQdrantUploadJob(BaseModel):
             raise ValueError("Expected one of filename, items, found none")
         if (self.filename is not None) and (self.items is not None):
             raise ValueError("Expected one of filename, items, found both")
+        if (self.items is not None) and (len(self.items)==0):
+            raise ValueError("items list must have at least one item")
         return self
 

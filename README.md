@@ -4,11 +4,8 @@ VVS V2
 todos
     dagster
         io managers, local vs prod 
-        concurrency
+        concurrency flags on ops
     logging
-        replace print with proper logger
-        add timestamps, etc
-        clean up excessive logging in executor 
         for redis cache, distinguish cache check from message response check
         will need unified logging id for multiple ops
         probably need job id on requests?

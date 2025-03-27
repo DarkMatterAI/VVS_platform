@@ -3,12 +3,12 @@ services:
     unit_test: False 
     integration_test: False 
   qdrant_plugin:
-    integration_test: False   
+    integration_test: True   
   tei_plugin:
     integration_test: False 
   rdkit_plugin:
     unit_test: False 
-    integration_test: True 
+    integration_test: False 
   triton_plugin:
     unit_test: False 
     integration_test: False 

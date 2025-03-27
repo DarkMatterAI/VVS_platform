@@ -91,6 +91,15 @@ def plugin_cleanup(backend_client):
         for record in record_list:
             backend_delete_plugin(backend_client, '/api/v1/plugins', record, ignore_404=True)
 
+@pytest.fixture(scope="function")
+def job_cleanup(backend_client):
+    job_records = []
+    def _add_record(record):
+        job_records.append(record)
+    yield _add_record 
+
+    for record in job_records:
+        backend_delete_plugin(backend_client, '/api/v1/jobs', record, ignore_404=True)
 
 @pytest.fixture(scope="session")
 def test_api_client():
