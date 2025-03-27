@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, update
+from sqlalchemy import select, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,9 +12,18 @@ from vvs_database.models import (
     JobPlugin
 )
 
-
-from vvs_database.schemas.enums import JobStatus, JobType
-from vvs_database.exceptions import NotFoundError
+from vvs_database.crud.plugin_crud import (
+    build_filters,
+    get_plugin
+)
+from vvs_database.schemas import (
+    PluginClass,
+    JobStatus, 
+    JobType, 
+    CreateQdrantUploadJob
+)
+from vvs_database.exceptions import NotFoundError, ValidationError
+from vvs_database import utils 
 
 async def create_job(db: AsyncSession,
                      job_type: JobType,
@@ -61,6 +70,36 @@ async def get_job(db: AsyncSession,
         await db.commit()
 
     return result
+
+async def get_jobs(db: AsyncSession, 
+                   filter_params: Dict[str, Any] = None,
+                   skip: int = 0, 
+                   limit: int = 100,
+                   ):
+    """Get jobs with filtering, pagination and eager loading."""
+    stmt = (
+        select(Job)
+        .options(
+            selectinload(Job.plugins),  # Eager load related plugins
+        )
+    )
+
+    if filter_params:
+        filters = build_filters(Job, filter_params)
+        stmt = stmt.filter(and_(*filters))
+
+    # Order by created_at descending to get newest jobs first
+    stmt = stmt.order_by(Job.created_at.desc())
+    
+    stmt = stmt.offset(skip).limit(limit)
+
+    result = await db.execute(stmt)
+    jobs = result.scalars().all()
+    
+    for job in jobs:
+        await db.refresh(job)
+    
+    return jobs
 
 async def update_job(db: AsyncSession,
                      job_id: int,
@@ -152,3 +191,44 @@ async def delete_job_plugin(db: AsyncSession,
     await db.delete(job_plugin)
     await db.commit()
     return job_plugin
+
+async def validate_qdrant_upload_create(db: AsyncSession, 
+                                        create_data: CreateQdrantUploadJob):
+    if create_data.filename is not None:
+        file_exists = utils.check_file_exists(create_data.filename)
+        if not file_exists:
+            raise ValidationError(f'Filename {create_data.filename} not found')
+                                              
+    data_record = await get_plugin(db, create_data.plugin_id, with_error=True)
+    if data_record.plugin_class != PluginClass.INTERNAL_QDRANT:
+        raise ValidationError(f'Plugin must be of class {PluginClass.INTERNAL_QDRANT}, ' \
+                              f'found {data_record.plugin_class}')
+    
+    embeddings = {i.id : i for i in data_record.embeddings}
+    if create_data.embedding_configs is not None:
+        for embedding_config in create_data.embedding_configs:
+            if embedding_config.plugin_id not in embeddings:
+                raise ValidationError(f"Found config for embedding {embedding_config.plugin_id}, " \
+                                      f"expected one of {embeddings.keys()}")
+                
+    return data_record, embeddings
+
+async def create_qdrant_upload_job(db: AsyncSession, 
+                                   create_data: CreateQdrantUploadJob, 
+                                   test=False):
+    data_record, embeddings = await validate_qdrant_upload_create(db, create_data)
+    
+    if test:
+        job_type = JobType.TEST_JOB
+    else:
+        job_type = JobType.QDRANT_UPLOAD
+        
+    job_json = create_data.model_dump()
+    
+    job = await create_job(db, job_type, job_json)
+    
+    plugin_ids = [data_record.id] + list(embeddings.keys())
+    
+    job_plugins = await bulk_create_job_plugins(db, job.id, plugin_ids)
+    
+    return job, job_plugins

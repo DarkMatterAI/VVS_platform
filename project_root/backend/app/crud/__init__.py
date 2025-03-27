@@ -5,7 +5,8 @@ from vvs_database.crud import (
     get_plugins_summary,
     count_plugins_by_class,
     count_plugins_linked_to_embedding_class,
-    delete_plugin_from_model
+    delete_plugin_from_model,
+    get_jobs
 )
 
 from app.crud import qdrant_crud, qdrant_utils
@@ -18,7 +19,10 @@ from app.crud.plugin_crud import (
     cleanup_unreferenced_items
 )
 
-from app.crud.job_crud import get_job
+from app.crud.job_crud import (
+    get_job,
+    delete_job
+)
 
 __all__ = [
     "get_plugin", 
@@ -26,12 +30,14 @@ __all__ = [
     "get_plugins_summary",
     "count_plugins_by_class", 
     "count_plugins_linked_to_embedding_class",
+    "get_jobs",
     "create_plugin",
     "update_plugin",
     "execute_plugin",
     "cleanup_unreferenced_items",
     "delete_plugin",
-    "get_job"
+    "get_job",
+    "delete_job",
 ]
 
 async def delete_plugin(db: AsyncSession, plugin_id: int):

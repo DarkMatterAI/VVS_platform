@@ -17,7 +17,10 @@ from vvs_database.schemas import (
     ExecuteRequestUnion,
     BatchExecuteRequestUnion,
     ExecuteParams,
-    JobDBResponse
+    JobDBResponse,
+    JobStatus,
+    JobType,
+    CreateQdrantUploadJob
 )
 
 from app.schemas.qdrant_plugin_schemas import (

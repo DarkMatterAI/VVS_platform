@@ -1,8 +1,9 @@
-from pydantic import BaseModel
-from typing import Optional 
+from pydantic import BaseModel, model_validator
+from typing import Optional, List 
 from datetime import datetime
 
 from vvs_database.schemas.enums import JobStatus, JobType
+from vvs_database.schemas.execute_schemas import ExecutePlugin
 
 class JobDBResponse(BaseModel):
     id: int 
@@ -11,4 +12,20 @@ class JobDBResponse(BaseModel):
     status: JobStatus
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+class UserItem(BaseModel):
+    external_id: Optional[str]
+    item: str 
+
+class CreateQdrantUploadJob(BaseModel):
+    plugin_id: int 
+    embedding_configs: Optional[List[ExecutePlugin]]=None 
+    filename: Optional[str]=None
+    items: Optional[List[UserItem]]=None
+        
+    @model_validator(mode='after')
+    def check_consistency(self):
+        if (self.filename is None) and (self.items is None):
+            raise ValueError("One of filename, items must be provided")
+        return self
 

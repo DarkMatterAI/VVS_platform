@@ -12,3 +12,12 @@ async def get_job(db: AsyncSession,
     except Exception as e:
         handle_db_exception(e)
     return job
+
+async def delete_job(db: AsyncSession, 
+                     job_id: int):
+    try:
+        job = await crud.get_job(db, job_id, with_error=True)
+        job = await crud.delete_job(db, job)
+    except Exception as e:
+        handle_db_exception(e)
+    return job

@@ -41,3 +41,11 @@ async def delete_orphan_collections(db: AsyncSession = Depends(get_db)):
     response = await crud.qdrant_utils.delete_orphan_collections(db)
     return response 
 
+@router.post("/create_upload_job", response_model=schemas.JobDBResponse)
+async def create_qdrant_upload_job(create_data: schemas.CreateQdrantUploadJob,
+                                   is_test: bool=False,
+                                   db: AsyncSession = Depends(get_db)):
+    response = await crud.qdrant_crud.create_qdrant_upload_job(db, create_data, is_test)
+    return response 
+
+

@@ -6,6 +6,7 @@ import boto3
 from botocore.exceptions import ClientError
 from vvs_database.core import get_engine, get_session_factory, create_all_tables
 from vvs_database import settings, logging
+from app import utils
 
 engine = get_engine(settings.SQLALCHEMY_DATABASE_URL)
 AsyncSessionLocal = get_session_factory(engine)
@@ -18,6 +19,7 @@ s3_client = boto3.client(
     config=boto3.session.Config(signature_version='s3v4'),
     verify=settings.S3_VERIFY_SSL
 )
+launch_config = utils.read_config()
 
 async def get_db():
     async with AsyncSessionLocal() as session:

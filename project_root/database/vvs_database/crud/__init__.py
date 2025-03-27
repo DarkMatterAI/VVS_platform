@@ -51,13 +51,15 @@ from vvs_database.crud.assembly_crud import (
 from vvs_database.crud.job_crud import (
     create_job,
     get_job,
+    get_jobs,
     update_job,
     delete_job,
     create_job_plugin,
     bulk_create_job_plugins,
     get_job_plugin,
     get_job_plugins,
-    delete_job_plugin
+    delete_job_plugin,
+    create_qdrant_upload_job,
 )
 
 __all__ = [
@@ -110,11 +112,13 @@ __all__ = [
     # job crud
     "create_job",
     "get_job",
+    "get_jobs",
     "update_job",
     "delete_job",
     "create_job_plugin",
     "bulk_create_job_plugins",
     "get_job_plugin",
     "get_job_plugins",
-    "delete_job_plugin"
+    "delete_job_plugin",
+    "create_qdrant_upload_job",
 ]

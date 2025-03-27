@@ -4,11 +4,12 @@ import logging
 from app import utils
 from app import crud 
 from vvs_database import settings, logging 
-from app.core.database import get_db 
+from app.core.database import get_db, launch_config 
 from app.core.plugin_records.records_config import PLUGIN_CREATE_DICT
 
 async def _init_records(db):
-    config = utils.read_config()['plugins']
+    config = launch_config['plugins']
+    # config = utils.read_config()['plugins']
     
     for plugin_name, plugin_data in config.items():
         if plugin_name not in PLUGIN_CREATE_DICT:

@@ -10,3 +10,4 @@ redis
 aioredis
 pika
 numpy
+boto3

@@ -8,6 +8,8 @@ from app import schemas
 from vvs_database import crud, logging
 from app.crud import qdrant_utils 
 from app.crud.plugin_crud import create_plugin
+from app.core.database import launch_config
+from app.utils import handle_db_exception
 
 async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate):
     logging.info('Parsing qdrant create')
@@ -129,3 +131,14 @@ async def update_snapshot(db: AsyncSession, plugin_id: int, snapshot_data: schem
     await db.refresh(db_plugin)
     return db_plugin.id
 
+async def create_qdrant_upload_job(db: AsyncSession, 
+                                   create_data: schemas.CreateQdrantUploadJob, 
+                                   test=False):
+    if launch_config.get('qdrant_plugin', {}).get('enabled', False):
+        raise HTTPException(status_code=404, detail=f"Qdrant plugin not enabled")
+    
+    try:
+        job, _ = await crud.create_qdrant_upload_job(db, create_data, test)
+    except Exception as e:
+        handle_db_exception(e)
+    return job 
