@@ -1,11 +1,11 @@
 import dagster as dg
 from dagster_aws.s3 import S3Resource, S3PickleIOManager
 
-# from typing import Optional
+from qdrant_client import AsyncQdrantClient
 
 from vvs_database.core import get_engine, get_session_factory
-from vvs_database.execution.connections.database import DatabaseService
-# from vvs_database.schemas import ExecutePlugin, ExecuteParams
+from vvs_database.schemas import RabbitMQConnection, RedisConnection
+from vvs_database.execution.connections import DatabaseService, RabbitMQService, RedisService
 
 class PostgresResource(dg.ConfigurableResource):
     postgres_user: str 
@@ -19,11 +19,58 @@ class PostgresResource(dg.ConfigurableResource):
         session = AsyncSession()
         return session 
 
-    def get_db_service(self):
+    def get_service(self):
         session = self.get_db()
         db_service = DatabaseService(session)
         return db_service
     
+class RabbitMQResource(dg.ConfigurableResource):
+    host: str 
+    port: str 
+    username: str 
+    password: str 
+    exchange: str 
+
+    def to_model(self):
+        return RabbitMQConnection(host=self.host,
+                                  port=self.port,
+                                  username=self.username,
+                                  password=self.password,
+                                  exchange=self.exchange)
+    
+    def get_service(self):
+        connection = self.to_model()
+        service = RabbitMQService(connection)
+        return service 
+
+class RedisResource(dg.ConfigurableResource):
+    host: str 
+    port: str
+    password: str 
+    db: str 
+    cache_ttl: str 
+
+    def to_model(self):
+        url =  f"redis://:{self.password}@{self.host}:{self.port}/{self.db}"
+        return RedisConnection(redis_url=url, cache_ttl=int(self.cache_ttl))
+    
+    def get_service(self):
+        connection = self.to_model()
+        return RedisService(connection)
+
+class QdrantResource(dg.ConfigurableResource):
+    port: str 
+    grpc_port: str 
+
+    def get_service(self):
+        client = AsyncQdrantClient(location='qdrant',
+                                   port=int(self.port),
+                                   grpc_port=int(self.grpc_port),
+                                   prefer_grpc=True,
+                                   timeout=60)
+        return client 
+
+
 S3 = S3Resource(region_name=dg.EnvVar('S3_REGION'),
                 endpoint_url=dg.EnvVar('S3_URL'),
                 # TODO: get s3 env vars working 
@@ -38,6 +85,18 @@ RESOURCE_DEFAULTS = {
     "postgres_resource": PostgresResource(postgres_user=dg.EnvVar("POSTGRES_USER"),
                                           postgres_password=dg.EnvVar("POSTGRES_PASSWORD"),
                                           postgres_db=dg.EnvVar("POSTGRES_DB")),
+    "rabbitmq_resource": RabbitMQResource(host=dg.EnvVar('RABBITMQ_HOST'),
+                                          port=dg.EnvVar('RABBITMQ_PORT'),
+                                          username=dg.EnvVar('RABBITMQ_DEFAULT_USER'),
+                                          password=dg.EnvVar('RABBITMQ_DEFAULT_PASS'),
+                                          exchange=dg.EnvVar('RABBITMQ_EXCHANGE_NAME')),
+    "redis_resource": RedisResource(host=dg.EnvVar('REDIS_HOST'),
+                                    port=dg.EnvVar('REDIS_PORT'),
+                                    password=dg.EnvVar('REDIS_PASSWORD'),
+                                    db=dg.EnvVar('REDIS_DB'),
+                                    cache_ttl=dg.EnvVar('REDIS_MESSAGE_TTL')),
+    "qdrant_resource": QdrantResource(port=dg.EnvVar('QDRANT__SERVICE__HTTP_PORT'),
+                                      grpc_port=dg.EnvVar('QDRANT__SERVICE__GRPC_PORT')),
     "s3_resource": S3,
     "io_manager": S3PickleIOManager(s3_resource=S3,
                                     s3_bucket=dg.EnvVar('S3_BUCKET')),

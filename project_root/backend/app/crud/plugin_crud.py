@@ -32,7 +32,15 @@ async def update_plugin(db: AsyncSession, plugin_id: int, plugin: schemas.Plugin
 
 async def cleanup_unreferenced_items(db: AsyncSession):
     try:
-        await crud.cleanup_unreferenced_items(db)
+        n_removed = await crud.cleanup_unreferenced_items(db)
+        return n_removed 
+    except Exception as e:
+        handle_db_exception(e)
+
+async def cleanup_unreferenced_jobs(db: AsyncSession):
+    try:
+        n_removed = await crud.cleanup_unreferenced_jobs(db)
+        return n_removed 
     except Exception as e:
         handle_db_exception(e)
 

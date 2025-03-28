@@ -1,9 +1,23 @@
-from sqlalchemy import Column, Integer, ForeignKey, JSON, Enum, DateTime, UniqueConstraint
-from sqlalchemy.sql import func
+from sqlalchemy import (
+    Column, 
+    Integer, 
+    ForeignKey, 
+    JSON, 
+    Enum, 
+    DateTime, 
+    UniqueConstraint,
+    exists,
+    and_,
+    delete,
+    func
+)
+# from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from vvs_database.core import Base
 from vvs_database.schemas.enums import JobStatus, JobType
+from vvs_database.models.plugin_models import PluginExecutionFailure
 
 class Job(Base):
     __tablename__ = "vvs_jobs"
@@ -16,8 +30,28 @@ class Job(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relationship to JobPlugins
     plugins = relationship("JobPlugin", back_populates="job", cascade="all, delete-orphan")
+    execution_failures = relationship("PluginExecutionFailure", back_populates="job")
+
+    @classmethod
+    async def cleanup_unreferenced(cls, session: AsyncSession):
+        """
+        Delete jobs that aren't referenced in vvs_job_plugins.
+        Returns number of items deleted.
+        """
+        delete_stmt = delete(cls).where(
+            and_(
+                ~exists().where(JobPlugin.job_id == cls.id),
+                ~exists().where(PluginExecutionFailure.job_id == cls.id)
+            )
+        ).returning(cls.id)
+
+        result = await session.execute(delete_stmt)
+        deleted_rows = result.scalars().all()
+        
+        await session.commit()
+        
+        return len(deleted_rows)
 
 class JobPlugin(Base):
     __tablename__ = "vvs_job_plugins"

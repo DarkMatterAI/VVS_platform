@@ -25,6 +25,10 @@ from vvs_database.schemas import (
 )
 from vvs_database.exceptions import NotFoundError, ValidationError
 
+async def cleanup_unreferenced_jobs(db: AsyncSession) -> int:
+    """Delete items that aren't referenced in other tables."""
+    return await Job.cleanup_unreferenced(db)
+
 async def create_job(db: AsyncSession,
                      job_type: JobType,
                      job_json: Optional[Dict[str, Any]] = None,

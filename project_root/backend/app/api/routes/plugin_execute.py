@@ -10,8 +10,8 @@ router = APIRouter()
 
 @router.get("/item_cleanup")
 async def item_cleanup(db: AsyncSession = Depends(get_db)):
-    await crud.cleanup_unreferenced_items(db)
-    response = {'success' : True}
+    n_removed = await crud.cleanup_unreferenced_items(db)
+    response = {'success' : True, 'removed' : n_removed}
     return response
 
 @router.post("/{plugin_id:int}")

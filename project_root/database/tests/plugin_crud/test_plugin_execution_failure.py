@@ -7,6 +7,7 @@ async def test_plugin_execution_failure(db_session, create_test_embedding):
 
     records = [{
         "plugin_id": plugin.id,
+        "job_id": None,
         "failure_reason": "test",
         "failure_detail": "test",
         "request": None

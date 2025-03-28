@@ -1,6 +1,6 @@
 from dagster import Definitions, load_assets_from_modules
 
-from vvs_dagster import assets, resources, test_job, qdrant_upload_job  # noqa: TID252
+from vvs_dagster import assets, resources, test_job, qdrant_upload_job
 
 all_assets = load_assets_from_modules([assets, qdrant_upload_job])
 

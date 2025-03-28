@@ -35,6 +35,7 @@ class DatabaseService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.log_id = 'DB'
+        self.job_id = None 
 
     async def get_plugin(self, plugin_id: int) -> Plugin:
         response = await get_plugin(self.db, plugin_id)
@@ -228,6 +229,7 @@ class DatabaseService:
         await asyncio.sleep(0)
         inputs = [{
             "plugin_id": plugin.id,
+            "job_id": self.job_id,
             "failure_reason": response_dict["failure_reason"],
             "failure_detail": response_dict["failure_detail"],
             "request": request.model_dump()

@@ -103,12 +103,14 @@ class BasePluginExecutor:
                                        Dict[str, ExecuteResponseUnion],
                                        Dict[str, ExecuteRequestUnion]]:
         """Check request against cache and database"""
+        if (not self.execute_params.cache) and (not self.execute_params.db_lookup):
+            return {}, {}, key_to_request
+
         unique_keys = list(key_to_request.keys())
         n_keys = len(unique_keys)
         logging.info(f"{self.log_id}: Checking records with {n_keys} keys")
 
         # Check cache for records
-        logging.info(f"{self.log_id}: Checking cache")
         cached_results = await self.get_cache_results(unique_keys)
         cached_results = {k: self.response_model.model_validate(v) 
                           for k, v in cached_results.items()}

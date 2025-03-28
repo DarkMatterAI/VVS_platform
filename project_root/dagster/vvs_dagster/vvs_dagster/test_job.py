@@ -14,7 +14,7 @@ class GetJobConfig(dg.Config):
 async def get_plugin(context: dg.OpExecutionContext, 
                      postgres_resource: PostgresResource,
                      config: GetPluginConfig):
-    db_service = postgres_resource.get_db_service()
+    db_service = postgres_resource.get_service()
     plugin = await db_service.get_plugin(config.plugin_id)
     context.log.info(f"plugin {config.plugin_id} : {plugin}")
     await db_service.db.close()
@@ -35,7 +35,7 @@ async def get_job(context: dg.OpExecutionContext,
                   config: GetJobConfig):
     db_session = postgres_resource.get_db()
     job = await crud.get_job(db_session, config.job_id, load_plugins=True)
-    # db_service = postgres_resource.get_db_service()
+    # db_service = postgres_resource.get_service()
     # job = await db_service.get_job(config.job_id, load_plugins=True)
     context.log.info(f"job {config.job_id} : {job}")
     for jp in job.plugins:

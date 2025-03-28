@@ -32,6 +32,13 @@ def check_file_exists(filename: str, s3_client=None):
     except ClientError:
         return False
     
+def get_file(filename: str, s3_client=None):
+    logging.info(f"Getting object {filename}")
+    filename = add_s3_prefix(filename)
+    response = s3_client.get_object(Bucket=settings.S3_BUCKET, 
+                                    Key=filename)
+    return response 
+
 def check_bucket_exists(bucket_name: str, s3_client=None):
     if s3_client is None:
         s3_client = get_s3_client()

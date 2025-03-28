@@ -137,13 +137,15 @@ class AssemblyPlugin(Plugin):
 class PluginExecutionFailure(Base):
     __tablename__ = "plugin_execution_failures"
 
-    # TODO: job id eventually
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     plugin_id = Column(Integer, ForeignKey("plugins.id", ondelete="CASCADE"), nullable=False)
+    job_id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"), nullable=True)
     failure_reason = Column(String, nullable=True)
     failure_detail = Column(Text, nullable=True) 
     request = Column(JSON, nullable=True)
     
-    # Relationship to the plugin (optional)
     plugin = relationship("Plugin", back_populates="execution_failures")
+    job = relationship("Job", back_populates="execution_failures")
+
+

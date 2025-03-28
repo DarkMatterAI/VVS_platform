@@ -10,7 +10,8 @@ dependencies = [
     "dagster-docker",
     "dagster-cloud",
     "dagster-aws",
-    "pandas"
+    "pandas",
+    "qdrant-client==1.11.2",
 ]
 
 [project.optional-dependencies]

@@ -18,7 +18,8 @@ from app.crud.plugin_crud import (
     create_plugin,
     update_plugin,
     execute_plugin,
-    cleanup_unreferenced_items
+    cleanup_unreferenced_items,
+    cleanup_unreferenced_jobs,
 )
 
 from app.crud.job_crud import (
@@ -39,6 +40,7 @@ __all__ = [
     "update_plugin",
     "execute_plugin",
     "cleanup_unreferenced_items",
+    "cleanup_unreferenced_jobs",
     "delete_plugin",
     "get_job",
     "delete_job",

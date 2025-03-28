@@ -49,6 +49,7 @@ from vvs_database.crud.assembly_crud import (
 )
 
 from vvs_database.crud.job_crud import (
+    cleanup_unreferenced_jobs,
     create_job,
     get_job,
     get_jobs,
@@ -68,6 +69,7 @@ from vvs_database.crud.s3_crud import (
     check_file_exists,
     upload_file,
     delete_file,
+    get_file,
 )
 
 __all__ = [
@@ -118,6 +120,7 @@ __all__ = [
     "upsert_execution_failures",
 
     # job crud
+    "cleanup_unreferenced_jobs",
     "create_job",
     "get_job",
     "get_jobs",
@@ -136,4 +139,5 @@ __all__ = [
     "check_file_exists",
     "upload_file",
     "delete_file",
+    "get_file",
 ]

@@ -9,7 +9,8 @@ setup(
         "dagster-docker",
         "dagster-cloud",
         "dagster-aws",
-        "pandas"
+        "pandas",
+        "qdrant-client==1.11.2",
     ],
     extras_require={"dev": ["dagster-webserver", "pytest"]},
 )

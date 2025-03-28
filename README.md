@@ -6,6 +6,7 @@ todos
         io managers, local vs prod 
         concurrency flags on ops
     logging
+        add job id to execution logging 
         for redis cache, distinguish cache check from message response check
         will need unified logging id for multiple ops
         probably need job id on requests?
