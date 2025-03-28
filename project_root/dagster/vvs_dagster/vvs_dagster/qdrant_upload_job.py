@@ -5,8 +5,6 @@ from qdrant_client import models
 from typing import Tuple 
 import pandas as pd 
 import uuid 
-import time 
-import asyncio 
 
 from vvs_database import crud, schemas 
 from vvs_database.job_runner import QdrantUploadRunner
@@ -37,12 +35,6 @@ def get_connection(postgres_resource: PostgresResource,
                        redis_service=redis_service,
                        rabbitmq_service=rabbitmq_service)
 
-async def set_indexing_threshold(logging, qdrant_client, collection_name, threshold):
-    logging.info(f'Setting qdrant indexing threshold to {threshold}')
-    await qdrant_client.update_collection(collection_name,
-                                          optimizers_config=models.OptimizersConfigDiff(
-                                              indexing_threshold=0))
-
 @dg.op(out={"runner": dg.Out(), "filename": dg.Out(), "collection_name": dg.Out()})
 async def load_job_data(context: dg.OpExecutionContext,
                         postgres_resource: PostgresResource,
@@ -59,8 +51,8 @@ async def load_job_data(context: dg.OpExecutionContext,
     await runner.load_job(db_session)
     await runner.update_job(db_session, schemas.JobStatus.RUNNING)
 
-    # setup qdrant
-    await set_indexing_threshold(logging, qdrant_client, runner.collection_name, 0)
+    # setup qdrant indexing threshold to 0 prior to upload 
+    await qdrant_resource.set_indexing_threshold(logging, qdrant_client, runner.collection_name, 0)
 
     await db_session.close()
     await qdrant_client.close()
@@ -105,25 +97,6 @@ async def qdrant_upload_embed(context: dg.OpExecutionContext,
 
     return records 
 
-def qdrant_records_to_points(records: list[dict]):
-    points = []
-    failed = []
-
-    for record in records:
-        payload = record["item_data"]
-        if not record["valid"]:
-            failed.append(payload)
-            continue 
-
-        point = models.PointStruct(id=str(uuid.uuid4()),
-                                   payload=payload,
-                                   vector={f"embedding_{plugin_id}" : embedding 
-                                           for plugin_id, embedding in record['embeddings'].items()})
-        points.append(point)
-    return points, failed 
-
-
-
 @dg.op(pool="qdrant_upload")
 async def qdrant_upload(context: dg.OpExecutionContext,
                         qdrant_resource: QdrantResource,
@@ -133,46 +106,11 @@ async def qdrant_upload(context: dg.OpExecutionContext,
     logging = get_logger(context)
     qdrant_client = qdrant_resource.get_service()
 
-    points, failed = qdrant_records_to_points(records)
-
-    _ = qdrant_client.upload_points(collection_name=collection_name,
-                                    points=points,
-                                    parallel=qdrant_resource.upload_processes,
-                                    max_retries=qdrant_resource.upload_max_retries,
-                                    batch_size=qdrant_resource.upload_batch_size)
+    points, failed = qdrant_resource.qdrant_records_to_points(records)
+    _ = qdrant_resource.upload_points(logging, qdrant_client, collection_name, points )
     await qdrant_client.close()
 
     return failed 
-
-async def qdrant_index_sleep(logging,
-                             qdrant_client, 
-                             index_start, 
-                             collection_name, 
-                             upload_ping, 
-                             index_timeout):
-    logging.info('Waiting on index build')
-    await asyncio.sleep(1.0) # wait for indexing to start 
-
-    index_log = {'index_timeout' : False,
-                 'index_error' : False}
-    while True:
-        elapsed = time.time() - index_start 
-        if elapsed > index_timeout:
-            index_log['index_timeout'] = True 
-            return index_log 
-        
-        collection_data = await qdrant_client.get_collection(collection_name)
-        status = collection_data.status
-        if status == 'green':
-            return index_log  
-
-        elif status == 'yellow':
-            logging.info(f'Index sleep, {elapsed} elapsed')
-            await asyncio.sleep(upload_ping)
-
-        else:
-            index_log['index_error'] = True
-            return index_log 
 
 @dg.op
 async def collect_qdrant_results(context: dg.OpExecutionContext,
@@ -186,23 +124,16 @@ async def collect_qdrant_results(context: dg.OpExecutionContext,
     db_session = postgres_resource.get_db()
     qdrant_client = qdrant_resource.get_service()
 
-    # start indexing
-    index_start = time.time()
-    await set_indexing_threshold(logging, qdrant_client, runner.collection_name, 1)
-
     # log failures
     failed = [item for sublist in failed for item in sublist]
     await runner.save_failed(db_session, failed)
 
-    # wait for indexing
-    index_log = await qdrant_index_sleep(logging, 
-                                         qdrant_client, 
-                                         index_start,
-                                         runner.collection_name, 
-                                         qdrant_resource.upload_ping,
-                                         qdrant_resource.indexing_timeout)
+    # build index
+    index_log = await qdrant_resource.index_sleep(logging, 
+                                                  qdrant_client,
+                                                  runner.collection_name)
+
     index_log['num_failed'] = len(failed)
-    index_log['index_time'] = time.time() - index_start 
 
     if runner.job.job_json['save_snapshot']:
         logging.info(f'Saving snapshot')

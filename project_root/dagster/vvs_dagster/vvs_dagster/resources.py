@@ -1,7 +1,11 @@
 import dagster as dg
 from dagster_aws.s3 import S3Resource, S3PickleIOManager
 
-from qdrant_client import AsyncQdrantClient
+import time 
+import asyncio
+import uuid 
+
+from qdrant_client import AsyncQdrantClient, models
 
 from vvs_database.core import get_engine, get_session_factory
 from vvs_database.schemas import RabbitMQConnection, RedisConnection
@@ -75,6 +79,86 @@ class QdrantResource(dg.ConfigurableResource):
                                    prefer_grpc=True,
                                    timeout=60)
         return client 
+    
+    async def set_indexing_threshold(self,
+                                     logging,
+                                     qdrant_client: AsyncQdrantClient,
+                                     collection_name: str,
+                                     threshold: int):
+        logging.info(f'Qdrant collection {collection_name}: Setting qdrant indexing threshold to {threshold}')
+        await qdrant_client.update_collection(collection_name,
+                                            optimizers_config=models.OptimizersConfigDiff(
+                                                indexing_threshold=threshold))
+    
+    async def index_sleep(self, 
+                          logging, 
+                          qdrant_client: AsyncQdrantClient,
+                          collection_name: str
+                          ) -> dict:
+        logging.info(f'Qdrant collection {collection_name}: building index')
+        index_start = time.time()
+        # set threshold to 1 to start indexing
+        await self.set_indexing_threshold(logging, qdrant_client, collection_name, 1)
+
+        # wait for qdrant internals to change collection status
+        await asyncio.sleep(2.0)
+
+        index_log = {'index_timeout' : False,
+                     'index_error' : False}
+        
+        while True:
+            elapsed = time.time() - index_start 
+            index_log['index_time'] = elapsed
+            if elapsed > self.indexing_timeout:
+                index_log['index_timeout'] = True 
+                return index_log 
+            
+            collection_data = await qdrant_client.get_collection(collection_name)
+            status = collection_data.status
+            if status == 'green':
+                logging.info(f'Qdrant collection {collection_name}: building index complete')
+                return index_log 
+
+            elif status == 'yellow':
+                logging.info(f'Qdrant collection {collection_name}: waiting on index, {elapsed} elapsed')
+                await asyncio.sleep(self.upload_ping)
+
+            else:
+                logging.error(f'Qdrant collection {collection_name}: index build error, ' \
+                              f'status {status}, collection data {collection_data}')
+                index_log['index_error'] = True 
+                return index_log 
+            
+    def qdrant_records_to_points(self, records: list[dict]):
+        points = []
+        failed = []
+
+        for record in records:
+            payload = record["item_data"]
+            if not record["valid"]:
+                failed.append(payload)
+                continue 
+
+            point = models.PointStruct(id=str(uuid.uuid4()),
+                                    payload=payload,
+                                    vector={f"embedding_{plugin_id}" : embedding 
+                                            for plugin_id, embedding in record['embeddings'].items()})
+            points.append(point)
+        return points, failed 
+    
+    def upload_points(self,
+                      logging,
+                      qdrant_client: AsyncQdrantClient,
+                      collection_name: str,
+                      points: list[models.PointStruct]):
+        logging.info(f"Qdrant collection {collection_name}: starting upload of {len(points)} points")
+        response = qdrant_client.upload_points(collection_name=collection_name,
+                                               points=points,
+                                               parallel=self.upload_processes,
+                                               max_retries=self.upload_max_retries,
+                                               batch_size=self.upload_batch_size)
+        return response 
+
 
 
 S3 = S3Resource(region_name=dg.EnvVar('S3_REGION'),

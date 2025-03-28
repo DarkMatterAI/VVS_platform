@@ -6,16 +6,10 @@ todos
         io managers, local vs prod 
         concurrency flags on ops
     logging
-        add job id to execution logging 
         for redis cache, distinguish cache check from message response check
-        will need unified logging id for multiple ops
         probably need job id on requests?
-        integrate with dagster 
-    integration stuff
-        dagster log swap
-        job id on lots of things
-            execution print out
-            execution failure log 
+    qdrant upload job
+        refactor qdrant utils 
     jobs
         qdrant upload
         search
@@ -239,29 +233,4 @@ iteration approach
     integrates with having a database for iterations 
     one issue - need way of generating consistent IDs for assembled molecules 
 
-
-
-
-# async def qdrant_query(db_record, request):
-#     async with get_qdrant_client() as client:
-#         collection_name = f"data_source_{db_record.id}"
-#         embedding_name = f"embedding_{request['id']}"
-#         qdrant_results = await client.query_points(
-#             collection_name=collection_name,
-#             query=request['embedding'],
-#             using=embedding_name,
-#             limit=request['k'],
-#             with_vectors=True
-#         )
-
-#         results = [] 
-#         for result in qdrant_results.points:
-#             result_data = {
-#                 'external_id' : result.payload.get('external_id', 0),
-#                 'item' : result.payload.get('item', ''),
-#                 'embedding' : result.vector[embedding_name],
-#                 'distance' : result.score
-#             }
-#             results.append(result_data)
-#         return results
 
