@@ -2,6 +2,7 @@ from sqlalchemy import (
     Column, 
     Integer, 
     ForeignKey, 
+    String,
     JSON, 
     Enum, 
     DateTime, 
@@ -11,7 +12,6 @@ from sqlalchemy import (
     delete,
     func
 )
-# from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,3 +65,14 @@ class JobPlugin(Base):
     __table_args__ = (
         UniqueConstraint('job_id', 'plugin_id', name='uix_job_plugin'),
     )
+
+class QdrantUploadFailed(Base):
+    __tablename__ = "qdrant_upload_failed"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"))
+    item = Column(String, nullable=False)
+    external_id = Column(String, nullable=True)
+
+    job = relationship("Job", passive_deletes=True)
+

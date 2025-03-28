@@ -16,7 +16,7 @@ temp_services:
   test_consumer:
     enabled: False
   test_server:
-    enabled: True
+    enabled: False
 
 # services:
 #   backend:

@@ -61,6 +61,12 @@ class RedisResource(dg.ConfigurableResource):
 class QdrantResource(dg.ConfigurableResource):
     port: str 
     grpc_port: str 
+    upload_job_chunksize: int 
+    upload_batch_size: int 
+    upload_processes: int 
+    upload_max_retries: int 
+    upload_ping: int 
+    indexing_timeout: int 
 
     def get_service(self):
         client = AsyncQdrantClient(location='qdrant',
@@ -96,7 +102,13 @@ RESOURCE_DEFAULTS = {
                                     db=dg.EnvVar('REDIS_DB'),
                                     cache_ttl=dg.EnvVar('REDIS_MESSAGE_TTL')),
     "qdrant_resource": QdrantResource(port=dg.EnvVar('QDRANT__SERVICE__HTTP_PORT'),
-                                      grpc_port=dg.EnvVar('QDRANT__SERVICE__GRPC_PORT')),
+                                      grpc_port=dg.EnvVar('QDRANT__SERVICE__GRPC_PORT'),
+                                      upload_job_chunksize=dg.EnvVar.int('QDRANT_UPLOAD_JOB_CHUNKSIZE'),
+                                      upload_batch_size=dg.EnvVar.int('QDRANT_UPLOAD_BATCH_SIZE'),
+                                      upload_processes=dg.EnvVar.int('QDRANT_UPLOAD_PROCESSES'),
+                                      upload_max_retries=dg.EnvVar.int('QDRANT_UPLOAD_MAX_RETRIES'),
+                                      upload_ping=dg.EnvVar.int('QDRANT_UPLOAD_PING'),
+                                      indexing_timeout=dg.EnvVar.int('QDRANT_INDEXING_TIMEOUT')),
     "s3_resource": S3,
     "io_manager": S3PickleIOManager(s3_resource=S3,
                                     s3_bucket=dg.EnvVar('S3_BUCKET')),

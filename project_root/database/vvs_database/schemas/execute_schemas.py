@@ -10,7 +10,6 @@ class RequestData(BaseModel):
 class ItemData(BaseModel):
     """Data for item in a request"""
     item_id: int
-    # external_id: Optional[Union[int, str]]
     external_id: Optional[str]
     item: str 
         
@@ -139,17 +138,6 @@ class ExecuteParams(BaseModel):
     queue_polling_interval: float=0.2
     backoff_factor: float=2.0
 
-class ExecutePlugin(BaseModel):
-    # model_config = ConfigDict(arbitrary_types_allowed=True)
-    model_config = ConfigDict(extra='allow')
-    plugin_id: int
-    # plugin: Optional[Plugin]=None
-    execute_params: ExecuteParams
-    runtime_args: Optional[dict]=None
-
-class ExecuteDataSource(ExecutePlugin):
-    k: int 
-    assembly_index: int
 
 ExecuteRequestUnion = Union[
     ItemRequest,

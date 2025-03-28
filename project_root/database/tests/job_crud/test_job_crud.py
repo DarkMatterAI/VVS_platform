@@ -39,3 +39,12 @@ async def test_job_update(db_session, create_job):
     job_record = await crud.get_job(db_session, job.id)
     assert job_record.job_json == job_json 
 
+@pytest.mark.asyncio
+async def test_qdrant_fail_create(db_session, create_job):
+    job = await create_job()
+    records = [{'item' : '', 'external_id' : ''} for i in range(5)]
+    results = await crud.create_qdrant_upload_failures(db_session, 
+                                                       job.id, 
+                                                       records,
+                                                       return_records=True)
+

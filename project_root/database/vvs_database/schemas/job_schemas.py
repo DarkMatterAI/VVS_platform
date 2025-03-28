@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from vvs_database.schemas.enums import JobStatus, JobType
-from vvs_database.schemas.execute_schemas import ExecutePlugin
+from vvs_database.schemas.internal_schemas import ExecutePlugin
 
 class JobDBResponse(BaseModel):
     id: int 
@@ -22,6 +22,7 @@ class CreateQdrantUploadJob(BaseModel):
     embedding_configs: Optional[List[ExecutePlugin]]=None 
     filename: Optional[str]=None
     items: Optional[List[UserItem]]=None
+    save_snapshot: bool=False 
         
     @model_validator(mode='after')
     def check_consistency(self):

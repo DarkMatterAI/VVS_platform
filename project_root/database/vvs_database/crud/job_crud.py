@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy import select, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from vvs_database.models import (
     DataSourcePlugin, 
@@ -9,7 +10,8 @@ from vvs_database.models import (
     ScorePlugin,
     MapperPlugin, 
     Job,
-    JobPlugin
+    JobPlugin,
+    QdrantUploadFailed
 )
 
 from vvs_database.crud.plugin_crud import (
@@ -236,3 +238,22 @@ async def create_qdrant_upload_job(db: AsyncSession,
     job_plugins = await bulk_create_job_plugins(db, job.id, plugin_ids)
     
     return job, job_plugins
+
+async def create_qdrant_upload_failures(db: AsyncSession,
+                                        job_id: int,
+                                        records: List[dict],
+                                        return_records: bool=False
+                                        ) -> Optional[List[QdrantUploadFailed]]:
+    failed_uploads = [QdrantUploadFailed(job_id=job_id,
+                                         item=record['item'],
+                                         external_id=record['external_id'])
+                      for record in records]
+    db.add_all(failed_uploads)
+    await db.commit()
+
+    if return_records:
+        for record in failed_uploads:
+            await db.refresh(record)
+        await db.commit()
+        return records 
+

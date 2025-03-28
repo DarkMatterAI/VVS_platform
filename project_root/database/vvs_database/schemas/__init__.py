@@ -62,8 +62,6 @@ from vvs_database.schemas.execute_schemas import (
     AssemblyResult,
     AssemblyResponse,
     ExecuteParams,
-    ExecutePlugin,
-    ExecuteDataSource,
     ExecuteRequestUnion,
     BatchExecuteRequestUnion,
     ItemResponseUnion,
@@ -91,6 +89,13 @@ from vvs_database.schemas.job_schemas import (
     JobDBResponse,
     UserItem,
     CreateQdrantUploadJob,
+)
+
+from vvs_database.schemas.internal_schemas import (
+    ExecutePlugin,
+    ExecuteDataSource,
+    InternalItem,
+    ScoreResult,
 )
 
 __all__ = [
@@ -165,8 +170,6 @@ __all__ = [
     "AssemblyResult",
     "AssemblyResponse",
     "ExecuteParams",
-    "ExecutePlugin",
-    "ExecuteDataSource",
     "ExecuteRequestUnion",
     "BatchExecuteRequestUnion",
     "ItemResponseUnion",
@@ -181,4 +184,10 @@ __all__ = [
     "JobDBResponse",
     "UserItem",
     "CreateQdrantUploadJob",
+
+    # internal schemas
+    "ExecutePlugin",
+    "ExecuteDataSource",
+    "InternalItem",
+    "ScoreResult"
 ]

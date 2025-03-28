@@ -5,12 +5,16 @@ scheduler:
 run_coordinator:
   module: dagster.core.run_coordinator
   class: QueuedRunCoordinator
-  config:
-    max_concurrent_runs: 25
+  # config:
+  #   max_concurrent_runs: 25
     # tag_concurrency_limits:
     #   - key: "operation"
     #     value: "example"
     #     limit: 5
+
+concurrency:
+  runs:
+    max_concurrent_runs: 25
 
 run_launcher:
   module: dagster_docker
@@ -37,6 +41,12 @@ run_launcher:
       - MINIO_API_PORT
       - QDRANT__SERVICE__HTTP_PORT
       - QDRANT__SERVICE__GRPC_PORT
+      - QDRANT_UPLOAD_JOB_CHUNKSIZE
+      - QDRANT_UPLOAD_BATCH_SIZE
+      - QDRANT_UPLOAD_PROCESSES
+      - QDRANT_UPLOAD_MAX_RETRIES
+      - QDRANT_UPLOAD_PING
+      - QDRANT_INDEXING_TIMEOUT
       - S3_PROFILE_NAME
       - S3_REGION
       - S3_USE_SSL
