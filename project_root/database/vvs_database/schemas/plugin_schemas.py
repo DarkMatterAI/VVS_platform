@@ -8,8 +8,10 @@ from pydantic import (
 )
 from typing import Optional, List, Union, Dict
 from datetime import datetime
+import uuid 
 
 from vvs_database.schemas.enums import PluginType, PluginClass, PluginExecutionType, DistanceMetric
+from vvs_database.schemas.execute_schemas import RequestData, ExecuteRequestUnion
 
 class OutputEmbedding(BaseModel):
     index: int 
@@ -173,6 +175,26 @@ class PluginInDB(PluginBase):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
+    def get_request_data(self, request_id: Optional[str]=None):
+        return RequestData(request_id=request_id,
+                           plugin_id=self.id,
+                           plugin_name=self.name)
+    
+    def get_request_key(self, item_id: Optional[int]=None):
+        unique_id = str(uuid.uuid4()) if item_id is None else str(item_id)
+        request_id = str(uuid.uuid4())
+        request_key = f"request.{self.group_key}.{self.type}.{self.id}.{unique_id}.{request_id}"
+        return request_key 
+    
+    def populate_request_data(self, request: ExecuteRequestUnion):
+        item_id = None 
+        if hasattr(request, 'item_data'):
+            item_id = request.item_data.item_id
+        request_id = self.get_request_key(item_id)
+        request_data = self.get_request_data(request_id)
+        request.request_data = request_data
+        return request 
 
 class EmbeddingPluginInDB(PluginInDB, EmbeddingPluginCreate):
     pass

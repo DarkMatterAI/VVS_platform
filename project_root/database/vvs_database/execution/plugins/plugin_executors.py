@@ -13,9 +13,14 @@ from vvs_database.schemas import (
     AssemblyResponse
 )
 
-from vvs_database.models import Plugin
-from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
-from vvs_database.schemas import DataSourceRequest, DataSourceResponse
+from vvs_database.schemas import (
+    ExecuteRequestUnion, 
+    ExecuteResponseUnion, 
+    ExecuteParams,
+    DataSourceRequest,
+    DataSourceResponse,
+    PluginInDB
+)
 from vvs_database.execution.plugins.base_executor import BasePluginExecutor
 from vvs_database import logging 
 
@@ -33,7 +38,7 @@ class ItemPluginExecutor(BasePluginExecutor):
         return None 
 
     async def query_database(self, 
-                             plugin: Plugin, 
+                             plugin: PluginInDB, 
                              requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
         logging.info(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")
@@ -117,7 +122,7 @@ class AssemblyPluginExecutor(BasePluginExecutor):
         )
     
     async def query_database(self, 
-                             plugin: Plugin, 
+                             plugin: PluginInDB, 
                              requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
         logging.info(f"{self.log_id}: Looking up DB results for {len(requests.keys())} requests")

@@ -3,8 +3,12 @@ import json
 import asyncio 
 from typing import List, Tuple, Dict, Optional, Any, Type
 
-from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
-from vvs_database.models import Plugin
+from vvs_database.schemas import (
+    ExecuteRequestUnion, 
+    ExecuteResponseUnion, 
+    ExecuteParams,
+    PluginInDB
+)
 from vvs_database import logging 
 
 from vvs_database.execution.connections import Connections
@@ -13,19 +17,18 @@ from vvs_database.execution.execution_strategy import APIExecutionStrategy, Queu
 class BasePluginExecutor:
     """Base class for all plugin executors"""
     
-    # Class variables for subclass configuration
     request_model: Type = None
     response_model: Type = None
     
     def __init__(self,
-                 plugin: Plugin,
+                 plugin: PluginInDB,
                  connections: Connections,
                  execute_params: ExecuteParams):
         
         self._init_execution_strategy(plugin, connections, execute_params)
     
     def _init_execution_strategy(self,
-                                 plugin: Plugin,
+                                 plugin: PluginInDB,
                                  connections: Connections,
                                  execute_params: ExecuteParams):
         """Initialize the appropriate execution strategy"""
@@ -196,7 +199,7 @@ class BasePluginExecutor:
         return None 
     
     async def query_database(self, 
-                             plugin: Plugin, 
+                             plugin: PluginInDB, 
                              requests: Dict[str, ExecuteRequestUnion]
                              ) -> Dict[str, ExecuteResponseUnion]:
         """Query database for existing results - must be implemented by subclasses"""

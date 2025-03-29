@@ -24,7 +24,7 @@ from vvs_database.schemas import (
     NewItem,
     NewResult,
     NewAssembly,
-    PostgresConnection
+    PluginInDB
 )
 from vvs_database.models import Plugin
 from vvs_database import logging 
@@ -42,7 +42,7 @@ class DatabaseService:
         return response 
     
     async def get_item_results(self, 
-                               plugin: Plugin, 
+                               plugin: PluginInDB, 
                                requests: Dict[str, ItemRequest]
                                ) -> Dict[str, ItemResponseUnion]:
         logging.info(f"{self.log_id}: Looking up item results for {len(requests.keys())} requests")
@@ -63,7 +63,7 @@ class DatabaseService:
         return result 
 
     async def get_assembly_results(self, 
-                                   plugin: Plugin, 
+                                   plugin: PluginInDB, 
                                    requests: Dict[str, AssemblyRequest]
                                    ) -> Dict[str, AssemblyResponse]:
         logging.info(f"{self.log_id}: Looking up assembly results for {len(requests.keys())} requests")
@@ -108,7 +108,7 @@ class DatabaseService:
         return results 
 
     async def check_in_item_results(self,
-                                    plugin: Plugin,
+                                    plugin: PluginInDB,
                                     requests: List[ExecuteRequestUnion],
                                     results: List[ExecuteResponseUnion],
                                     valid_execution: List[bool]
@@ -132,7 +132,7 @@ class DatabaseService:
         return checkin_result
     
     async def check_in_data_source_results(self,
-                                           plugin: Plugin,
+                                           plugin: PluginInDB,
                                            requests: List[ExecuteRequestUnion],
                                            results: List[ExecuteResponseUnion],
                                            valid_execution: List[bool],
@@ -184,7 +184,7 @@ class DatabaseService:
         return checkin_result
     
     async def check_in_assembly_results(self,
-                                        plugin: Plugin,
+                                        plugin: PluginInDB,
                                         requests: List[ExecuteRequestUnion],
                                         results: List[ExecuteResponseUnion],
                                         valid_execution: List[bool],
@@ -223,7 +223,7 @@ class DatabaseService:
         return checkin_result
 
     async def log_failed_requests(self,
-                                  plugin: Plugin,
+                                  plugin: PluginInDB,
                                   failed_requests: List[Tuple[ExecuteRequestUnion, Dict]]
                                   ):
         await asyncio.sleep(0)

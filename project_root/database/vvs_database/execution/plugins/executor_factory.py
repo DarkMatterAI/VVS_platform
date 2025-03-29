@@ -1,5 +1,4 @@
-from vvs_database.schemas import PluginType, ExecuteParams
-from vvs_database.models import Plugin
+from vvs_database.schemas import ExecuteParams, PluginInDB
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.plugins.base_executor import BasePluginExecutor
 from vvs_database.execution.plugins.plugin_executors import EXECUTOR_DICT
@@ -9,7 +8,7 @@ class PluginExecutorFactory:
     
     @staticmethod
     def create_executor(
-            plugin: Plugin,
+            plugin: PluginInDB,
             connections: Connections,
             execute_params: ExecuteParams,
         ) -> BasePluginExecutor:

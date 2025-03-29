@@ -1,7 +1,11 @@
 from typing import Dict 
 
-from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
-from vvs_database.models import Plugin 
+from vvs_database.schemas import (
+    ExecuteRequestUnion, 
+    ExecuteResponseUnion, 
+    ExecuteParams,
+    PluginInDB
+)
 from vvs_database.execution.connections import Connections
 
 class ExecutionStrategy:
@@ -13,7 +17,7 @@ class ExecutionStrategy:
         self.log_id = 'Execute'
     
     async def execute(self, 
-                      plugin: Plugin, 
+                      plugin: PluginInDB, 
                       requests: Dict[str, ExecuteRequestUnion]
                       ) -> Dict[str, ExecuteResponseUnion]:
         """Execute plugin with the given request data"""

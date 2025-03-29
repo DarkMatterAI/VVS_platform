@@ -7,7 +7,8 @@ from vvs_database.schemas import (
     ItemDataEmbed,
     Embedding,
     ScoreResult,
-    ExecuteResponseUnion
+    ExecuteResponseUnion,
+    PluginInDBUnion
 )
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.ops.execution_op import ExecutionOp
@@ -24,12 +25,12 @@ def gather_valid_items(items: List[InternalItem]
     return valid_items, idxs
 
 def item_to_item_request(items: List[InternalItem], 
-                         plugin_config: ExecutePlugin
+                         plugin: PluginInDBUnion,
+                         runtime_args: Optional[dict]=None,
                         ) -> List[ItemRequest]:
-    plugin = plugin_config.plugin
     embedding_ids = []
     if plugin.type != 'embedding':
-        embedding_ids = [i.id for i in plugin.embeddings]
+        embedding_ids = plugin.embedding_ids
     
     requests = []
     for item in items:
@@ -40,7 +41,7 @@ def item_to_item_request(items: List[InternalItem],
         item_data = ItemDataEmbed(**item_data)
         request = ItemRequest(request_data=plugin.get_request_data(request_id),
                               item_data=item_data,
-                              runtime_args=plugin_config.runtime_args)
+                              runtime_args=runtime_args)
         requests.append(request)
     return requests 
 
@@ -92,7 +93,7 @@ class ItemOp(ExecutionOp):
                                      plugin_config: ExecutePlugin,
                                     ) -> List[InternalItem]:
         valid_items, idxs = gather_valid_items(items)
-        requests = item_to_item_request(items, plugin_config)
+        requests = item_to_item_request(items, plugin_config.plugin, plugin_config.runtime_args)
         responses, _, _ = await self.execute_plugin(requests, self.plugin_config)
         items = item_response_scatter(items, responses, idxs, self.plugin_config)
         return items 

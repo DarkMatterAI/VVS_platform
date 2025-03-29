@@ -2,6 +2,7 @@ from typing import Union, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from vvs_database.utils import get_plugin_response_model
 from vvs_database.execution.connections import get_connections
 from vvs_database.schemas import BatchExecuteRequestUnion, ExecuteRequestUnion, ExecuteParams
 from vvs_database.execution.plugins.executor_factory import PluginExecutorFactory
@@ -35,7 +36,8 @@ async def execute_plugin(db: AsyncSession,
         delist = True 
 
     connections = get_connections(db)
-    plugin = await connections.db_service.get_plugin(plugin_id)
+    plugin_record = await connections.db_service.get_plugin(plugin_id)
+    plugin = get_plugin_response_model(plugin_record)
     
     # Create appropriate executor using factory
     executor = PluginExecutorFactory.create_executor(

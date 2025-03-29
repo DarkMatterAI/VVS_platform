@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from vvs_database import crud, logging, schemas  
+from vvs_database import crud, logging, schemas, utils  
 
 class JobRunner():
     def __init__(self, job_id):
@@ -17,7 +17,7 @@ class JobRunner():
         
         for jp in job.plugins:
             plugin = jp.plugin
-            self.plugins[plugin.id] = plugin 
+            self.plugins[plugin.id] = utils.get_plugin_response_model(plugin)
 
         self.log_id = f"Job {self.job.id}"
 

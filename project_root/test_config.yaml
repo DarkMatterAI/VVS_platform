@@ -1,40 +1,40 @@
-services:
-  backend:
-    unit_test: True 
-    integration_test: False 
-  qdrant_plugin:
-    integration_test: False   
-  tei_plugin:
-    integration_test: False 
-  rdkit_plugin:
-    unit_test: False 
-    integration_test: False 
-  triton_plugin:
-    unit_test: False 
-    integration_test: False 
-temp_services:
-  test_consumer:
-    enabled: False
-  test_server:
-    enabled: False
-
 # services:
 #   backend:
 #     unit_test: True 
-#     integration_test: True 
+#     integration_test: False 
 #   qdrant_plugin:
-#     integration_test: True 
+#     integration_test: False   
 #   tei_plugin:
-#     integration_test: True 
+#     integration_test: False 
 #   rdkit_plugin:
-#     unit_test: True 
-#     integration_test: True 
+#     unit_test: False 
+#     integration_test: False 
 #   triton_plugin:
-#     unit_test: True 
-#     integration_test: True 
+#     unit_test: False 
+#     integration_test: False 
 # temp_services:
 #   test_consumer:
-#     enabled: True
+#     enabled: False
 #   test_server:
-#     enabled: True
+#     enabled: False
+
+services:
+  backend:
+    unit_test: True 
+    integration_test: True 
+  qdrant_plugin:
+    integration_test: True 
+  tei_plugin:
+    integration_test: True 
+  rdkit_plugin:
+    unit_test: True 
+    integration_test: True 
+  triton_plugin:
+    unit_test: True 
+    integration_test: True 
+temp_services:
+  test_consumer:
+    enabled: True
+  test_server:
+    enabled: True
     

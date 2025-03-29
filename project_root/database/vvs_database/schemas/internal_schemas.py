@@ -1,8 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List, Union, Optional, Dict
 
-from vvs_database.schemas.execute_schemas import ExecuteParams
+from vvs_database.schemas.plugin_schemas import PluginInDBUnion
 from vvs_database.schemas.execute_schemas import (
+    ExecuteParams,
     ItemData,
     Embedding,
     AssemblyItem

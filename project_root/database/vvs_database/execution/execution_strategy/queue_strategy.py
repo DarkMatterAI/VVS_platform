@@ -2,10 +2,14 @@ import asyncio
 import time 
 import random 
 
-from typing import Dict, List, Tuple  
+from typing import Dict
 
-from vvs_database.schemas import ExecuteRequestUnion, ExecuteResponseUnion, ExecuteParams
-from vvs_database.models import Plugin 
+from vvs_database.schemas import (
+    ExecuteRequestUnion, 
+    ExecuteResponseUnion, 
+    ExecuteParams,
+    PluginInDB
+)
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
 from vvs_database.execution.connections import Connections
 from vvs_database import logging 
@@ -25,7 +29,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         self.channel = None 
         
     async def execute(self, 
-                plugin: Plugin, 
+                plugin: PluginInDB, 
                 requests: Dict[str, ExecuteRequestUnion]
                 ) -> Dict[str, ExecuteResponseUnion]:
         """
