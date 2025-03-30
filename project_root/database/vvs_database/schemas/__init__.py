@@ -89,11 +89,15 @@ from vvs_database.schemas.job_schemas import (
     JobDBResponse,
     UserItem,
     CreateQdrantUploadJob,
+    QdrantUploadJob,
 )
 
 from vvs_database.schemas.internal_schemas import (
     ExecutePlugin,
     ExecuteDataSource,
+    Parent,
+    AssemblyItemInternal,
+    InternalAssemblyData,
     InternalItem,
     ScoreResult,
 )
@@ -184,10 +188,14 @@ __all__ = [
     "JobDBResponse",
     "UserItem",
     "CreateQdrantUploadJob",
+    "QdrantUploadJob",
 
     # internal schemas
     "ExecutePlugin",
     "ExecuteDataSource",
+    "Parent",
+    "AssemblyItemInternal",
+    "InternalAssemblyData",
     "InternalItem",
     "ScoreResult"
 ]

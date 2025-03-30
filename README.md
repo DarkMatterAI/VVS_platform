@@ -2,16 +2,7 @@
 VVS V2
 
 todos
-    dagster
-        io managers, local vs prod 
-        concurrency flags on ops
-    logging
-        for redis cache, distinguish cache check from message response check
-        probably need job id on requests?
-    qdrant upload job
-        refactor qdrant utils 
     jobs
-        qdrant upload
         search
             standard
             mapper

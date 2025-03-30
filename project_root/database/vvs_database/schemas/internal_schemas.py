@@ -9,15 +9,39 @@ from vvs_database.schemas.execute_schemas import (
     AssemblyItem
 )
 
-class ExecutePlugin(BaseModel):
-    model_config = ConfigDict(extra='allow')
+class PluginRecord(BaseModel):
+    plugin: Optional[PluginInDBUnion]=None 
+
+class ExecuteDataParams(BaseModel):
+    k: int 
+    assembly_index: int
+
+class ExecutePluginParams(BaseModel):
     plugin_id: int
     execute_params: ExecuteParams
     runtime_args: Optional[dict]=None
 
-class ExecuteDataSource(ExecutePlugin):
-    k: int 
-    assembly_index: int
+class ExecutePluginCreate(ExecutePluginParams):
+    pass 
+
+class ExecuteDataSourceCreate(ExecutePluginParams, ExecuteDataParams):
+    pass 
+
+class ExecutePlugin(ExecutePluginCreate, PluginRecord):
+    pass 
+
+class ExecuteDataSource(ExecuteDataSourceCreate, PluginRecord):
+    pass 
+
+# class ExecutePlugin(BaseModel):
+#     model_config = ConfigDict(extra='allow')
+#     plugin_id: int
+#     execute_params: ExecuteParams
+#     runtime_args: Optional[dict]=None
+
+# class ExecuteDataSource(ExecutePlugin):
+#     k: int 
+#     assembly_index: int
 
 class Parent(BaseModel):
     item_data: ItemData

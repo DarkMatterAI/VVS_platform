@@ -29,7 +29,7 @@ def item_to_item_request(items: List[InternalItem],
                          runtime_args: Optional[dict]=None,
                         ) -> List[ItemRequest]:
     embedding_ids = []
-    if plugin.type != 'embedding':
+    if (plugin.type != 'embedding') and (plugin.embedding_ids is not None):
         embedding_ids = plugin.embedding_ids
     
     requests = []

@@ -1,7 +1,5 @@
 import pytest 
 
-from tests.utils.backend_utils import backend_delete_plugin
-
 from vvs_database.crud import create_qdrant_upload_job
 from vvs_database.schemas import CreateQdrantUploadJob, ExecutePlugin, ExecuteParams
 from vvs_database.utils import object_as_dict

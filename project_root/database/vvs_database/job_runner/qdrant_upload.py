@@ -8,7 +8,8 @@ from vvs_database.execution.connections import Connections
 from vvs_database.job_runner.base_runner import JobRunner
 
 def get_configs(job_json: dict, plugins: dict):
-    job_json = schemas.CreateQdrantUploadJob(**job_json)
+    # job_json = schemas.CreateQdrantUploadJob(**job_json)
+    job_json = schemas.QdrantUploadJob(**job_json)
     user_embedding_configs = {}
     if job_json.embedding_configs is not None:
         user_embedding_configs = {i.plugin_id:i for i in job_json.embedding_configs}
