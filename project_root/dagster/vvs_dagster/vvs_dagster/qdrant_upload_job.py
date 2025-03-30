@@ -63,7 +63,6 @@ async def load_job_data(context: dg.OpExecutionContext,
         'filename' : runner.job.job_json['filename'],
         'items' : runner.job.job_json['items']
     }
-    # filename = runner.job.job_json['filename']
     collection_name = runner.collection_name
 
     return runner, user_data, collection_name
@@ -87,13 +86,9 @@ def chunk_csv_dynamic(context: dg.OpExecutionContext,
     else:
         df = pd.DataFrame(items)
         chunk_iterator = [df[i:i+chunksize] for i in range(0, df.shape[0], chunksize)]
-        # chunk_iterator = [items[i:i+chunksize] for i in range(0, len(items), chunksize)]
 
     for idx, chunk in enumerate(chunk_iterator):
         yield dg.DynamicOutput(chunk, mapping_key=str(idx))
-
-    # for idx, chunk in enumerate(pd.read_csv(file_data, chunksize=qdrant_resource.upload_job_chunksize)):
-        # yield dg.DynamicOutput(chunk, mapping_key=str(idx))
 
 @dg.op(pool="plugin_execution")
 async def qdrant_upload_embed(context: dg.OpExecutionContext,

@@ -30,6 +30,7 @@ class Job(Base):
     dagster_run_id = Column(String, nullable=True) 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     
     plugins = relationship("JobPlugin", back_populates="job", cascade="all, delete-orphan")
     execution_failures = relationship("PluginExecutionFailure", back_populates="job")
@@ -43,7 +44,8 @@ class Job(Base):
         delete_stmt = delete(cls).where(
             and_(
                 ~exists().where(JobPlugin.job_id == cls.id),
-                ~exists().where(PluginExecutionFailure.job_id == cls.id)
+                ~exists().where(PluginExecutionFailure.job_id == cls.id),
+                ~exists().where(QdrantUploadFailed.job_id == cls.id)
             )
         ).returning(cls.id)
 

@@ -21,8 +21,7 @@ eventual job todos
         create query for each linked embedding?
 
 
-jobs table
-    job id, job type, job json, status
+
 
 results
     result id, job id, item_id, assembly id (optional)

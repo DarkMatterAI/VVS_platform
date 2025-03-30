@@ -1,6 +1,6 @@
 import pytest
 
-from vvs_database import crud 
+from vvs_database import crud, schemas 
 
 @pytest.mark.asyncio
 async def test_job_create(create_job):
@@ -38,6 +38,14 @@ async def test_job_update(db_session, create_job):
 
     job_record = await crud.get_job(db_session, job.id)
     assert job_record.job_json == job_json 
+
+@pytest.mark.asyncio
+async def test_job_complete_timestamp(db_session, create_job):
+    job = await create_job()
+    assert job.completed_at is None 
+
+    job = await crud.update_job(db_session, job.id, status=schemas.JobStatus.COMPLETE)
+    assert job.completed_at is not None  
 
 @pytest.mark.asyncio
 async def test_qdrant_fail_create(db_session, create_job):

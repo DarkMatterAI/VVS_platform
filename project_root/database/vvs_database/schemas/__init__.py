@@ -4,6 +4,7 @@ from vvs_database.schemas.enums import (
     PluginExecutionType,
     DistanceMetric,
     JobStatus,
+    TERMINAL_STATUSES,
     JobType
 )
 
@@ -109,6 +110,7 @@ __all__ = [
     "PluginExecutionType",
     "DistanceMetric",
     "JobStatus",
+    "TERMINAL_STATUSES",
     "JobType",
     
     # Plugin schemas

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlalchemy import select, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +24,8 @@ from vvs_database.schemas import (
     PluginClass,
     JobStatus, 
     JobType, 
-    CreateQdrantUploadJob
+    CreateQdrantUploadJob,
+    TERMINAL_STATUSES
 )
 from vvs_database.exceptions import NotFoundError, ValidationError
 
@@ -121,17 +123,12 @@ async def update_job(db: AsyncSession,
         "status": status,
         "job_json": job_json,
         "status_detail": status_detail,
-        "dagster_run_id": dagster_run_id
+        "dagster_run_id": dagster_run_id,
     }
-    update_data = {k:v for k,v in update_data.items() if (v is not None)}
+    if status in TERMINAL_STATUSES:
+        update_data["completed_at"] = datetime.now()
 
-    # update_data = {}
-    # if status is not None:
-    #     update_data["status"] = status
-    # if job_json is not None:
-    #     update_data["job_json"] = job_json
-    # if status_detail is not None:
-    #     update_data["status_detail"] = status_detail
+    update_data = {k:v for k,v in update_data.items() if (v is not None)}
     
     if not update_data:
         return await get_job(db, job_id)

@@ -31,8 +31,17 @@ class JobStatus(str, Enum):
     RUNNING = 'running'
     COMPLETE = 'complete'
     COMPLETE_WITH_ERRORS = 'complete_with_errors'
+    COMPLETE_EARLY_STOP = 'complete_early_stop'
     FAILED = 'failed'
     CANCELLED = 'cancelled'
+
+TERMINAL_STATUSES = set([
+    JobStatus.COMPLETE, 
+    JobStatus.COMPLETE_WITH_ERRORS, 
+    JobStatus.COMPLETE_EARLY_STOP,
+    JobStatus.FAILED,
+    JobStatus.CANCELLED
+])
 
 class JobType(str, Enum):
     TEST_JOB = 'test_job'
