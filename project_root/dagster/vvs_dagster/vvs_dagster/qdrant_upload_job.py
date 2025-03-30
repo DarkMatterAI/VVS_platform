@@ -35,12 +35,12 @@ def get_connection(postgres_resource: PostgresResource,
                        redis_service=redis_service,
                        rabbitmq_service=rabbitmq_service)
 
-@dg.op(out={"runner": dg.Out(), "filename": dg.Out(), "collection_name": dg.Out()})
+@dg.op(out={"runner": dg.Out(), "user_data": dg.Out(), "collection_name": dg.Out()})
 async def load_job_data(context: dg.OpExecutionContext,
                         postgres_resource: PostgresResource,
                         qdrant_resource: QdrantResource,
                         config: QdrantUploadConfig
-                        ) -> Tuple[QdrantUploadRunner, str, str]:
+                        ) -> Tuple[QdrantUploadRunner, dict, str]:
     # setup 
     logging = get_logger(context)
     db_session = postgres_resource.get_db()
@@ -49,7 +49,9 @@ async def load_job_data(context: dg.OpExecutionContext,
 
     # load jobs
     await runner.load_job(db_session)
-    await runner.update_job(db_session, schemas.JobStatus.RUNNING)
+    await runner.update_job(db_session, 
+                            status=schemas.JobStatus.RUNNING,
+                            dagster_run_id=context.run.run_id)
 
     # setup qdrant indexing threshold to 0 prior to upload 
     await qdrant_resource.set_indexing_threshold(logging, qdrant_client, runner.collection_name, 0)
@@ -57,23 +59,41 @@ async def load_job_data(context: dg.OpExecutionContext,
     await db_session.close()
     await qdrant_client.close()
 
-    filename = runner.job.job_json['filename']
+    user_data = {
+        'filename' : runner.job.job_json['filename'],
+        'items' : runner.job.job_json['items']
+    }
+    # filename = runner.job.job_json['filename']
     collection_name = runner.collection_name
 
-    return runner, filename, collection_name
+    return runner, user_data, collection_name
 
 @dg.op(out=dg.DynamicOut())
 def chunk_csv_dynamic(context: dg.OpExecutionContext,
                       s3_resource: S3Resource,
                       qdrant_resource: QdrantResource,
-                      filename: str):
+                      user_data: dict):
     logging = get_logger(context)
-    s3_client = s3_resource.get_client()
-    response = crud.get_file(filename, s3_client)
-    file_data = response['Body']
 
-    for idx, chunk in enumerate(pd.read_csv(file_data, chunksize=qdrant_resource.upload_job_chunksize)):
+    filename = user_data['filename']
+    items = user_data['items']
+    chunksize = qdrant_resource.upload_job_chunksize
+
+    if filename is not None:
+        s3_client = s3_resource.get_client()
+        response = crud.get_file(filename, s3_client)
+        file_data = response['Body']
+        chunk_iterator = pd.read_csv(file_data, chunksize=chunksize)
+    else:
+        df = pd.DataFrame(items)
+        chunk_iterator = [df[i:i+chunksize] for i in range(0, df.shape[0], chunksize)]
+        # chunk_iterator = [items[i:i+chunksize] for i in range(0, len(items), chunksize)]
+
+    for idx, chunk in enumerate(chunk_iterator):
         yield dg.DynamicOutput(chunk, mapping_key=str(idx))
+
+    # for idx, chunk in enumerate(pd.read_csv(file_data, chunksize=qdrant_resource.upload_job_chunksize)):
+        # yield dg.DynamicOutput(chunk, mapping_key=str(idx))
 
 @dg.op(pool="plugin_execution")
 async def qdrant_upload_embed(context: dg.OpExecutionContext,
@@ -152,8 +172,8 @@ default_config = dg.RunConfig(
 
 @dg.job(config=default_config)
 def qdrant_upload_job():
-    runner, filename, collection_name = load_job_data()
-    upload_chunks = chunk_csv_dynamic(filename=filename)
+    runner, user_data, collection_name = load_job_data()
+    upload_chunks = chunk_csv_dynamic(user_data=user_data)
     records = upload_chunks.map(lambda df: qdrant_upload_embed(df=df, runner=runner))
     failed = records.map(lambda rec: qdrant_upload(records=rec, collection_name=collection_name))
     collect_qdrant_results(runner=runner, failed=failed.collect())

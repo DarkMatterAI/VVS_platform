@@ -10,6 +10,8 @@ class JobDBResponse(BaseModel):
     job_type: JobType
     job_json: Optional[dict]=None
     status: JobStatus
+    status_detail: Optional[dict]=None
+    dagster_run_id: Optional[str]=None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

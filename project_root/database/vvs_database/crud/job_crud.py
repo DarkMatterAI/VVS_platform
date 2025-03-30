@@ -36,12 +36,14 @@ async def create_job(db: AsyncSession,
                      job_json: Optional[Dict[str, Any]] = None,
                      status: JobStatus = JobStatus.CREATED,
                      status_detail: Optional[Dict[str, Any]] = None,
+                     dagster_run_id: Optional[str] = None,
                     ) -> Job:
     """Create a new job."""
     job = Job(job_type=job_type, 
               job_json=job_json, 
               status=status,
-              status_detail=status_detail)
+              status_detail=status_detail,
+              dagster_run_id=dagster_run_id)
     db.add(job)
     await db.commit()
     return job
@@ -111,16 +113,25 @@ async def update_job(db: AsyncSession,
                      job_id: int,
                      job_json: Optional[Dict[str, Any]] = None,
                      status: Optional[JobStatus] = None,
-                     status_detail: Optional[Dict[str, Any]] = None
+                     status_detail: Optional[Dict[str, Any]] = None,
+                     dagster_run_id: Optional[str] = None,
                     ) -> Optional[Job]:
     """Update a job's status and/or job_json."""
-    update_data = {}
-    if status is not None:
-        update_data["status"] = status
-    if job_json is not None:
-        update_data["job_json"] = job_json
-    if status_detail is not None:
-        update_data["status_detail"] = status_detail
+    update_data = {
+        "status": status,
+        "job_json": job_json,
+        "status_detail": status_detail,
+        "dagster_run_id": dagster_run_id
+    }
+    update_data = {k:v for k,v in update_data.items() if (v is not None)}
+
+    # update_data = {}
+    # if status is not None:
+    #     update_data["status"] = status
+    # if job_json is not None:
+    #     update_data["job_json"] = job_json
+    # if status_detail is not None:
+    #     update_data["status_detail"] = status_detail
     
     if not update_data:
         return await get_job(db, job_id)

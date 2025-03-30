@@ -24,11 +24,13 @@ class JobRunner():
     async def update_job(self, 
                          db_session: AsyncSession, 
                          status: schemas.JobStatus, 
-                         status_detail: Optional[dict]=None):
+                         status_detail: Optional[dict]=None,
+                         dagster_run_id: Optional[str]=None):
         logging.info(f"Updating job {self.job_id}")
         self.job = await crud.update_job(db_session, 
                                          self.job_id, 
                                          status=status, 
-                                         status_detail=status_detail)
+                                         status_detail=status_detail,
+                                         dagster_run_id=dagster_run_id)
 
 
