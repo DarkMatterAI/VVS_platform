@@ -14,12 +14,12 @@ async def job_cleanup(db: AsyncSession = Depends(get_db)):
     response = {'success' : True, 'removed' : n_removed}
     return response
 
-@router.get("/{job_id}", response_model=schemas.JobDBResponse)
+@router.get("/{job_id}", response_model=schemas.JobDBResponseUnion)
 async def read_job(job_id: int, db: AsyncSession = Depends(get_db)):
     response = await crud.get_job(db, job_id=job_id)
     return response 
 
-@router.get("/", response_model=List[schemas.JobDBResponse])
+@router.get("/", response_model=List[schemas.JobDBResponseUnion])
 async def scroll_jobs(job_type: Optional[schemas.JobType]=None,
                       status: Optional[schemas.JobStatus]=None,
                       skip: int = 0,
@@ -36,7 +36,7 @@ async def scroll_jobs(job_type: Optional[schemas.JobType]=None,
                               skip=skip, limit=limit)
     return jobs
     
-@router.delete("/{job_id}", response_model=schemas.JobDBResponse)
+@router.delete("/{job_id}", response_model=schemas.JobDBResponseUnion)
 async def delete_job(job_id: int, db: AsyncSession = Depends(get_db)):
     response = await crud.delete_job(db=db, job_id=job_id)
     return response

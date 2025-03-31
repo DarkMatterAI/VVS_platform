@@ -33,16 +33,6 @@ class ExecutePlugin(ExecutePluginCreate, PluginRecord):
 class ExecuteDataSource(ExecuteDataSourceCreate, PluginRecord):
     pass 
 
-# class ExecutePlugin(BaseModel):
-#     model_config = ConfigDict(extra='allow')
-#     plugin_id: int
-#     execute_params: ExecuteParams
-#     runtime_args: Optional[dict]=None
-
-# class ExecuteDataSource(ExecutePlugin):
-#     k: int 
-#     assembly_index: int
-
 class Parent(BaseModel):
     item_data: ItemData
     embedding: Embedding

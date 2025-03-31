@@ -27,6 +27,7 @@ from vvs_database.schemas import (
     CreateQdrantUploadJob,
     TERMINAL_STATUSES
 )
+from vvs_database.utils import job_type_map
 from vvs_database.exceptions import NotFoundError, ValidationError
 
 async def cleanup_unreferenced_jobs(db: AsyncSession) -> int:
@@ -42,15 +43,19 @@ async def create_job(db: AsyncSession,
                      dagster_run_id: Optional[str] = None,
                     ) -> Job:
     """Create a new job."""
-    job = Job(job_type=job_type, 
-              job_json=job_json, 
-              status=status,
-              status_detail=status_detail,
-              auto_execute=auto_execute,
-              dagster_run_id=dagster_run_id)
+    job_data = {
+        "job_type": job_type,
+        "job_json": job_json,
+        "status": status,
+        "status_detail": status_detail,
+        "auto_execute": auto_execute,
+        "dagster_run_id": dagster_run_id
+    }
+    job_data_model = job_type_map[job_type]['data_model']
+    job = job_data_model(**job_data)
     db.add(job)
     await db.commit()
-    return job
+    return job 
 
 async def get_job(db: AsyncSession,
                   job_id: int,
@@ -71,14 +76,17 @@ async def get_job(db: AsyncSession,
     if with_error and (result is None):
         raise NotFoundError(f"Plugin with ID {job_id} not found")
     
-    if load_plugins and (result is not None):
-        await db.refresh(result, ["plugins"])
-        for jp in result.plugins:
-            await db.refresh(jp, ["plugin"])
-            plugin = jp.plugin 
-            await db.refresh(plugin)
-            if isinstance(plugin, (DataSourcePlugin, FilterPlugin, ScorePlugin, MapperPlugin)):
-                await db.refresh(plugin, ["embeddings"])
+    if result is not None:
+        await db.refresh(result)
+        if load_plugins:
+            await db.refresh(result, ["plugins"])
+            for jp in result.plugins:
+                await db.refresh(jp, ["plugin"])
+                plugin = jp.plugin 
+                await db.refresh(plugin)
+                if isinstance(plugin, (DataSourcePlugin, FilterPlugin, ScorePlugin, MapperPlugin)):
+                    await db.refresh(plugin, ["embeddings"])
+
         await db.commit()
 
     return result
@@ -116,6 +124,17 @@ async def get_jobs(db: AsyncSession,
     
     return jobs
 
+async def _update_job(db: AsyncSession,
+                      job_id: int,
+                      update_data: dict
+                      ) -> Optional[Job]:
+    job = await get_job(db, job_id)
+    for key, value in update_data.items():
+        setattr(job, key, value)
+
+    await db.commit()
+    return job 
+
 async def update_job(db: AsyncSession,
                      job_id: int,
                      job_json: Optional[Dict[str, Any]] = None,
@@ -140,10 +159,7 @@ async def update_job(db: AsyncSession,
     if not update_data:
         return await get_job(db, job_id)
     
-    stmt = update(Job).where(Job.id == job_id).values(**update_data).returning(Job)
-    async with db.begin():
-        result = await db.execute(stmt)
-        job = result.scalar_one_or_none()
+    job = await _update_job(db, job_id, update_data)
     
     return job
 
@@ -239,11 +255,6 @@ async def create_qdrant_upload_job(db: AsyncSession,
                                    auto_execute: bool=False):
     data_record, embeddings = await validate_qdrant_upload_create(db, create_data)
     job_type = JobType.QDRANT_UPLOAD
-    
-    # if test:
-    #     job_type = JobType.TEST_JOB
-    # else:
-    #     job_type = JobType.QDRANT_UPLOAD
         
     job_json = create_data.model_dump()
     

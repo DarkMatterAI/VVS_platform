@@ -49,6 +49,14 @@ plugin_type_map = {
     }
 }
 
+job_type_map = {
+    schemas.JobType.TEST_JOB : {
+        'data_model' : models.TestJob
+    },
+    schemas.JobType.QDRANT_UPLOAD : {
+        'data_model' : models.QdrantUploadJob
+    }
+}
 
 def object_as_dict(obj):
     """Convert SQLAlchemy model instance to dictionary."""

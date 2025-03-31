@@ -1,6 +1,7 @@
 from sqlalchemy import (
     Column, 
     Integer, 
+    Float,
     ForeignKey, 
     String,
     JSON, 
@@ -37,6 +38,12 @@ class Job(Base):
     plugins = relationship("JobPlugin", back_populates="job", cascade="all, delete-orphan")
     execution_failures = relationship("PluginExecutionFailure", back_populates="job")
 
+    __mapper_args__ = {
+        'polymorphic_on': job_type,
+        'polymorphic_identity': 'plugin',
+        'polymorphic_load': 'selectin'
+    }
+
     @classmethod
     async def cleanup_unreferenced(cls, session: AsyncSession):
         """
@@ -57,6 +64,30 @@ class Job(Base):
         await session.commit()
         
         return len(deleted_rows)
+    
+class TestJob(Job):
+    __tablename__ = "vvs_test_jobs"
+
+    id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'test_job',
+    }
+
+class QdrantUploadJob(Job):
+    __tablename__ = "qdrant_upload"
+
+    id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    num_uploaded = Column(Integer, nullable=True)
+    num_failed = Column(Integer, nullable=True)
+    index_time = Column(Float, nullable=True)
+    index_timeout = Column(Boolean, nullable=True)
+    index_error = Column(Boolean, nullable=True)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'qdrant_upload',
+    }
+
 
 class JobPlugin(Base):
     __tablename__ = "vvs_job_plugins"
@@ -75,9 +106,11 @@ class QdrantUploadFailed(Base):
     __tablename__ = "qdrant_upload_failed"
 
     id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"))
+    # job_id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"))
+    job_id = Column(Integer, ForeignKey("qdrant_upload.id", ondelete="CASCADE"))
     item = Column(String, nullable=False)
     external_id = Column(String, nullable=True)
 
-    job = relationship("Job", passive_deletes=True)
+    # job = relationship("Job", passive_deletes=True)
+    job = relationship("QdrantUploadJob", passive_deletes=True)
 

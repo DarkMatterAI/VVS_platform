@@ -120,7 +120,7 @@ async def qdrant_upload(context: dg.OpExecutionContext,
                         qdrant_resource: QdrantResource,
                         records: list[dict],
                         job_params: dict
-                        ) -> list[dict]:
+                        ) -> dict:
     # setup 
     logging = get_logger(context)
     qdrant_client = qdrant_resource.get_service()
@@ -130,31 +130,44 @@ async def qdrant_upload(context: dg.OpExecutionContext,
     _ = qdrant_resource.upload_points(logging, qdrant_client, collection_name, points )
     await qdrant_client.close()
 
-    return failed 
+    upload_output = {
+        "failed": failed,
+        "num_uploaded": len(points)
+    }
+
+    return upload_output 
 
 @dg.op
 async def save_failed_results(context: dg.OpExecutionContext,
                               postgres_resource: PostgresResource,
                               runner: QdrantUploadRunner,
-                              failed: list[list[dict]]
-                              ) -> int:
+                              upload_output: list[dict]
+                              ) -> dict:
     # setup
     logging = get_logger(context)
     db_session = postgres_resource.get_db()
-
-    # log failures
-    failed = [item for sublist in failed for item in sublist]
-    await runner.save_failed(db_session, failed)
-
-    await db_session.close()
+    failed = []
+    num_uploaded = 0
+    for output in upload_output:
+        failed += output['failed']
+        num_uploaded += output['num_uploaded']
 
     num_failed = len(failed)
-    return num_failed 
+    output = {
+        "num_failed": num_failed,
+        "num_uploaded": num_uploaded
+    }
+
+    # log failures
+    await runner.save_failed(db_session, failed)
+    await db_session.close()
+
+    return output
 
 @dg.op(tags={"concurrency": "qdrant_index_build"})
 async def build_qdrant_index(context: dg.OpExecutionContext,
                              qdrant_resource: QdrantResource,
-                             num_failed: int,
+                             upload_summary: dict,
                              job_params: dict
                              ) -> dict:
     # setup
@@ -168,7 +181,7 @@ async def build_qdrant_index(context: dg.OpExecutionContext,
                                                   qdrant_client,
                                                   collection_name)
 
-    index_log['num_failed'] = num_failed
+    index_log.update(upload_summary)
 
     collection_info = await qdrant_resource.get_collection_info(logging,
                                                                 qdrant_client,
@@ -196,10 +209,14 @@ async def update_job_complete(context: dg.OpExecutionContext,
 
     await runner.update_job(db_session, 
                             status=schemas.JobStatus.COMPLETE,
-                            status_detail=index_log)
+                            num_uploaded=index_log['num_uploaded'],
+                            num_failed=index_log['num_failed'],
+                            index_time=index_log['index_time'],
+                            index_timeout=index_log['index_timeout'],
+                            index_error=index_log['index_error'])
     
     logging.info("Updating collection info")
-    plugin = await crud.get_plugin(db_session, runner.job_id)
+    plugin = await crud.get_plugin(db_session, runner.data_source_id)
     config = dict(plugin.config)
     config['collection_info'] = collection_info
     setattr(plugin, 'config', config)
@@ -218,9 +235,9 @@ def qdrant_upload_job():
     runner, user_data, job_params = load_job_data()
     upload_chunks = chunk_csv_dynamic(user_data=user_data)
     records = upload_chunks.map(lambda df: qdrant_upload_embed(df=df, runner=runner))
-    failed = records.map(lambda rec: qdrant_upload(records=rec, job_params=job_params))
-    num_failed = save_failed_results(runner=runner, failed=failed.collect())
-    index_log = build_qdrant_index(num_failed=num_failed, job_params=job_params)
+    upload_output = records.map(lambda rec: qdrant_upload(records=rec, job_params=job_params))
+    upload_summary = save_failed_results(runner=runner, upload_output=upload_output.collect())
+    index_log = build_qdrant_index(upload_summary=upload_summary, job_params=job_params)
     update_job_complete(runner=runner, index_log=index_log)
 
 

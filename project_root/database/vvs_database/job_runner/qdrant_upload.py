@@ -1,14 +1,15 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
 
-from typing import List 
+from typing import List, Optional
 
 from vvs_database import crud, logging, schemas  
+from vvs_database.crud.job_crud import _update_job as update_job
 from vvs_database.execution.ops import ItemOp
 from vvs_database.execution.connections import Connections
 from vvs_database.job_runner.base_runner import JobRunner
 
 def get_configs(job_json: dict, plugins: dict):
-    # job_json = schemas.CreateQdrantUploadJob(**job_json)
     job_json = schemas.QdrantUploadJob(**job_json)
     user_embedding_configs = {}
     if job_json.embedding_configs is not None:
@@ -54,7 +55,8 @@ class QdrantUploadRunner(JobRunner):
         await super().load_job(db_session)
         self.plugin_configs = get_configs(self.job.job_json, self.plugins)
         self.embedding_ids = [i.plugin.id for i in self.plugin_configs]
-        self.collection_name = f"data_source_{self.job.job_json['plugin_id']}"
+        self.data_source_id = self.job.job_json['plugin_id']
+        self.collection_name = f"data_source_{self.data_source_id}"
 
     async def save_failed(self, db_session, failed: List[dict]):
         logging.info(f'{self.log_id}: Saving {len(failed)} failed items')
@@ -82,4 +84,33 @@ class QdrantUploadRunner(JobRunner):
             }
             outputs.append(output)
         return outputs 
+
+    async def update_job(self, 
+                         db_session: AsyncSession, 
+                         status: schemas.JobStatus, 
+                         status_detail: Optional[dict]=None,
+                         dagster_run_id: Optional[str]=None,
+                         num_uploaded: Optional[int]=None,
+                         num_failed: Optional[int]=None,
+                         index_time: Optional[float]=None,
+                         index_timeout: Optional[bool]=None,
+                         index_error: Optional[bool]=None,
+                         ):
+        logging.info(f"Updating job {self.job_id}")
+        update_dict = {
+            "status": status,
+            "status_detail": status_detail,
+            "dagster_run_id": dagster_run_id,
+            "num_uploaded": num_uploaded,
+            "num_failed": num_failed,
+            "index_time": index_time,
+            "index_timeout": index_timeout,
+            "index_error": index_error
+        }
+        if status in schemas.TERMINAL_STATUSES:
+            update_dict["completed_at"] = datetime.now()
+
+        update_dict = {k:v for k,v in update_dict.items() if (v is not None)}
+
+        self.job = await update_job(db_session, self.job_id, update_dict)
 

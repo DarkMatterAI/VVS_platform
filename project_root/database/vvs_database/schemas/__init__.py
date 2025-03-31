@@ -88,6 +88,7 @@ from vvs_database.schemas.connection_schemas import (
 
 from vvs_database.schemas.job_schemas import (
     JobDBResponse,
+    JobDBResponseUnion,
     UserItem,
     CreateQdrantUploadJob,
     QdrantUploadJob,
@@ -188,6 +189,7 @@ __all__ = [
 
     # job schemas
     "JobDBResponse",
+    "JobDBResponseUnion",
     "UserItem",
     "CreateQdrantUploadJob",
     "QdrantUploadJob",

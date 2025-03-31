@@ -18,6 +18,7 @@ from vvs_database.schemas import (
     BatchExecuteRequestUnion,
     ExecuteParams,
     JobDBResponse,
+    JobDBResponseUnion,
     JobStatus,
     JobType,
     CreateQdrantUploadJob

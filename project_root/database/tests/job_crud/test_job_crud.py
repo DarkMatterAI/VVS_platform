@@ -49,7 +49,7 @@ async def test_job_complete_timestamp(db_session, create_job):
 
 @pytest.mark.asyncio
 async def test_qdrant_fail_create(db_session, create_job):
-    job = await create_job()
+    job = await create_job(job_type=schemas.JobType.QDRANT_UPLOAD)
     records = [{'item' : '', 'external_id' : ''} for i in range(5)]
     results = await crud.create_qdrant_upload_failures(db_session, 
                                                        job.id, 

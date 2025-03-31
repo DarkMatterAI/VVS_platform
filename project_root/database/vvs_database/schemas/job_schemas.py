@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from typing import Optional, List 
+from typing import Optional, List, Union 
 from datetime import datetime
 
 from vvs_database.schemas.enums import JobStatus, JobType
@@ -15,6 +15,16 @@ class JobDBResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+
+class QdrantUploadJobDBResponse(JobDBResponse):
+    num_uploaded: Optional[int]=None
+    num_failed: Optional[int]=None
+    index_time: Optional[float]=None
+    index_timeout: Optional[bool]=None
+    index_error: Optional[bool]=None
+
+JobDBResponseUnion = Union[JobDBResponse,
+                           QdrantUploadJobDBResponse]
 
 class UserItem(BaseModel):
     external_id: Optional[str]
@@ -41,22 +51,4 @@ class CreateQdrantUploadJob(QdrantUploadJobParams):
 
 class QdrantUploadJob(QdrantUploadJobParams):
     embedding_configs: Optional[List[ExecutePlugin]]=None 
-
-
-# class CreateQdrantUploadJob(BaseModel):
-#     plugin_id: int 
-#     embedding_configs: Optional[List[ExecutePlugin]]=None 
-#     filename: Optional[str]=None
-#     items: Optional[List[UserItem]]=None
-#     save_snapshot: bool=False 
-        
-#     @model_validator(mode='after')
-#     def check_consistency(self):
-#         if (self.filename is None) and (self.items is None):
-#             raise ValueError("Expected one of filename, items, found none")
-#         if (self.filename is not None) and (self.items is not None):
-#             raise ValueError("Expected one of filename, items, found both")
-#         if (self.items is not None) and (len(self.items)==0):
-#             raise ValueError("items list must have at least one item")
-#         return self
 
