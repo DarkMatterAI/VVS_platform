@@ -53,7 +53,8 @@ async def test_qdrant_upload_crud_db(db_session,
         response.raise_for_status()
         job = response.json()
     else:
-        job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
+        # job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
+        job, _ = await create_qdrant_upload_job(db_session, create_data, auto_execute=False)
         job = object_as_dict(job)
 
     job_cleanup(job)
@@ -104,7 +105,8 @@ async def test_qdrant_upload_missing_plugin(db_session,
     else:
         create_data = CreateQdrantUploadJob(**create_data)
         with pytest.raises(NotFoundError):
-            job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
+            job, _ = await create_qdrant_upload_job(db_session, create_data, auto_execute=False)
+            # job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("use_backend", [True, False])
@@ -127,7 +129,8 @@ async def test_qdrant_upload_missing_file(db_session,
     else:
         create_data = CreateQdrantUploadJob(**create_data)
         with pytest.raises(ValidationError):
-            job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
+            job, _ = await create_qdrant_upload_job(db_session, create_data, auto_execute=False)
+            # job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
 
 
 @pytest.mark.asyncio
@@ -151,6 +154,7 @@ async def test_qdrant_upload_wrong_plugin_type(db_session,
     else:
         create_data = CreateQdrantUploadJob(**create_data)
         with pytest.raises(ValidationError):
-            job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
+            job, _ = await create_qdrant_upload_job(db_session, create_data, auto_execute=False)
+            # job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
 
 

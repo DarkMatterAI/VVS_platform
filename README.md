@@ -2,6 +2,8 @@
 VVS V2
 
 todos
+    dagster
+        figure out how to have run cancellation/failure update database
     jobs
         search
             standard

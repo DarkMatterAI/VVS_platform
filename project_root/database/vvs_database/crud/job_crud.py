@@ -38,6 +38,7 @@ async def create_job(db: AsyncSession,
                      job_json: Optional[Dict[str, Any]] = None,
                      status: JobStatus = JobStatus.CREATED,
                      status_detail: Optional[Dict[str, Any]] = None,
+                     auto_execute: bool = False,
                      dagster_run_id: Optional[str] = None,
                     ) -> Job:
     """Create a new job."""
@@ -45,6 +46,7 @@ async def create_job(db: AsyncSession,
               job_json=job_json, 
               status=status,
               status_detail=status_detail,
+              auto_execute=auto_execute,
               dagster_run_id=dagster_run_id)
     db.add(job)
     await db.commit()
@@ -108,6 +110,9 @@ async def get_jobs(db: AsyncSession,
     
     for job in jobs:
         await db.refresh(job)
+
+    # required for sqlalchemy to close transaction after refresh
+    await db.commit()
     
     return jobs
 
@@ -116,6 +121,7 @@ async def update_job(db: AsyncSession,
                      job_json: Optional[Dict[str, Any]] = None,
                      status: Optional[JobStatus] = None,
                      status_detail: Optional[Dict[str, Any]] = None,
+                     auto_execute: Optional[bool] = None,
                      dagster_run_id: Optional[str] = None,
                     ) -> Optional[Job]:
     """Update a job's status and/or job_json."""
@@ -123,6 +129,7 @@ async def update_job(db: AsyncSession,
         "status": status,
         "job_json": job_json,
         "status_detail": status_detail,
+        "auto_execute": auto_execute,
         "dagster_run_id": dagster_run_id,
     }
     if status in TERMINAL_STATUSES:
@@ -229,17 +236,21 @@ async def validate_qdrant_upload_create(db: AsyncSession,
 
 async def create_qdrant_upload_job(db: AsyncSession, 
                                    create_data: CreateQdrantUploadJob, 
-                                   test=False):
+                                   auto_execute: bool=False):
     data_record, embeddings = await validate_qdrant_upload_create(db, create_data)
+    job_type = JobType.QDRANT_UPLOAD
     
-    if test:
-        job_type = JobType.TEST_JOB
-    else:
-        job_type = JobType.QDRANT_UPLOAD
+    # if test:
+    #     job_type = JobType.TEST_JOB
+    # else:
+    #     job_type = JobType.QDRANT_UPLOAD
         
     job_json = create_data.model_dump()
     
-    job = await create_job(db, job_type, job_json)
+    job = await create_job(db, 
+                           job_type=job_type, 
+                           job_json=job_json,
+                           auto_execute=auto_execute)
     
     plugin_ids = [data_record.id] + list(embeddings.keys())
     

@@ -8,5 +8,6 @@ defs = Definitions(
     assets=all_assets,
     resources=resources.RESOURCE_DEFAULTS,
     jobs=[dynamic_job.dynamic_job,
-          qdrant_upload_job.qdrant_upload_job]
+          qdrant_upload_job.qdrant_upload_job],
+    sensors=[qdrant_upload_job.qdrant_upload_sensor]
 )

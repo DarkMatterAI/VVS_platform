@@ -1,10 +1,9 @@
 import dagster as dg 
 from dagster_aws.s3 import S3Resource
-from qdrant_client import models 
 
 from typing import Tuple 
 import pandas as pd 
-import uuid 
+import asyncio
 
 from vvs_database import crud, schemas 
 from vvs_database.job_runner import QdrantUploadRunner
@@ -165,6 +164,10 @@ default_config = dg.RunConfig(
     ops={"load_job_data": QdrantUploadConfig(job_id=1)}
 )
 
+# @dg.job(
+#     config=default_config,
+#     executor_def=dg.multiprocess_executor.configured({"max_concurrent": 1})
+# )
 @dg.job(config=default_config)
 def qdrant_upload_job():
     runner, user_data, collection_name = load_job_data()
@@ -172,5 +175,46 @@ def qdrant_upload_job():
     records = upload_chunks.map(lambda df: qdrant_upload_embed(df=df, runner=runner))
     failed = records.map(lambda rec: qdrant_upload(records=rec, collection_name=collection_name))
     collect_qdrant_results(runner=runner, failed=failed.collect())
+
+
+
+@dg.sensor(job=qdrant_upload_job,
+           minimum_interval_seconds=5,
+        #    default_status=dg.DefaultSensorStatus.RUNNING,
+           )
+def qdrant_upload_sensor(context: dg.SensorEvaluationContext,
+                         postgres_resource: PostgresResource):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    last_job = int(context.cursor) if context.cursor else 0
+    new_last_job = last_job
+
+    session = postgres_resource.get_db()
+    filter_params = {
+        'job_type' : schemas.JobType.QDRANT_UPLOAD,
+        'status' : schemas.JobStatus.CREATED,
+        'auto_execute' : True
+    }
+
+    records = loop.run_until_complete(crud.get_jobs(session, filter_params))
+
+    context.log.info(f'Qdrant upload sensor: found {len(records)} jobs')
+
+    for record in records:
+        job_id = record.id
+        if job_id > last_job:
+            new_last_job = max(new_last_job, job_id)
+            run_config = {"ops": {"load_job_data": {"config": {"job_id": job_id}}}}
+            context.log.info(f'Yielding run request for job {job_id}')
+            yield dg.RunRequest(run_key=str(record.id), run_config=run_config)
+
+            context.log.info(f'Updating status for job {job_id}')
+            loop.run_until_complete(crud.update_job(session, job_id, status=schemas.JobStatus.QUEUED))
+
+    context.update_cursor(str(new_last_job))
+    loop.run_until_complete(session.close())
+    loop.close()
+    
 
 

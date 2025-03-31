@@ -8,6 +8,12 @@ from app.core.database import get_db
 
 router = APIRouter()
 
+@router.get("/job_cleanup")
+async def job_cleanup(db: AsyncSession = Depends(get_db)):
+    n_removed = await crud.cleanup_unreferenced_jobs(db)
+    response = {'success' : True, 'removed' : n_removed}
+    return response
+
 @router.get("/{job_id}", response_model=schemas.JobDBResponse)
 async def read_job(job_id: int, db: AsyncSession = Depends(get_db)):
     response = await crud.get_job(db, job_id=job_id)
@@ -34,10 +40,3 @@ async def scroll_jobs(job_type: Optional[schemas.JobType]=None,
 async def delete_job(job_id: int, db: AsyncSession = Depends(get_db)):
     response = await crud.delete_job(db=db, job_id=job_id)
     return response
-
-@router.get("/job_cleanup")
-async def job_cleanup(db: AsyncSession = Depends(get_db)):
-    n_removed = await crud.cleanup_unreferenced_jobs(db)
-    response = {'success' : True, 'removed' : n_removed}
-    return response
-

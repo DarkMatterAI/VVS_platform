@@ -133,12 +133,14 @@ async def update_snapshot(db: AsyncSession, plugin_id: int, snapshot_data: schem
 
 async def create_qdrant_upload_job(db: AsyncSession, 
                                    create_data: schemas.CreateQdrantUploadJob, 
-                                   test=False):
+                                   auto_execute: bool=False):
+                                #    test=False):
     if launch_config.get('qdrant_plugin', {}).get('enabled', False):
         raise HTTPException(status_code=404, detail=f"Qdrant plugin not enabled")
     
     try:
-        job, _ = await crud.create_qdrant_upload_job(db, create_data, test)
+        # job, _ = await crud.create_qdrant_upload_job(db, create_data, test)
+        job, _ = await crud.create_qdrant_upload_job(db, create_data, auto_execute)
     except Exception as e:
         handle_db_exception(e)
     return job 
