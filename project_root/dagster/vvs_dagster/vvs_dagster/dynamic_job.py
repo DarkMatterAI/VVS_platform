@@ -19,23 +19,47 @@ def serial_fan_out(context: dg.OpExecutionContext,
     for iteration in range(iterations):
         yield dg.DynamicOutput(iteration, mapping_key=str(iteration))
 
-@dg.op(tags={"concurrency": "limited"})
-def process_iteration(context: dg.OpExecutionContext,
-                      iteration: int,
-                      item: str):
-    context.log.info(f"Starting iteration {iteration}")
+# @dg.op(tags={"concurrency": "limited"})
+# def process_iteration(context: dg.OpExecutionContext,
+#                       iteration: int,
+#                       item: str):
+#     context.log.info(f"Starting iteration {iteration}")
+#     time.sleep(1.0)
+#     context.log.info(f"Finished iteration {iteration}")
+#     return True 
+
+@dg.op(tags={"concurrency": "limited", "dagster/priority": "0"})
+def process_iteration_1(context: dg.OpExecutionContext,
+                        iteration: int):
+    context.log.info(f"Starting iteration {iteration} op 1")
     time.sleep(1.0)
-    context.log.info(f"Finished iteration {iteration}")
+    context.log.info(f"Finished iteration {iteration} op 1")
+    return iteration 
+
+@dg.op(tags={"concurrency": "limited", "dagster/priority": "1"})
+def process_iteration_2(context: dg.OpExecutionContext,
+                        iteration: int,
+                        item: str):
+    context.log.info(f"Starting iteration {iteration} op 2")
+    time.sleep(1.0)
+    context.log.info(f"Finished iteration {iteration} op 2")
     return True 
 
-@dg.op
-def process_iteration_parallel(context: dg.OpExecutionContext,
-                               iteration: int,
-                               item: str):
-    context.log.info(f"Starting iteration {iteration}")
-    time.sleep(1.0)
-    context.log.info(f"Finished iteration {iteration}")
-    return True 
+@dg.graph
+def process_iteration(iteration: int,
+                      item: str):
+    iteration = process_iteration_1(iteration=iteration)
+    iteration = process_iteration_2(iteration=iteration, item=item)
+    return iteration 
+
+# @dg.op
+# def process_iteration_parallel(context: dg.OpExecutionContext,
+#                                iteration: int,
+#                                item: str):
+#     context.log.info(f"Starting iteration {iteration}")
+#     time.sleep(1.0)
+#     context.log.info(f"Finished iteration {iteration}")
+#     return True 
 
 @dg.op
 def collect(context: dg.OpExecutionContext,
@@ -61,6 +85,12 @@ def dynamic_job():
     results = iterations.map(lambda iteration: process_iteration(iteration=iteration, item=item))
     collect(results.collect())
 
-    results2 = iterations.map(lambda iteration: process_iteration_parallel(iteration=iteration, item=item))
-    collect(results2.collect())
+# def dynamic_job():
+#     item, iterations = parse_config()
+#     iterations = serial_fan_out(iterations=iterations)
+#     results = iterations.map(lambda iteration: process_iteration(iteration=iteration, item=item))
+#     collect(results.collect())
+
+    # results2 = iterations.map(lambda iteration: process_iteration_parallel(iteration=iteration, item=item))
+    # collect(results2.collect())
 

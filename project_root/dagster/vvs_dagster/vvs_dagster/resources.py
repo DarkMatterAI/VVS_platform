@@ -159,6 +159,14 @@ class QdrantResource(dg.ConfigurableResource):
                                                batch_size=self.upload_batch_size)
         return response 
 
+    async def get_collection_info(self,
+                            logging,
+                            qdrant_client: AsyncQdrantClient,
+                            collection_name: str):
+        logging.info(f"Qdrant collection {collection_name}: fetching collection info")
+        response = await qdrant_client.get_collection(collection_name)
+        response = response.model_dump()
+        return response 
 
 
 S3 = S3Resource(region_name=dg.EnvVar('S3_REGION'),

@@ -8,12 +8,13 @@ from vvs_database.schemas.internal_schemas import ExecutePlugin, ExecutePluginCr
 class JobDBResponse(BaseModel):
     id: int 
     job_type: JobType
-    job_json: Optional[dict]=None
+    # job_json: Optional[dict]=None
     status: JobStatus
     status_detail: Optional[dict]=None
     dagster_run_id: Optional[str]=None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
 
 class UserItem(BaseModel):
     external_id: Optional[str]

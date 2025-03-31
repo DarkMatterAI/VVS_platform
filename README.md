@@ -4,6 +4,7 @@ VVS V2
 todos
     dagster
         figure out how to have run cancellation/failure update database
+        think more about concurrent qdrant uploads
     jobs
         search
             standard
