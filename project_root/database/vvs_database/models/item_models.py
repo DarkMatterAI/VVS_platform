@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import relationship
 
 from vvs_database.core import Base
+from vvs_database.models.job_models.hc_models import HCInputJob, HCResult
 
 class Item(Base):
     __tablename__ = "items"
@@ -27,11 +28,35 @@ class Item(Base):
     item = Column(String, unique=True, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # @classmethod
+    # async def cleanup_unreferenced(cls, session: AsyncSession):
+    #     """
+    #     Delete items that aren't referenced in item_sources, item_results, 
+    #     assemblies (as products), or assembly_components (as components) tables.
+    #     Returns number of items deleted.
+    #     """
+    #     delete_stmt = delete(cls).where(
+    #         and_(
+    #             ~exists().where(ItemSource.item_id == cls.id),
+    #             ~exists().where(ItemResult.item_id == cls.id),
+    #             ~exists().where(Assembly.product_id == cls.id),
+    #             ~exists().where(AssemblyComponent.component_id == cls.id),
+    #         )
+    #     ).returning(cls.id)
+
+    #     result = await session.execute(delete_stmt)
+    #     deleted_rows = result.scalars().all()
+        
+    #     await session.commit()
+        
+    #     return len(deleted_rows)
+    
     @classmethod
     async def cleanup_unreferenced(cls, session: AsyncSession):
         """
         Delete items that aren't referenced in item_sources, item_results, 
-        assemblies (as products), or assembly_components (as components) tables.
+        assemblies (as products), assembly_components (as components), or
+        the new hill climbing tables.
         Returns number of items deleted.
         """
         delete_stmt = delete(cls).where(
@@ -40,6 +65,8 @@ class Item(Base):
                 ~exists().where(ItemResult.item_id == cls.id),
                 ~exists().where(Assembly.product_id == cls.id),
                 ~exists().where(AssemblyComponent.component_id == cls.id),
+                ~exists().where(HCInputJob.item_id == cls.id),
+                ~exists().where(HCResult.item_id == cls.id)
             )
         ).returning(cls.id)
 
@@ -49,6 +76,7 @@ class Item(Base):
         await session.commit()
         
         return len(deleted_rows)
+
 
 class ItemSource(Base):
     __tablename__ = "item_sources"

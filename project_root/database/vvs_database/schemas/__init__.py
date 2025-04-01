@@ -91,7 +91,7 @@ from vvs_database.schemas.job_schemas import (
     JobDBResponseUnion,
     UserItem,
     CreateQdrantUploadJob,
-    QdrantUploadJob,
+    QdrantUploadInternal,
 )
 
 from vvs_database.schemas.internal_schemas import (
@@ -192,7 +192,7 @@ __all__ = [
     "JobDBResponseUnion",
     "UserItem",
     "CreateQdrantUploadJob",
-    "QdrantUploadJob",
+    "QdrantUploadInternal",
 
     # internal schemas
     "ExecutePlugin",

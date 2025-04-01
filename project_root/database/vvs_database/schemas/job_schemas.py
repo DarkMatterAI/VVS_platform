@@ -1,9 +1,11 @@
 from pydantic import BaseModel, model_validator
-from typing import Optional, List, Union 
+from typing import Optional, List, Union, Generic, TypeVar
 from datetime import datetime
 
 from vvs_database.schemas.enums import JobStatus, JobType
 from vvs_database.schemas.internal_schemas import ExecutePlugin, ExecutePluginCreate
+
+T = TypeVar("T")
 
 class JobDBResponse(BaseModel):
     id: int 
@@ -46,9 +48,9 @@ class QdrantUploadJobParams(BaseModel):
             raise ValueError("items list must have at least one item")
         return self
 
-class CreateQdrantUploadJob(QdrantUploadJobParams):
-    embedding_configs: Optional[List[ExecutePluginCreate]]=None 
+class QdrantUploadBase(QdrantUploadJobParams, Generic[T]):
+    embedding_configs: Optional[List[T]]=None 
 
-class QdrantUploadJob(QdrantUploadJobParams):
-    embedding_configs: Optional[List[ExecutePlugin]]=None 
+CreateQdrantUploadJob = QdrantUploadBase[ExecutePluginCreate]
+QdrantUploadInternal = QdrantUploadBase[ExecutePlugin]
 

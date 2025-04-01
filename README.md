@@ -5,13 +5,29 @@ todos
     dagster
         figure out how to have run cancellation/failure update database
         think more about concurrent qdrant uploads
+            acquire semaphore at start of job, release at end
+            requires above cancellation/failure handling to release on fail/cancel 
     jobs
         search
             standard
             mapper
             bb
+    search job control flow
+        start iteration
+            check record
+            if status is complete_early_stop, early exit
+            run iteration 
+        at end of iteration
+            update iteration record
+            update input/job parent records
+            check inference and timeout 
+        create next iteration
+            if pass, create with status queued
+            else, create with status complete_early_stop
 
-
+setting up HC data models
+    figure out crud and job json format
+    make sure unique constraints are working 
 
 
 eventual job todos

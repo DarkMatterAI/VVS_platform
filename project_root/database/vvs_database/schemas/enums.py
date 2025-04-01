@@ -46,3 +46,6 @@ TERMINAL_STATUSES = set([
 class JobType(str, Enum):
     TEST_JOB = 'test_job'
     QDRANT_UPLOAD = 'qdrant_upload'
+    HILL_CLIMB_JOB = 'hill_climb_job'
+    HILL_CLIMB_JOB_INPUT = 'hill_climb_job_input'
+    HILL_CLIMB_JOB_ITERATION = 'hill_climb_job_iteration'

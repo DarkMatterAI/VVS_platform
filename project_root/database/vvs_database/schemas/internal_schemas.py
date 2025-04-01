@@ -22,15 +22,19 @@ class ExecutePluginParams(BaseModel):
     runtime_args: Optional[dict]=None
 
 class ExecutePluginCreate(ExecutePluginParams):
+    # create - plugin params
     pass 
 
 class ExecuteDataSourceCreate(ExecutePluginParams, ExecuteDataParams):
+    # create - plugin params and data params
     pass 
 
 class ExecutePlugin(ExecutePluginCreate, PluginRecord):
+    # internal - plugin params, plugin
     pass 
 
 class ExecuteDataSource(ExecuteDataSourceCreate, PluginRecord):
+    # internal - plugin params, plugin, data params
     pass 
 
 class Parent(BaseModel):
