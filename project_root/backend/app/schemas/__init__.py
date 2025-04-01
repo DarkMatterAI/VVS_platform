@@ -6,6 +6,7 @@ from vvs_database.schemas import (
     EmbeddingPluginCreate,
     DataSourcePluginCreate,
     FilterPluginCreate,
+    ScorePluginCreate,
     AssemblyPluginCreate,
     MapperPluginCreate,
     PluginUpdate,

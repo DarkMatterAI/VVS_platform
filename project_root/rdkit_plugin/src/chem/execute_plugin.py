@@ -1,6 +1,6 @@
 from vvs_database.schemas import ItemRequest, AssemblyRequest
 
-from .property_filter import property_filter
+from .property_filter import property_filter, property_score
 from .reaction_assembly import reaction_assembly
 from .synton_assembly import synton_assembly
 
@@ -9,6 +9,7 @@ from ..connections import get_plugin_from_routing_key
 
 class_map = {
     'property_filter' : {'schema' : ItemRequest, 'func' : property_filter},
+    'property_score' : {'schema' : ItemRequest, 'func' : property_score},
     'smarts_assembly' : {'schema' : AssemblyRequest, 'func' : reaction_assembly},
     'synton_assembly' : {'schema' : AssemblyRequest, 'func' : synton_assembly},
 }
@@ -18,6 +19,8 @@ def classify_plugin(plugin_record):
         return '', False 
     elif plugin_record['type'].lower() == 'filter':
         return 'property_filter', True 
+    elif plugin_record['type'].lower() == 'score':
+        return 'property_score', True
     elif ((plugin_record['type'].lower() == 'assembly') and 
           plugin_record['config'].keys() == set(['single_stage_reactions', 'multi_stage_reactions'])):
         return 'smarts_assembly', True 

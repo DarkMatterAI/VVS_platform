@@ -20,6 +20,25 @@ def process_property_filters(filters, mol):
             return False, None
     return True, None
 
+def process_property_score(score_configs, mol):
+    total_score = 0
+    for s in score_configs:
+        name = s.get('property_name', None)
+        if name is None:
+            return None, False, f"Property filter dict missing property_name field {f}"
+        
+        weight = s.get('weight')
+        if weight is None:
+            return None, False, f"Property score missing weight {s}"
+
+        if name not in PROP_FUNCS:
+            return None, False, f"Invalid property name {name}"
+        
+        prop_val = PROP_FUNCS[name](mol)
+        total_score += prop_val * weight 
+
+    return total_score, True, None 
+
 def process_catalog_filters(filters, mol):
     for f in filters:
         name = f.get('catalog_name', None)
@@ -61,3 +80,11 @@ def property_filter(plugin_record, message_data):
             return ({}, False, reason) if reason else ({'valid': False}, True, None)
 
     return {'valid': True}, True, None
+
+def property_score(plugin_record, message_data):
+    mol = to_mol(message_data['item_data']['item'])
+    if mol is None:
+        return {'valid': False, 'score': None}, True, None
+    
+    score, valid, reason = process_property_score(plugin_record['config']['property_weights'], mol)
+    return {'valid': True, 'score' : score}, valid, reason 

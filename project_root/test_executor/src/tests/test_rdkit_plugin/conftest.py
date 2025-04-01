@@ -10,6 +10,7 @@ api_str = '/api/v1/rdkit_plugins'
 plugin_api_str = '/api/v1/plugins'
 
 _filter_counter = itertools.count(1)
+_score_counter = itertools.count(1)
 _assembly_counter = itertools.count(1)
 random_rdkit_key = ''.join(np.random.choice([i for i in string.ascii_lowercase], 8))
 
@@ -39,7 +40,7 @@ def rdkit_test_filter(backend_client, plugin_cleanup):
                 "plugin_class": "internal_rdkit",
                 "type": "filter",
                 "execution_type": "queue",
-                "group_key": "rdkit_plugin_filter",
+                "group_key": "rdkit_plugin",
                 "timeout": 30,
                 "max_concurrency": 12,
                 "max_retries": 1,
@@ -52,6 +53,30 @@ def rdkit_test_filter(backend_client, plugin_cleanup):
         return response 
 
     return _create_filter
+
+@pytest.fixture(scope="function")
+def rdkit_test_score(backend_client, plugin_cleanup):
+    def _create_score():
+        response = backend_client.post(
+            f"{api_str}/",
+            json={
+                "name": f"Test RDKit Score Integration {next(_score_counter)} {random_rdkit_key}",
+                "plugin_class": "internal_rdkit",
+                "type": "score",
+                "execution_type": "queue",
+                "group_key": "rdkit_plugin",
+                "timeout": 30,
+                "max_concurrency": 12,
+                "max_retries": 1,
+                "config": {"property_weights": [{"property_name": "QED", "weight": 1.0}]}
+            }
+        )
+        assert response.status_code == 200, response.text
+        response = response.json()
+        plugin_cleanup(response)
+        return response 
+
+    return _create_score
 
 @pytest.fixture(scope="function")
 def rdkit_test_assembly(backend_client, plugin_cleanup):

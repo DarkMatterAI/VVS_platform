@@ -25,6 +25,20 @@ RDKIT_FILTERS = [
     }
 ]
 
+RDKIT_SCORES = [
+    {
+        "name": "QED Score",
+        "type": "score",
+        "plugin_class": "internal_rdkit",
+        "execution_type": "queue",
+        "group_key": "rdkit_plugin",
+        "timeout": 600,
+        "max_concurrency": int(os.environ.get('RDKIT_CONCURRENCY', 64)),
+        "max_retries": 3,
+        "config" : {"property_weights": [{"property_name": "QED", "weight": 1.0}]}
+    }
+]
+
 
 async def init_rdkit_records(db):
     logging.info("Creating RDKit filters")
@@ -33,6 +47,15 @@ async def init_rdkit_records(db):
         if not current_record:
             logging.info(f"Creating RDKit filter record {record['name']}")
             record = schemas.FilterPluginCreate(**record)
+            response = await crud.create_plugin(db=db, plugin=record)
+            logging.info(response)
+
+    logging.info("Creating RDKit scores")
+    for record in RDKIT_SCORES:
+        current_record = await crud.get_plugins(db, filter_params={'name' : record['name']})
+        if not current_record:
+            logging.info(f"Creating RDKit score record {record['name']}")
+            record = schemas.ScorePluginCreate(**record)
             response = await crud.create_plugin(db=db, plugin=record)
             logging.info(response)
 

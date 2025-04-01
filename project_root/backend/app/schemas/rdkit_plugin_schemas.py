@@ -1,8 +1,10 @@
 from enum import Enum
-from pydantic import BaseModel, RootModel, field_validator, model_validator
-from typing import List, Dict, Union, Optional
+from pydantic import BaseModel, RootModel, field_validator, model_validator, Field
+from typing import List, Dict, Union, Optional, Annotated, Literal 
 
-from vvs_database.schemas import (FilterPluginCreate, 
+from vvs_database.schemas import (
+                                FilterPluginCreate, 
+                                ScorePluginCreate,
                                 PluginUpdate, 
                                 FilterPluginInDB,
                                 PluginType,
@@ -101,6 +103,18 @@ def parse_filters(v):
     return RDKitFilterConfig(**filter_config)
     # return filter_config
 
+def parse_score(config):
+    assert len(config.property_weights)>0
+    properties = []
+    for property in config.property_weights:
+        property_name = property.property_name
+        if property_name in properties:
+            raise ValueError(f"Property {property_name} appears more than once")
+        properties.append(property_name)
+        
+        PropertyName(property_name)
+    return RDKitScoreConfig(property_weights=config.property_weights)
+
 
 class PropertyFilter(BaseModel):
     property_name: PropertyName
@@ -123,6 +137,7 @@ class RDKitFilterConfig(BaseModel):
 
 class RDKitFilterCreate(FilterPluginCreate):
     plugin_class: PluginClass=PluginClass.INTERNAL_RDKIT
+    # type: Literal[PluginType.FILTER]=PluginType.FILTER
     type: PluginType=PluginType.FILTER
     execution_type: PluginExecutionType=PluginExecutionType.QUEUE
     group_key: str='rdkit_plugin'
@@ -149,6 +164,43 @@ class RDKitFilterUpdate(PluginUpdate):
     @field_validator('config')
     def parse_config(cls, v, info):
         return parse_filters(v)
+
+
+class PropertyScore(BaseModel):
+    property_name: PropertyName
+    weight: float 
+
+class RDKitScoreConfig(BaseModel):
+    property_weights: List[PropertyScore]=[]
+
+class RDKitScoreCreate(ScorePluginCreate):
+    plugin_class: PluginClass=PluginClass.INTERNAL_RDKIT
+    # type: Literal[PluginType.SCORE]=PluginType.SCORE
+    type: PluginType=PluginType.SCORE
+    execution_type: PluginExecutionType=PluginExecutionType.QUEUE
+    group_key: str='rdkit_plugin'
+    config: RDKitScoreConfig
+
+    @field_validator('execution_type', 'group_key', 'plugin_class')
+    def set_default_fields(cls, v, info):
+        return field_mapping[info.field_name]
+    
+    @field_validator('config')
+    def parse_config(cls, v, info):
+        return parse_score(v)
+    
+class RDKitScoreUpdate(PluginUpdate):
+    execution_type: PluginExecutionType=PluginExecutionType.QUEUE
+    group_key: str='rdkit_plugin'
+    config: RDKitScoreConfig
+
+    @field_validator('execution_type', 'group_key')
+    def set_default_fields(cls, v, info):
+        return field_mapping[info.field_name]
+    
+    @field_validator('config')
+    def parse_config(cls, v, info):
+        return parse_score(v)
 
 
 class SmartsConfig(BaseModel):
@@ -243,6 +295,7 @@ def check_parent_reaction_match(values):
 
 class ReactionAssmeblyCreate(AssemblyPluginCreate):
     plugin_class: PluginClass=PluginClass.INTERNAL_RDKIT
+    # type: Literal[PluginType.ASSEMBLY]=PluginType.ASSEMBLY
     type: PluginType=PluginType.ASSEMBLY
     execution_type: PluginExecutionType=PluginExecutionType.QUEUE
     group_key: str='rdkit_plugin'
@@ -314,6 +367,7 @@ class SyntOnReactionConfig(BaseModel):
 
 class SyntOnAssmeblyCreate(AssemblyPluginCreate):
     plugin_class: PluginClass=PluginClass.INTERNAL_RDKIT
+    # type: Literal[PluginType.ASSEMBLY]=PluginType.ASSEMBLY
     type: PluginType=PluginType.ASSEMBLY
     execution_type: PluginExecutionType=PluginExecutionType.QUEUE
     group_key: str='rdkit_plugin'
@@ -354,10 +408,12 @@ class SyntOnAssemblyUpdate(PluginUpdate):
                             f"reaction stages, expected {values.num_parents-1}")
         return values 
     
+
 RDKitPluginCreateUnion = Union[
     RDKitFilterCreate,
+    RDKitScoreCreate,
+    SyntOnAssmeblyCreate,
     ReactionAssmeblyCreate,
-    SyntOnAssmeblyCreate
 ]
 
 class RDKitPluginCreate(RootModel):
@@ -365,9 +421,62 @@ class RDKitPluginCreate(RootModel):
 
 RDKitPluginUpdateUnion = Union[
     RDKitFilterUpdate,
+    RDKitScoreUpdate,
+    SyntOnAssemblyUpdate,
     ReactionAssemblyUpdate,
-    SyntOnAssemblyUpdate
 ]
 
 class RDKitPluginUpdate(RootModel):
     root: RDKitPluginUpdateUnion
+
+
+# RDKitAssemblyCreateUnion = Union[ReactionAssmeblyCreate, SyntOnAssmeblyCreate]
+
+# RDKitPluginCreateUnion = Union[
+#     RDKitFilterCreate,
+#     # RDKitScoreCreate,
+#     RDKitAssemblyCreateUnion
+# ]
+
+
+# class RDKitPluginCreate(RootModel):
+#     root: RDKitPluginCreateUnion = Field(discriminator='type')
+
+# RDKitAssemblyUpdateUnion = Union[ReactionAssemblyUpdate, SyntOnAssemblyUpdate]
+
+# RDKitPluginUpdateUnion = Union[
+#     RDKitFilterUpdate,
+#     RDKitAssemblyUpdateUnion,
+#     # RDKitScoreUpdate,
+# ]
+
+# class RDKitPluginUpdate(RootModel):
+#     root: RDKitPluginUpdateUnion = Field(discriminator='type')
+
+
+# RDKitPluginCreateUnion = Annotated[
+#     Union[
+#         SyntOnAssmeblyCreate,
+#         ReactionAssmeblyCreate,
+#         RDKitFilterCreate,
+#         # RDKitScoreCreate,
+#     ],
+#     Field(discriminator='type')
+# ]
+
+# class RDKitPluginCreate(RootModel):
+#     root: RDKitPluginCreateUnion
+
+# RDKitPluginUpdateUnion = Annotated[
+#     Union[
+#         SyntOnAssemblyUpdate,
+#         ReactionAssemblyUpdate,
+#         RDKitFilterUpdate,
+#         # RDKitScoreUpdate,
+#     ],
+#     Field(discriminator='type')
+# ]
+
+# class RDKitPluginUpdate(RootModel):
+#     root: RDKitPluginUpdateUnion
+
