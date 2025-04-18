@@ -151,3 +151,29 @@ async def make_post_request(data: dict, url: str, timeout: int, retries: int, re
                 logging.info(f"{log_id}Post request failed, sleeping for {retry_sleep} seconds")
                 await asyncio.sleep(retry_sleep) 
 
+async def delete_redis_keys_batch(keys, redis_client):
+    if keys:
+        if hasattr(redis_client, 'unlink'):
+            deleted = await redis_client.unlink(*keys)
+        else:
+            deleted = await redis_client.delete(*keys)
+    
+async def clear_plugin_cache(plugin_id, redis_client, batch_size=500):
+    pattern = f"plugin:{plugin_id}:*"
+
+    total_deleted = 0
+    keys_batch = []
+
+    async for key in redis_client.scan_iter(match=pattern):
+        keys_batch.append(key)
+
+        if len(keys_batch) >= batch_size:
+            await delete_redis_keys_batch(keys_batch, redis_client)
+            total_deleted += len(keys_batch)
+            keys_batch = []
+            
+    await delete_redis_keys_batch(keys_batch, redis_client)
+    total_deleted += len(keys_batch)
+
+    return total_deleted
+

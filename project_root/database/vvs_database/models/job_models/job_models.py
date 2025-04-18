@@ -11,6 +11,7 @@ from sqlalchemy import (
     exists,
     and_,
     delete,
+    select,
     func
 )
 from sqlalchemy.orm import relationship
@@ -43,30 +44,64 @@ class Job(Base):
         'polymorphic_load': 'selectin'
     }
 
+    # @classmethod
+    # async def cleanup_unreferenced(cls, session: AsyncSession):
+    #     """
+    #     Delete jobs that aren't referenced in vvs_job_plugins.
+    #     Returns number of items deleted.
+    #     """
+
+    #     # workaround for circular import 
+    #     from vvs_database.models.job_models.qdrant_upload import QdrantUploadFailed
+
+    #     delete_stmt = delete(cls).where(
+    #         and_(
+    #             ~exists().where(JobPlugin.job_id == cls.id),
+    #             ~exists().where(PluginExecutionFailure.job_id == cls.id),
+    #             ~exists().where(QdrantUploadFailed.job_id == cls.id)
+    #         )
+    #     ).returning(cls.id)
+
+    #     result = await session.execute(delete_stmt)
+    #     deleted_rows = result.scalars().all()
+        
+    #     await session.commit()
+        
+    #     return len(deleted_rows)
+
     @classmethod
     async def cleanup_unreferenced(cls, session: AsyncSession):
         """
         Delete jobs that aren't referenced in vvs_job_plugins.
         Returns number of items deleted.
         """
-
+        
         # workaround for circular import 
         from vvs_database.models.job_models.qdrant_upload import QdrantUploadFailed
-
-        delete_stmt = delete(cls).where(
+        
+        # Query for jobs that have no references
+        unreferenced_jobs = select(cls.id).where(
             and_(
                 ~exists().where(JobPlugin.job_id == cls.id),
                 ~exists().where(PluginExecutionFailure.job_id == cls.id),
                 ~exists().where(QdrantUploadFailed.job_id == cls.id)
             )
-        ).returning(cls.id)
-
-        result = await session.execute(delete_stmt)
-        deleted_rows = result.scalars().all()
+        )
+        
+        result = await session.execute(unreferenced_jobs)
+        job_ids = result.scalars().all()
+        
+        # Use SQLAlchemy ORM to delete these objects properly
+        deleted_count = 0
+        for job_id in job_ids:
+            job = await session.get(cls, job_id)
+            if job:
+                await session.delete(job)
+                deleted_count += 1
         
         await session.commit()
         
-        return len(deleted_rows)
+        return deleted_count
     
 class TestJob(Job):
     __tablename__ = "vvs_test_jobs"

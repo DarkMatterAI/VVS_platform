@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 from app import schemas
 from app import crud 
-from app.core.database import get_db 
+from app.core.database import get_db, get_redis_client
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ async def create_plugin(plugin: schemas.PluginCreate, db: AsyncSession = Depends
     response = await crud.create_plugin(db=db, plugin=plugin.root, response_model=True)
     return response 
 
-@router.get("/{plugin_id}", response_model=schemas.PluginInDBUnion)
+@router.get("/{plugin_id:int}", response_model=schemas.PluginInDBUnion)
 async def read_plugin(plugin_id: int, db: AsyncSession = Depends(get_db)):
     response = await crud.get_plugin(db, plugin_id=plugin_id, response_model=True)
     return response 
@@ -43,12 +43,18 @@ async def scroll_plugins(plugin_type: Optional[schemas.PluginType]=None,
                                      skip=skip, limit=limit, response_model=True)
     return plugins 
 
-@router.put("/{plugin_id}", response_model=schemas.PluginInDBUnion)
+@router.put("/{plugin_id:int}", response_model=schemas.PluginInDBUnion)
 async def update_plugin(plugin_id: int, plugin: schemas.PluginUpdate, db: AsyncSession = Depends(get_db)):
     db_plugin = await crud.update_plugin(db=db, plugin_id=plugin_id, plugin=plugin, response_model=True)
     return db_plugin
 
-@router.delete("/{plugin_id}", response_model=schemas.PluginInDBUnion)
+@router.delete("/{plugin_id:int}", response_model=schemas.PluginInDBUnion)
 async def delete_plugin(plugin_id: int, db: AsyncSession = Depends(get_db)):
     db_plugin = await crud.delete_plugin(db=db, plugin_id=plugin_id)
     return db_plugin
+
+@router.delete("/clear_cache/{plugin_id:int}")
+async def clear_plugin_cache(plugin_id: int, redis_client = Depends(get_redis_client)):
+    n_deleted = await crud.clear_plugin_cache(plugin_id, redis_client)
+    response = {'success' : True, 'removed' : n_deleted}
+    return response 

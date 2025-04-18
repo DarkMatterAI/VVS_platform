@@ -167,7 +167,7 @@ async def save_failed_results(context: dg.OpExecutionContext,
 
     return output
 
-@dg.op(tags={"concurrency": "qdrant_index_build"})
+@dg.op(pool="qdrant_index_build")
 async def build_qdrant_index(context: dg.OpExecutionContext,
                              qdrant_resource: QdrantResource,
                              upload_summary: dict,

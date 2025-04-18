@@ -28,6 +28,8 @@ from app.crud.job_crud import (
     kill_job
 )
 
+from vvs_database.utils import clear_plugin_cache
+
 __all__ = [
     "get_plugin", 
     "get_plugins",

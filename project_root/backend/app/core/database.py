@@ -23,6 +23,13 @@ def get_s3_client():
     finally:
         s3_client.close()
 
+async def get_redis_client():
+    redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+    try:
+        yield redis 
+    finally:
+        await redis.close()
+
 async def init_db():
     redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     lock = redis.lock("db_init_lock", timeout=60)

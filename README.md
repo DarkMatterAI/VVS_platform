@@ -2,12 +2,9 @@
 VVS V2
 
 todos
-    dagster cancellation stuff
-        backend api for job kill
     database
         ability to override plugin params at execution time 
     dagster
-        figure out how to have run cancellation/failure update database
         think more about concurrent qdrant uploads
             acquire semaphore at start of job, release at end
             requires above cancellation/failure handling to release on fail/cancel 
@@ -36,17 +33,6 @@ todos
 setting up HC data models
     figure out crud and job json format
     make sure unique constraints are working 
-
-
-eventual job todos
-    add job id to execution failures
-    how to handle initial queries?
-        most likely add a `UserItem` table
-            item id, job id
-            auto delete on item or job delete
-    how to determine initial embedding for data source with multiple embeddings?
-        create query for each linked embedding?
-
 
 
 
