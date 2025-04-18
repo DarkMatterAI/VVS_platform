@@ -102,7 +102,7 @@ def validate_updates(plugin: models.Plugin, update_data: dict):
     plugin_dict.update(update_data)
     plugin_type_map[plugin.type]['response_model'].model_validate(plugin_dict)
 
-async def make_post_request(data, url, timeout, retries, retry_sleep=0, log_id=None):
+async def make_post_request(data: dict, url: str, timeout: int, retries: int, retry_sleep=0, log_id=None):
     """Make HTTP POST request with retry logic."""
     if log_id is None:
         log_id = ''

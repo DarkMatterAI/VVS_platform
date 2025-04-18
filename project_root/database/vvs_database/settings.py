@@ -51,5 +51,7 @@ class Settings(BaseSettings):
     S3_SECURE_CONNECTION: bool = os.getenv('S3_SECURE_CONNECTION', 'false') == 'true'
     S3_URL: str = os.getenv('S3_URL')
 
+    DAGSTER_WEBSERVER_PORT : str = os.getenv('DAGSTER_WEBSERVER_PORT')
+
 settings = Settings()
 

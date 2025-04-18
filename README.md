@@ -2,6 +2,9 @@
 VVS V2
 
 todos
+    dagster cancellation stuff
+        backend api for job kill
+        dagster sensor for job fail or kill
     database
         ability to override plugin params at execution time 
     dagster

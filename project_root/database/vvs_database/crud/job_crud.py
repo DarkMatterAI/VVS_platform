@@ -27,8 +27,9 @@ from vvs_database.schemas import (
     CreateQdrantUploadJob,
     TERMINAL_STATUSES
 )
-from vvs_database.utils import job_type_map
+from vvs_database.utils import job_type_map, make_post_request
 from vvs_database.exceptions import NotFoundError, ValidationError
+from vvs_database.settings import settings 
 
 async def cleanup_unreferenced_jobs(db: AsyncSession) -> int:
     """Delete items that aren't referenced in other tables."""
@@ -167,6 +168,17 @@ async def update_job(db: AsyncSession,
     
     return job
 
+async def update_job_from_dagster_id(db: AsyncSession,
+                                     dagster_run_id: str,
+                                     status: Optional[JobStatus]=None,
+                                     status_detail: Optional[Dict[str, Any]] = None):
+    jobs = await get_jobs(db, filter_params={'dagster_run_id' : dagster_run_id})
+    result = []
+    for job in jobs:
+        job = await update_job(db, job.id, status=status, status_detail=status_detail)
+        result.append(job)
+    return result 
+
 async def delete_job(db: AsyncSession,
                      job: Job
                     ) -> Job:
@@ -232,6 +244,62 @@ async def delete_job_plugin(db: AsyncSession,
     await db.delete(job_plugin)
     await db.commit()
     return job_plugin
+
+async def kill_dagster_job(dagster_id: str,
+                           dagster_url: Optional[str]=None):
+    if dagster_url is None:
+        dagster_url = f"http://dagster_webserver:{settings.DAGSTER_WEBSERVER_PORT}/dagster/graphql"
+
+    # Define the GraphQL mutation for terminating a run
+    TERMINATE_RUN_MUTATION = """
+    mutation TerminateRun($runId: String!) {
+    terminateRun(runId: $runId) {
+        __typename
+        ... on TerminateRunSuccess {
+        run {
+            runId
+        }
+        }
+        ... on TerminateRunFailure {
+        message
+        }
+        ... on RunNotFoundError {
+        runId
+        }
+        ... on PythonError {
+        message
+        stack
+        }
+    }
+    }
+    """
+
+    payload = {
+        "query": TERMINATE_RUN_MUTATION,
+        "variables": {"runId": dagster_id},
+    }
+
+    response = await make_post_request(payload, dagster_url, timeout=10, retries=1)
+    return response 
+
+async def kill_job(db: AsyncSession,
+                   job_id: int,
+                   with_error: bool=False,
+                   dagster_url: Optional[str]=None
+                   ) -> JobPlugin:
+    job = await get_job(db, job_id, with_error=with_error)
+    current_status = job.status 
+
+    if current_status not in TERMINAL_STATUSES:
+        new_status = JobStatus.CANCELLED
+        dagster_id = job.dagster_run_id
+
+        if dagster_id is not None:
+            await kill_dagster_job(dagster_id, dagster_url=dagster_url)
+
+        job = await update_job(db, job_id=job_id, status=new_status)
+
+    return job 
 
 async def validate_qdrant_upload_create(db: AsyncSession, 
                                         create_data: CreateQdrantUploadJob):

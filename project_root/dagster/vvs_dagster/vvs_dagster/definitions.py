@@ -1,13 +1,16 @@
 from dagster import Definitions, load_assets_from_modules
 
-from vvs_dagster import assets, resources, dynamic_job, qdrant_upload_job
+from vvs_dagster import assets, resources, qdrant_upload_job, test_job, failure_sensor
 
 all_assets = load_assets_from_modules([assets, qdrant_upload_job])
 
 defs = Definitions(
     assets=all_assets,
     resources=resources.RESOURCE_DEFAULTS,
-    jobs=[dynamic_job.dynamic_job,
+    jobs=[test_job.test_job,
           qdrant_upload_job.qdrant_upload_job],
-    sensors=[qdrant_upload_job.qdrant_upload_sensor]
+    sensors=[qdrant_upload_job.qdrant_upload_sensor,
+             failure_sensor.job_canceled_sensor,
+             failure_sensor.job_failure_sensor]
 )
+

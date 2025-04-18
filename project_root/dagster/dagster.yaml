@@ -57,6 +57,7 @@ run_launcher:
       - S3_BUCKET
       - S3_UPLOAD_PREFIX
       - S3_URL
+      - DAGSTER_WEBSERVER_PORT
     network: vvs_v2_network
     container_kwargs:
       auto_remove: True

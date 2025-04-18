@@ -16,13 +16,10 @@ from vvs_dagster.resources import (
     QdrantResource
 )
 
+from vvs_dagster.utils import get_logger
+
 class QdrantUploadConfig(dg.Config):
     job_id: int 
-
-def get_logger(context: dg.OpExecutionContext):
-    from vvs_database import logging 
-    logging.set_logger(context.log)
-    return logging
 
 def get_connection(postgres_resource: PostgresResource,
                    rabbitmq_resource: RabbitMQResource,
@@ -48,6 +45,12 @@ async def load_job_data(context: dg.OpExecutionContext,
 
     # load jobs
     await runner.load_job(db_session)
+
+    current_status = runner.job.status
+    expected_status = [schemas.JobStatus.CREATED, schemas.JobStatus.QUEUED]
+    if current_status not in expected_status:
+        raise Exception(f"Invalid job status {current_status}, expected one of {expected_status}")
+
     await runner.update_job(db_session, 
                             status=schemas.JobStatus.RUNNING,
                             dagster_run_id=context.run.run_id)
