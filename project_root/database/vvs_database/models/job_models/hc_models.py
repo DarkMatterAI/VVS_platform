@@ -4,11 +4,13 @@ from sqlalchemy import (
     ForeignKey, 
     JSON, 
     Boolean,
+    String,
+    DateTime,
+    func,
     and_,
     select,
     Index
 )
-from typing import Optional 
 
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,7 +42,7 @@ class HCInputJob(Job):
 
     id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
     parent_id = Column(Integer, ForeignKey("hc_jobs.id", ondelete="CASCADE"), nullable=False)
-    item_id = Column(Integer, ForeignKey("items.id"), nullable=False)
+    max_iterations = Column(Integer, nullable=False)
     inference_limit = Column(Integer, nullable=True)
     time_limit = Column(Integer, nullable=True)
     inference = Column(Integer, nullable=True)
@@ -49,7 +51,9 @@ class HCInputJob(Job):
                          back_populates="inputs", 
                          passive_deletes=True,
                          foreign_keys=[parent_id])
-    item = relationship("Item")
+    input_items = relationship("HCInputItems", 
+                             back_populates="input_job",
+                             cascade="all, delete-orphan")
     iterations = relationship("HCIterationJob", 
                              back_populates="input_job", 
                              cascade="all, delete-orphan",
@@ -59,6 +63,16 @@ class HCInputJob(Job):
         'polymorphic_identity': 'hill_climb_job_input',
     }
 
+class HCInputItems(Base):
+    __tablename__ = "hc_input_items"
+    
+    job_id = Column(Integer, ForeignKey("hc_input_jobs.id", ondelete="CASCADE"), primary_key=True)
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), primary_key=True)
+    assembly_index = Column(Integer, primary_key=True)
+    external_id = Column(String, nullable=True)
+    
+    input_job = relationship("HCInputJob", back_populates="input_items")
+    item = relationship("Item")
 
 class HCIterationJob(Job):
     __tablename__ = "hc_iteration_jobs"
@@ -96,6 +110,7 @@ class HCResult(Base):
     item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     assembly_id = Column(Integer, ForeignKey("assemblies.assembly_id", ondelete="CASCADE"), nullable=True)
     valid = Column(Boolean, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     job = relationship("HCJob", back_populates="results", passive_deletes=True)
     item = relationship("Item", passive_deletes=True)

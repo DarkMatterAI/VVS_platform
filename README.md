@@ -10,6 +10,8 @@ todos
             acquire semaphore at start of job, release at end
             requires above cancellation/failure handling to release on fail/cancel 
     jobs
+        qdrant upload
+            verify failures work
         search
             standard
             mapper

@@ -23,7 +23,13 @@ from vvs_database.models.job_models import (
     TestJob,
     QdrantUploadJob,
     JobPlugin,
-    QdrantUploadFailed
+    QdrantUploadFailed,
+    HCJob,
+    HCInputJob,
+    HCInputItems,
+    HCIterationJob,
+    HCResult,
+    HCIterationResult
 )
 
 __all__ = [
@@ -46,4 +52,10 @@ __all__ = [
     "QdrantUploadJob",
     "JobPlugin",
     "QdrantUploadFailed",
+    "HCJob",
+    "HCInputJob",
+    "HCInputItems",
+    "HCIterationJob",
+    "HCResult",
+    "HCIterationResult"
 ]

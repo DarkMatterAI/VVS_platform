@@ -17,6 +17,8 @@ class PluginOverrideParams(BaseModel):
     max_concurrency: Optional[int] = None
     max_retries: Optional[int] = None
     batch_size: Optional[int] = None
+    endpoint_url: Optional[str] = None
+    group_key: Optional[str] = None
 
 class ExecuteDataParams(BaseModel):
     k: int 

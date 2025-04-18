@@ -22,6 +22,7 @@ async def test_rdkit_score_consumer(db_session, rabbitmq_connection, redis_conne
     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
     response = [i['response_data'] for i in response]
     validate_response(plugin, response)
+    assert response[0]['score']>0
 
 @pytest.mark.asyncio
 async def test_rdkit_score_backend(db_session, backend_client, rdkit_test_score):

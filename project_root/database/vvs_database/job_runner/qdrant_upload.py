@@ -23,9 +23,7 @@ def get_configs(job_json: dict, plugins: dict):
         if plugin_id in user_embedding_configs:
             plugin_config = user_embedding_configs[plugin_id]
         else:
-            plugin_config = schemas.ExecutePlugin(plugin_id=plugin_id,)
-                                                #   execute_params=schemas.ExecuteParams(),
-                                                #   runtime_args=None)
+            plugin_config = schemas.ExecutePlugin(plugin_id=plugin_id)
             
         # disable for qdrant job
         plugin_config.execute_params.cache = False
@@ -33,7 +31,7 @@ def get_configs(job_json: dict, plugins: dict):
         plugin_config.execute_params.db_lookup = False 
         plugin_config.plugin = plugin 
 
-        for k,v in plugin_config.override_params.model_dump():
+        for k,v in plugin_config.override_params.model_dump().items():
             if v is not None:
                 logging.info(f"Overriding plugin {plugin_id} parameter {k}:{v}")
                 setattr(plugin_config.plugin, k, v)

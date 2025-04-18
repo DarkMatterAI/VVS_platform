@@ -41,6 +41,7 @@ async def create_job(db: AsyncSession,
                      status_detail: Optional[Dict[str, Any]] = None,
                      auto_execute: bool = False,
                      dagster_run_id: Optional[str] = None,
+                     extra_args: Optional[dict] = None
                     ) -> Job:
     """Create a new job."""
     job_data = {
@@ -51,6 +52,9 @@ async def create_job(db: AsyncSession,
         "auto_execute": auto_execute,
         "dagster_run_id": dagster_run_id
     }
+    if extra_args is not None:
+        job_data.update(extra_args)
+
     job_data_model = job_type_map[job_type]['data_model']
     job = job_data_model(**job_data)
     db.add(job)

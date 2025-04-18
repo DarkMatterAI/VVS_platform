@@ -9,3 +9,12 @@ from vvs_database.models.job_models.qdrant_upload import (
     QdrantUploadFailed
 )
 
+from vvs_database.models.job_models.hc_models import (
+    HCJob,
+    HCInputJob,
+    HCInputItems,
+    HCIterationJob,
+    HCResult,
+    HCIterationResult
+)
+

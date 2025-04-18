@@ -55,8 +55,18 @@ job_type_map = {
     },
     schemas.JobType.QDRANT_UPLOAD : {
         'data_model' : models.QdrantUploadJob
+    },
+    schemas.JobType.HILL_CLIMB_JOB : {
+        'data_model' : models.HCJob
+    },
+    schemas.JobType.HILL_CLIMB_JOB_INPUT : {
+        'data_model' : models.HCInputJob
+    },
+    schemas.JobType.HILL_CLIMB_JOB_ITERATION : {
+        'data_model' : models.HCIterationJob
     }
 }
+
 
 def object_as_dict(obj):
     """Convert SQLAlchemy model instance to dictionary."""
