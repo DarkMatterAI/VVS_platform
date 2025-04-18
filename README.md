@@ -4,7 +4,6 @@ VVS V2
 todos
     dagster cancellation stuff
         backend api for job kill
-        dagster sensor for job fail or kill
     database
         ability to override plugin params at execution time 
     dagster
@@ -31,6 +30,8 @@ todos
         create next iteration
             if pass, create with status queued
             else, create with status complete_early_stop
+    test gaps
+        anything related to dagster 
 
 setting up HC data models
     figure out crud and job json format

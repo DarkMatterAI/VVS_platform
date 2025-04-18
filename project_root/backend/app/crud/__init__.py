@@ -24,7 +24,8 @@ from app.crud.plugin_crud import (
 
 from app.crud.job_crud import (
     get_job,
-    delete_job
+    delete_job,
+    kill_job
 )
 
 __all__ = [

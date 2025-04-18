@@ -21,3 +21,13 @@ async def delete_job(db: AsyncSession,
     except Exception as e:
         handle_db_exception(e)
     return job
+
+async def kill_job(db: AsyncSession,
+                   job_id: int):
+    try:
+        job = await crud.kill_job(db, job_id, with_error=True)
+        # refresh for weird greenlet spawn bullshit 
+        job = await crud.get_job(db, job_id, with_error=True)
+    except Exception as e:
+        handle_db_exception(e)
+    return job

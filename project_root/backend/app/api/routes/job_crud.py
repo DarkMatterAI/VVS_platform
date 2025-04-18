@@ -14,6 +14,11 @@ async def job_cleanup(db: AsyncSession = Depends(get_db)):
     response = {'success' : True, 'removed' : n_removed}
     return response
 
+@router.delete("/kill/{job_id}", response_model=schemas.JobDBResponseUnion)
+async def kill_job(job_id: int, db: AsyncSession = Depends(get_db)):
+    response = await crud.kill_job(db, job_id=job_id)
+    return response 
+
 @router.get("/{job_id}", response_model=schemas.JobDBResponseUnion)
 async def read_job(job_id: int, db: AsyncSession = Depends(get_db)):
     response = await crud.get_job(db, job_id=job_id)
