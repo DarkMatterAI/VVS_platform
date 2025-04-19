@@ -93,7 +93,7 @@ class ItemOp(ExecutionOp):
                                      plugin_config: ExecutePlugin,
                                     ) -> List[InternalItem]:
         valid_items, idxs = gather_valid_items(items)
-        requests = item_to_item_request(items, plugin_config.plugin, plugin_config.runtime_args)
+        requests = item_to_item_request(valid_items, plugin_config.plugin, plugin_config.runtime_args)
         responses, _, _ = await self.execute_plugin(requests, self.plugin_config)
         items = item_response_scatter(items, responses, idxs, self.plugin_config)
         return items 

@@ -96,7 +96,7 @@ def chunk_csv_dynamic(context: dg.OpExecutionContext,
     for idx, chunk in enumerate(chunk_iterator):
         yield dg.DynamicOutput(chunk, mapping_key=str(idx))
 
-@dg.op(pool="plugin_execution")
+@dg.op(pool="qdrant_embed")
 async def qdrant_upload_embed(context: dg.OpExecutionContext,
                               postgres_resource: PostgresResource,
                               rabbitmq_resource: RabbitMQResource,

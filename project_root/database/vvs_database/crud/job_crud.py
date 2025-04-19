@@ -327,7 +327,14 @@ async def create_qdrant_upload_job(db: AsyncSession,
                                    auto_execute: bool=False):
     data_record, embeddings = await validate_qdrant_upload_create(db, create_data)
     job_type = JobType.QDRANT_UPLOAD
-        
+    
+    if create_data.embedding_configs is not None:
+        for embedding_config in create_data.embedding_configs:
+            if embedding_config.execute_params is not None:
+                embedding_config.execute_params.db_lookup = False
+                embedding_config.execute_params.db_persist = False
+                embedding_config.execute_params.cache = False
+
     job_json = create_data.model_dump()
     
     job = await create_job(db, 

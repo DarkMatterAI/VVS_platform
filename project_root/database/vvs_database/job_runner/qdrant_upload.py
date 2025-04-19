@@ -39,8 +39,10 @@ def get_configs(job_json: dict, plugins: dict):
         configs.append(plugin_config)
     return configs 
 
-def record_to_item(record: dict) -> schemas.InternalItem:
-    return schemas.InternalItem(item_data=schemas.ItemData(item_id=-1,
+def record_to_item(record: dict,
+                   item_id: int
+                   ) -> schemas.InternalItem:
+    return schemas.InternalItem(item_data=schemas.ItemData(item_id=item_id,
                                                            external_id=record['external_id'],
                                                            item=record['item']),
                                 valid=True,
@@ -50,7 +52,13 @@ def record_to_item(record: dict) -> schemas.InternalItem:
                                 query_group=None)
 
 def records_to_items(records: list[dict]) -> List[schemas.InternalItem]:
-    return [record_to_item(i) for i in records]
+    # need dummy ids because we don't check in items for qdrant upload
+    init_id = 999999
+    items = []
+    for i, record in enumerate(records):
+        items.append(record_to_item(record, init_id+i))
+
+    return items
 
 
 class QdrantUploadRunner(JobRunner):
