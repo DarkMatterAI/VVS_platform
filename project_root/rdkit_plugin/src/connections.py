@@ -1,5 +1,7 @@
 import pika
 from sqlalchemy import text 
+from cachetools import cached
+from cachetools.keys import hashkey
 
 from vvs_database import settings 
 
@@ -17,6 +19,7 @@ rabbitmq_params = pika.ConnectionParameters(
     )
 )
 
+@cached(cache={}, key=lambda engine, plugin_id: hashkey(plugin_id))
 def get_plugin_record(engine, plugin_id):
     date_print(f"Querying database for plugin {plugin_id}")
     with engine.connect() as conn:

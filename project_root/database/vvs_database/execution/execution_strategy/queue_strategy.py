@@ -202,56 +202,55 @@ class QueueExecutionStrategy(ExecutionStrategy):
                                       "failure_reason": "Queue error",
                                       "failure_detail": "Too many queue errors, marking failed messages as error"
                                     }
-    
-    async def _acquire_available_locks(self, 
-                                       request_tracker, 
-                                       semaphore_name, 
-                                       max_locks, 
-                                       lock_timeout, 
-                                       max_concurrency):
+
+    async def _acquire_available_locks(
+        self,
+        request_tracker,
+        semaphore_name,
+        max_locks,
+        lock_timeout,
+        max_concurrency,
+    ):
         """
-        Try to acquire locks for pending requests (just one try per request per iteration)
-        
-        Args:
-            request_tracker: The request tracking structure
-            semaphore_name: Name of the semaphore to acquire
-            max_locks: Maximum number of concurrent locks
-            lock_timeout: How long until the lock expires
+        Try once per outer loop to get as many free slots as possible
+        and assign them to waiting requests.
         """
+        # Fast path when semaphore off
         if not self.execute_params.use_semaphore:
-            for key, req_data in request_tracker.items():
-                if req_data["status"] == "pending":
-                    req_data["status"] = "processing"
-                    req_data["identifier"] = None
-            return # early exit without semaphore 
+            for req in request_tracker.values():
+                if req["status"] == "pending":
+                    req["status"] = "processing"
+            return
 
         logging.info(f"{self.log_id}: Acquiring locks")
-        lock_count = 0
-        for key, req_data in request_tracker.items():
-            if req_data["status"] == "pending":
-                success, identifier = await self.redis_service.acquire_semaphore(
-                    name=semaphore_name,
-                    max_locks=max_locks,
-                    lock_timeout=lock_timeout,
-                    max_attempts=1,  # Just try once per iteration
-                    initial_backoff=0.1,  # These values don't matter for max_attempts=1
-                    max_backoff=1.0,
-                    backoff_factor=1.0
-                )
-                req_data["semaphore_count"] += 1
-                
-                if success:
-                    req_data["status"] = "processing"
-                    req_data["identifier"] = identifier
-                    lock_count += 1
-                else:
-                    break 
+        # 1) Collect the requests still waiting for a token
+        waiting = [req for req in request_tracker.values()
+                if req["status"] == "pending"]
 
-                if lock_count >= max_concurrency:
-                    # early exit if we acquire all locks 
-                    break 
+        # Nothing to do?
+        if not waiting:
+            return
 
-        logging.info(f"{self.log_id}: Acquired {lock_count} locks")
+        # 2) Ask Redis once for *up to* len(waiting) locks
+        wanted = min(len(waiting), max_concurrency)
+        identifiers = await self.redis_service.acquire_semaphores_batch(
+            name         = semaphore_name,
+            n            = wanted,
+            max_locks    = max_locks,
+            lock_timeout = lock_timeout,
+        )
+
+        # 3) Mark the lucky ones; the rest stay “pending”
+        for req, ident in zip(waiting, identifiers):
+            req["status"]      = "processing"
+            req["identifier"]  = ident
+            req["semaphore_count"] += 1
+
+        # For book‑keeping, increment attempts even if we didn’t succeed
+        for req in waiting[len(identifiers):]:
+            req["semaphore_count"] += 1
+
+        logging.info(f"{self.log_id}: Acquired {len(identifiers)} locks")
     
     async def _poll_for_results(self, request_tracker):
         """

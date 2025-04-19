@@ -61,7 +61,7 @@ def start_consumer():
 
     callback_partial = partial(callback, engine=engine)
 
-    channel.basic_qos(prefetch_count=1)
+    channel.basic_qos(prefetch_count=5)
     channel.basic_consume(
         queue=queue_name,
         on_message_callback=callback_partial

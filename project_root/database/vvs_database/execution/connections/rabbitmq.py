@@ -7,8 +7,11 @@ from vvs_database.schemas import ExecuteRequestUnion, RabbitMQConnection
 from vvs_database import logging
 
 class RabbitMQService():
-    def __init__(self, rabbitmq_connection: RabbitMQConnection):
+    def __init__(self, 
+                 rabbitmq_connection: RabbitMQConnection,
+                 verbose: bool=False):
         self.init(rabbitmq_connection)
+        self.verbose = verbose
 
     def init(self, rabbitmq_connection: RabbitMQConnection):
         self.connection = None 
@@ -82,7 +85,8 @@ class RabbitMQService():
                     properties=pika.BasicProperties(delivery_mode=2)
                 )
                 successful_ids.append(request_id)
-                logging.info(f"{self.log_id}: Message published to {request_id}")
+                if self.verbose:
+                    logging.info(f"{self.log_id}: Message published to {request_id}")
             return successful_ids
         
         except pika.exceptions.AMQPError as e:

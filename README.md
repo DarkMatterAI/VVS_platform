@@ -3,6 +3,8 @@ VVS V2
 
 todos
     "clear plugin records" api to delete associated item records without affecting things
+    rdkit batch
+    verbosity flag to executor 
     dagster
         think more about concurrent qdrant uploads
             acquire semaphore at start of job, release at end

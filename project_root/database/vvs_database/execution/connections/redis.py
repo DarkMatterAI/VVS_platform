@@ -10,12 +10,15 @@ from typing import Optional, List, Dict, Any, Union
 from vvs_database.schemas import RedisConnection
 from vvs_database import logging
 
-        
+
 class RedisService:
     """Redis service for caching, receiving message responses, and managing concurrency"""
 
-    def __init__(self, redis_connection: RedisConnection):
+    def __init__(self, 
+                 redis_connection: RedisConnection,
+                 verbose: bool=False):
         self.init(redis_connection)
+        self.verbose = verbose 
     
     def init(self, redis_connection: RedisConnection):
         self.redis_url = redis_connection.redis_url
@@ -100,7 +103,8 @@ class RedisService:
         Returns:
             bool: True if semaphore was acquired, False otherwise
         """
-        logging.info(f"{self.log_id}: Acquiring semaphore for {name}")
+        if self.verbose:
+            logging.info(f"{self.log_id}: Acquiring semaphore for {name}")
 
         identifier = str(uuid.uuid4())
         semaphore_key = f"semaphore:{name}"
@@ -110,7 +114,8 @@ class RedisService:
         self.init_redis_connection()
         
         for attempt in range(max_attempts):
-            logging.info(f"{self.log_id}: Acquiring semaphore for {name} - attempt {attempt}")
+            if self.verbose:
+                logging.info(f"{self.log_id}: Acquiring semaphore for {name} - attempt {attempt}")
             now = time.time()
 
             async with self.redis.pipeline(transaction=True) as pipe:
@@ -125,8 +130,8 @@ class RedisService:
                 rank = (await pipe.execute())[-1]
 
                 if rank is not None and rank < max_locks:
-                    # self.semaphore_identifiers[name] = identifier
-                    logging.info(f"{self.log_id}: Successfully acquired semaphore for {name}")
+                    if self.verbose:
+                        logging.info(f"{self.log_id}: Successfully acquired semaphore for {name}")
                     return True, identifier 
                 else:
                     logging.info(f"{self.log_id}: Unable to acquire semaphore for {name}")
@@ -145,13 +150,57 @@ class RedisService:
                     sleep_time = current_backoff * jitter
                     
                     # Sleep with backoff
-                    logging.info(f"{self.log_id}: Sleeping for {sleep_time}")
+                    if self.verbose:
+                        logging.info(f"{self.log_id}: Sleeping for {sleep_time}")
                     await asyncio.sleep(sleep_time)
                     
                     # Increase backoff for next attempt
                     current_backoff = min(current_backoff * backoff_factor, max_backoff)
         
         return False, ""  # This should never be reached but added for clarity
+
+    async def acquire_semaphores_batch(
+        self,
+        name: str,
+        n: int,                 # how many tokens we’d like
+        max_locks: int,
+        lock_timeout: int = 30,
+    ) -> List[str]:             # identifiers we actually got
+        """
+        Atomically try to grab up to *n* semaphore slots.
+        Returns the list of identifiers actually acquired.
+        """
+        logging.info('New batch confirmed')
+        if n <= 0:
+            return []
+
+        self.init_redis_connection()
+        now = time.time()
+        semaphore_key = f"semaphore:{name}"
+        owner_key     = f"{semaphore_key}:owner"
+
+        # ----- phase 1: clean up & discover capacity -----
+        async with self.redis.pipeline(transaction=True) as pipe:
+            pipe.zremrangebyscore(semaphore_key, "-inf", now - lock_timeout)
+            pipe.zinterstore(owner_key, {owner_key: 1, semaphore_key: 0})
+            pipe.zcard(owner_key)                       # current holders
+            current = (await pipe.execute())[-1]
+
+        free = max(0, max_locks - current)
+        if free == 0:
+            return []                                   # nothing available
+
+        grab = min(free, n)
+        identifiers = [str(uuid.uuid4()) for _ in range(grab)]
+
+        # ----- phase 2: claim the slots we just discovered -----
+        async with self.redis.pipeline(transaction=True) as pipe:
+            for i, ident in enumerate(identifiers, start=1):
+                pipe.zadd(semaphore_key, {ident: now})
+                pipe.zadd(owner_key,    {ident: current + i})
+            await pipe.execute()
+
+        return identifiers
 
     async def release_semaphore(self, name: str, identifiers: Union[str, List[str]]) -> bool:
         """
@@ -181,5 +230,6 @@ class RedisService:
             results = await pipe.execute()
 
         released = sum(results[::2])  # Every other result is from zrem on semaphore_key
-        logging.info(f"{self.log_id}: Released {released} locks for {name}")
+        if self.verbose:
+            logging.info(f"{self.log_id}: Released {released} locks for {name}")
         return released 
