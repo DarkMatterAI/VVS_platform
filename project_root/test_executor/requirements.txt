@@ -5,9 +5,8 @@ pytest-asyncio
 redis
 pika
 numpy
-pydantic
 qdrant-client==1.11.2
-pydantic
+pydantic==2.10.6
 pydantic-settings
 sqlalchemy[asyncio]
 asyncpg

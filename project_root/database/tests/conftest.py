@@ -11,6 +11,9 @@ from vvs_database.testing import create_test_database_url, drop_test_database
 
 _item_counter = itertools.count(1)
 _embedding_counter = itertools.count(1)
+_data_counter = itertools.count(1)
+_score_counter = itertools.count(1)
+_filter_counter = itertools.count(1)
 _assembly_counter = itertools.count(1)
 
 @pytest.fixture(scope="session")
@@ -63,8 +66,10 @@ async def db_session(test_engine):
 
 @pytest_asyncio.fixture(scope="function")
 async def create_test_embedding(db_session):    
-    async def _create_embedding(name=None, plugin_class='generic',
-                                vector_length=128, distance_metric="Cosine"):
+    async def _create_embedding(name=None, 
+                                plugin_class='generic',
+                                vector_length=128, 
+                                distance_metric="Cosine"):
         embedding = schemas.EmbeddingPluginCreate(
             name=name or f"Test Embedding {next(_embedding_counter)}",
             plugin_class=plugin_class,
@@ -82,6 +87,102 @@ async def create_test_embedding(db_session):
         return embedding
 
     return _create_embedding
+
+@pytest_asyncio.fixture(scope="function")
+async def create_test_datasource_plugin(db_session, create_test_embedding):
+    async def _create_data_source(name=None, embedding=None):
+        if embedding is None:
+            embedding = await create_test_embedding()
+
+        datasource_schema = schemas.DataSourcePluginCreate(
+            name=name or f"Test DataSource {next(_data_counter)}",
+            plugin_class="generic",
+            execution_type="queue",
+            group_key="test",
+            timeout=30,
+            max_concurrency=5,
+            max_retries=1,
+            batch_size=1,
+            embedding_ids=[embedding.id],
+        )
+        plugin = await crud.create_plugin(db_session, datasource_schema)
+        return plugin, embedding
+
+    return _create_data_source
+
+@pytest_asyncio.fixture(scope="function")
+async def create_test_mapper_plugin(db_session, create_test_embedding):
+    async def _create_test_mapper(n_outputs=2,
+                                  input_embedding=None,
+                                  output_embeddings=None):
+
+        if input_embedding is None:
+            input_embedding = await create_test_embedding()
+        
+        if output_embeddings is None:
+            output_embeddings = [await create_test_embedding() for _ in range(n_outputs)]
+
+        output_order = [
+            schemas.OutputEmbedding(index=i, embedding_id=e.id) 
+            for i, e in enumerate(output_embeddings)
+        ]
+
+        mapper_schema = schemas.MapperPluginCreate(
+            name="Test Mapper",
+            plugin_class="generic",
+            execution_type="queue",
+            group_key="test",
+            timeout=30,
+            max_concurrency=5,
+            max_retries=1,
+            batch_size=1,
+            input_embedding_id=input_embedding.id,
+            output_order=output_order,
+        )
+        plugin = await crud.create_plugin(db_session, mapper_schema)
+
+        # await db_session.commit()
+        return plugin, input_embedding, output_embeddings
+
+    return _create_test_mapper
+
+@pytest_asyncio.fixture(scope="function")
+async def create_test_score_plugin(db_session):    
+    async def _create_test_score_plugin(name=None):
+        assembly_plugin = schemas.ScorePluginCreate(
+            name=name or f"Test Score Plugin {next(_score_counter)}",
+            plugin_class="generic",
+            type="score",
+            execution_type="queue",
+            group_key="test",
+            timeout=30,
+            max_concurrency=5,
+            max_retries=1,
+            batch_size=1,
+        )
+        plugin = await crud.create_plugin(db_session, assembly_plugin)
+        return plugin
+
+    return _create_test_score_plugin
+
+@pytest_asyncio.fixture(scope="function")
+async def create_test_filter_plugin(db_session):    
+    async def _create_test_filter_plugin(name=None):
+        assembly_plugin = schemas.FilterPluginCreate(
+            name=name or f"Test Score Plugin {next(_filter_counter)}",
+            plugin_class="generic",
+            type="filter",
+            execution_type="queue",
+            group_key="test",
+            timeout=30,
+            max_concurrency=5,
+            max_retries=1,
+            batch_size=1,
+        )
+        plugin = await crud.create_plugin(db_session, assembly_plugin)
+        return plugin
+
+    return _create_test_filter_plugin
 
 @pytest_asyncio.fixture(scope="function")
 async def create_test_assembly_plugin(db_session):    

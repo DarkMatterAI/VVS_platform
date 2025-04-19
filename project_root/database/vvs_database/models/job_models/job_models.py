@@ -44,31 +44,6 @@ class Job(Base):
         'polymorphic_load': 'selectin'
     }
 
-    # @classmethod
-    # async def cleanup_unreferenced(cls, session: AsyncSession):
-    #     """
-    #     Delete jobs that aren't referenced in vvs_job_plugins.
-    #     Returns number of items deleted.
-    #     """
-
-    #     # workaround for circular import 
-    #     from vvs_database.models.job_models.qdrant_upload import QdrantUploadFailed
-
-    #     delete_stmt = delete(cls).where(
-    #         and_(
-    #             ~exists().where(JobPlugin.job_id == cls.id),
-    #             ~exists().where(PluginExecutionFailure.job_id == cls.id),
-    #             ~exists().where(QdrantUploadFailed.job_id == cls.id)
-    #         )
-    #     ).returning(cls.id)
-
-    #     result = await session.execute(delete_stmt)
-    #     deleted_rows = result.scalars().all()
-        
-    #     await session.commit()
-        
-    #     return len(deleted_rows)
-
     @classmethod
     async def cleanup_unreferenced(cls, session: AsyncSession):
         """

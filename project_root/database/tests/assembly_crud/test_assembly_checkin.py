@@ -16,7 +16,7 @@ def validate_assembly(assembly_data, result, plugin):
             assert response_comp[assembly_index].component_id == item_id
 
 @pytest.mark.asyncio
-async def test_assembly_checkin_basic(assembly_checkin, create_item, create_test_assembly_plugin):
+async def test_assembly_checkin_basic(event_loop, assembly_checkin, create_item, create_test_assembly_plugin):
     # Create components that will be part of the assembly
     component1 = await create_item()
     component2 = await create_item()
@@ -39,20 +39,6 @@ async def test_assembly_checkin_basic(assembly_checkin, create_item, create_test
     # Execute assembly checkin
     result = await assembly_checkin(assembly_data, plugin.id)
     validate_assembly(assembly_data, result, plugin)
-    
-    # # Verify the results
-    # assemblies = result["assemblies"]
-    # assert len(assemblies) == 1
-    
-    # assembly = assemblies[0]
-    # assert assembly.product_id == result["items"][0].id
-    # assert assembly.plugin_id == plugin.id
-    
-    # # Verify components
-    # components = sorted(assembly.components, key=lambda x: x.assembly_index)
-    # assert len(components) == 2
-    # assert components[0].component_id == component1.id
-    # assert components[1].component_id == component2.id
 
 @pytest.mark.asyncio
 async def test_assembly_checkin_multiple(assembly_checkin, create_item, create_test_assembly_plugin):
@@ -87,30 +73,6 @@ async def test_assembly_checkin_multiple(assembly_checkin, create_item, create_t
     # Execute assembly checkin
     result = await assembly_checkin(assembly_data, plugin.id)
     validate_assembly(assembly_data, result, plugin)
-    
-    # # Verify the results
-    # assemblies = result["assemblies"]
-    # assert len(assemblies) == 2
-    
-    # # First assembly
-    # assert assemblies[0].product_id == result["items"][0].id
-    # assert assemblies[0].plugin_id == plugin.id
-    
-    # # Second assembly
-    # assert assemblies[1].product_id == result["items"][1].id
-    # assert assemblies[1].plugin_id == plugin.id
-    
-    # # Components for first assembly
-    # components1 = sorted(assemblies[0].components, key=lambda x: x.assembly_index)
-    # assert len(components1) == 2
-    # assert components1[0].component_id == component1.id
-    # assert components1[1].component_id == component2.id
-    
-    # # Components for second assembly
-    # components2 = sorted(assemblies[1].components, key=lambda x: x.assembly_index)
-    # assert len(components2) == 2
-    # assert components2[0].component_id == component2.id
-    # assert components2[1].component_id == component3.id
 
 @pytest.mark.asyncio
 async def test_assembly_checkin_input_duplicates(assembly_checkin, create_item, create_test_assembly_plugin):

@@ -2,33 +2,19 @@
 VVS V2
 
 todos
-    database
-        ability to override plugin params at execution time 
+    "clear plugin records" api to delete associated item records without affecting things
     dagster
         think more about concurrent qdrant uploads
             acquire semaphore at start of job, release at end
             requires above cancellation/failure handling to release on fail/cancel 
     jobs
-        qdrant upload
-            verify failures work
         search
             standard
             mapper
             bb
-    search job control flow
-        start iteration
-            check record
-            if status is complete_early_stop, early exit
-            run iteration 
-        at end of iteration
-            update iteration record
-            update input/job parent records
-            check inference and timeout 
-        create next iteration
-            if pass, create with status queued
-            else, create with status complete_early_stop
     test gaps
         anything related to dagster 
+        qdrant failure uploads 
 
 setting up HC data models
     figure out crud and job json format
@@ -40,7 +26,18 @@ results
     result id, job id, item_id, assembly id (optional)
         score? can find with query but could be easier to just store again
 
-
+search job control flow
+    start iteration
+        check record
+        if status is complete_early_stop, early exit
+        run iteration 
+    at end of iteration
+        update iteration record
+        update input/job parent records
+        check inference and timeout 
+    create next iteration
+        if pass, create with status queued
+        else, create with status complete_early_stop
 
 
 

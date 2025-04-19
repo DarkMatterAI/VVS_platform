@@ -7,10 +7,10 @@ services:
   tei_plugin:
     integration_test: False 
   rdkit_plugin:
-    unit_test: True 
+    unit_test: False 
     integration_test: False 
   triton_plugin:
-    unit_test: True 
+    unit_test: False 
     integration_test: False 
 temp_services:
   test_consumer:

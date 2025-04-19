@@ -3,5 +3,5 @@ pika
 sqlalchemy
 psycopg2-binary
 pytest 
-pydantic 
+pydantic==2.10.6
 pydantic-settings
