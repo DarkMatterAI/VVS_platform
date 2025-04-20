@@ -170,7 +170,7 @@ class RedisService:
         Atomically try to grab up to *n* semaphore slots.
         Returns the list of identifiers actually acquired.
         """
-        logging.info('New batch confirmed')
+        logging.info(f"{self.log_id}: New batch confirmed")
         if n <= 0:
             return []
 

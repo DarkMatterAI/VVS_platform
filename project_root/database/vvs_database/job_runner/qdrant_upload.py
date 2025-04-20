@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime
+from datetime import datetime, timezone 
 
 from typing import List, Optional
 
@@ -119,7 +119,7 @@ class QdrantUploadRunner(JobRunner):
             "index_error": index_error
         }
         if status in schemas.TERMINAL_STATUSES:
-            update_dict["completed_at"] = datetime.now()
+            update_dict["completed_at"] = datetime.now(timezone.utc)
 
         update_dict = {k:v for k,v in update_dict.items() if (v is not None)}
 

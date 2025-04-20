@@ -49,7 +49,7 @@ class SingleDataOp(ExecutionOp):
                  data_config: ExecuteDataSource,
                  connections: Connections,
                  log_id: Optional[str]=None):
-        self.data_op = DataOp({0:data_config}, connections)
+        self.data_op = DataOp({0:data_config}, connections, log_id)
         self.connections = connections
         self.log_id = log_id
         
@@ -70,8 +70,8 @@ class DecomposedDataOp(ExecutionOp):
                  connections: Connections,
                  log_id: Optional[str]=None):
         self.data_keys = data_config_dict.keys()
-        self.data_op = DataOp(data_config_dict, connections)
-        self.assembly_op = AssemblyOp(assembly_config, connections)
+        self.data_op = DataOp(data_config_dict, connections, log_id)
+        self.assembly_op = AssemblyOp(assembly_config, connections, log_id)
         self.log_id = log_id
         
     async def __call__(self,

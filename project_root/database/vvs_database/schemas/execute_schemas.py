@@ -6,7 +6,7 @@ class RequestData(BaseModel):
     request_id: Optional[str] # request.{group_key}.{plugin_type}.{plugin_id}.{item_id}.{request_id}
     plugin_id: int 
     plugin_name: str 
-        
+
 class ItemData(BaseModel):
     """Data for item in a request"""
     item_id: int

@@ -2,6 +2,7 @@ from sqlalchemy import (
     Column, 
     Integer, 
     ForeignKey, 
+    UniqueConstraint,
     JSON, 
     Boolean,
     String,
@@ -102,6 +103,10 @@ class HCIterationJob(Job):
         'polymorphic_identity': 'hill_climb_job_iteration',
     }
 
+    __table_args__ = (
+        UniqueConstraint('input_id', 'iteration', name='uix_input_id_iteration'),
+    )
+
 class HCResult(Base):
     __tablename__ = "hc_results"
 
@@ -119,50 +124,30 @@ class HCResult(Base):
                                     back_populates="result", 
                                     cascade="all, delete-orphan")
 
-    # Index for faster lookups with handling for nullable assembly_id
     __table_args__ = (
-        Index('idx_hc_result_uniqueness', 'job_id', 'item_id', 'assembly_id', unique=True),
+        # (A) rows whose assembly_id IS NOT NULL
+        Index(
+            "uix_hc_result_notnull",
+            "job_id", "item_id", "assembly_id",
+            unique=True,
+            postgresql_where=assembly_id.isnot(None),
+        ),
+        # (B) rows whose assembly_id IS NULL
+        Index(
+            "uix_hc_result_null",
+            "job_id", "item_id",
+            unique=True,
+            postgresql_where=assembly_id.is_(None),
+        ),
     )
 
-    # @classmethod
-    # async def get_or_create(cls, session: AsyncSession, job_id: int, item_id: int, 
-    #                        assembly_id: Optional[int], valid: bool):
-    #     """Get existing result or create a new one"""
-    #     if assembly_id is None:
-    #         stmt = select(cls).where(
-    #             and_(
-    #                 cls.job_id == job_id,
-    #                 cls.item_id == item_id,
-    #                 cls.assembly_id == None
-    #             )
-    #         )
-    #     else:
-    #         stmt = select(cls).where(
-    #             and_(
-    #                 cls.job_id == job_id,
-    #                 cls.item_id == item_id,
-    #                 cls.assembly_id == assembly_id
-    #             )
-    #         )
-            
-    #     result = await session.execute(stmt)
-    #     existing = result.scalar_one_or_none()
-        
-    #     if existing:
-    #         return existing
-            
-    #     # Create new result
-    #     new_result = cls(job_id=job_id, item_id=item_id, assembly_id=assembly_id, valid=valid)
-    #     session.add(new_result)
-    #     await session.flush()  # Flush to get the result_id
-        
-    #     return new_result
 
 class HCIterationResult(Base):
     __tablename__ = "hc_iteration_results"
 
     result_id = Column(Integer, ForeignKey("hc_results.result_id", ondelete="CASCADE"), primary_key=True)
     iteration_id = Column(Integer, ForeignKey("hc_iteration_jobs.id", ondelete="CASCADE"), primary_key=True)
+    count = Column(Integer, nullable=False)
 
     result = relationship("HCResult", back_populates="iteration_results", passive_deletes=True)
     iteration_job = relationship("HCIterationJob", back_populates="iteration_results", passive_deletes=True)
@@ -170,25 +155,3 @@ class HCIterationResult(Base):
     __table_args__ = (
         Index('idx_hc_iteration_result', 'result_id', 'iteration_id', unique=True),
     )
-
-    # @classmethod
-    # async def create(cls, session: AsyncSession, result_id: int, iteration_id: int):
-    #     """Create a new iteration result or return existing"""
-    #     stmt = select(cls).where(
-    #         and_(
-    #             cls.result_id == result_id,
-    #             cls.iteration_id == iteration_id
-    #         )
-    #     )
-    #     result = await session.execute(stmt)
-    #     existing = result.scalar_one_or_none()
-        
-    #     if existing:
-    #         return existing
-            
-    #     # Create new iteration result
-    #     new_result = cls(result_id=result_id, iteration_id=iteration_id)
-    #     session.add(new_result)
-    #     await session.flush()
-        
-    #     return new_result

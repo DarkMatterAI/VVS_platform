@@ -46,6 +46,7 @@ class BasePluginExecutor:
                 self.connections,
                 self.execute_params
             )
+        self.last_executed_count = 0
 
     def update_params(self, execute_params: ExecuteParams):
         return execute_params 
@@ -138,6 +139,7 @@ class BasePluginExecutor:
                              ) -> Dict[str, ExecuteResponseUnion]:
         """Execute plugin request. Optionally cache/persist results"""
         logging.info(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
+        self.last_executed_count = len(remaining_requests.keys())
         executed_results = {}
         if not remaining_requests:
             return executed_results
@@ -210,6 +212,7 @@ class BasePluginExecutor:
     async def execute(self, requests: List[ExecuteRequestUnion], log_id: Optional[str]=None):
         """Main execution flow that orchestrates the execution process"""
         self.init_log_id(log_id)
+        self.last_executed_count = 0
 
         if not requests:
             logging.info(f"{self.log_id}: No requests - returning")

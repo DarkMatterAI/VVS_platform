@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone 
 from typing import Optional, List, Dict, Any
 from sqlalchemy import select, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -134,8 +134,18 @@ async def _update_job(db: AsyncSession,
                       update_data: dict
                       ) -> Optional[Job]:
     job = await get_job(db, job_id)
+
+    if 'status' in update_data:
+        status = update_data['status']
+        if status in TERMINAL_STATUSES:
+            update_data["completed_at"] = datetime.now(timezone.utc)
+        elif (status == JobStatus.RUNNING) and (job.started_at is None):
+            update_data["started_at"] = datetime.now(timezone.utc)
+
     for key, value in update_data.items():
         setattr(job, key, value)
+
+    job.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
     return job 
@@ -156,8 +166,6 @@ async def update_job(db: AsyncSession,
         "auto_execute": auto_execute,
         "dagster_run_id": dagster_run_id,
     }
-    if status in TERMINAL_STATUSES:
-        update_data["completed_at"] = datetime.now()
 
     update_data = {k:v for k,v in update_data.items() if (v is not None)}
     

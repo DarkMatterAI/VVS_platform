@@ -27,5 +27,6 @@ class ExecutionOp():
                                                          plugin_config.execute_params)
         
         res = await executor.execute(requests, log_id=self.log_id)
+        self.last_executed_count = executor.last_executed_count
         responses, checkin_response, valid_execution = res
         return responses, checkin_response, valid_execution
