@@ -3,8 +3,8 @@ VVS V2
 
 todos
     "clear plugin records" api to delete associated item records without affecting things
-    rdkit batch
     verbosity flag to executor 
+    HC update api endpoint 
     dagster
         think more about concurrent qdrant uploads
             acquire semaphore at start of job, release at end
@@ -17,16 +17,13 @@ todos
     test gaps
         anything related to dagster 
         qdrant failure uploads 
+        unit tests on ops 
 
 setting up HC data models
     figure out crud and job json format
     make sure unique constraints are working 
 
 
-
-results
-    result id, job id, item_id, assembly id (optional)
-        score? can find with query but could be easier to just store again
 
 search job control flow
     start iteration
@@ -40,49 +37,6 @@ search job control flow
     create next iteration
         if pass, create with status queued
         else, create with status complete_early_stop
-
-
-
-search iteration
-    iteration id - id
-    seed iteration id - first iteration 
-    parent iteration id - previous iteration
-    iteration - int iteration count
-    inference count - int inference so far
-    time - int time elapsed
-    iteration blob - json blob with query, grad, etc
-    status - str queue, running, fail, complete, etc
-    failure notes - str, any details on failure 
-
-search iteration results
-    iteration id, item_id, valid (item made it past all filters to score)
-
-
-search iteration
-    init - embedding, gradient
-    do data queries
-        check in results
-        store to search iteration results table
-    filter
-    score
-        check in results
-    update
-    compute grad 
-
-assembly search iteration
-    init - embedding, gradient
-    do data queries
-        de-concat
-        data query
-        check in results
-    do assembly
-        check in results
-        store to search iteration results table
-    filter
-    score
-        check in results
-    update
-    compute grad
 
 
 locks/control of plugins/jobs

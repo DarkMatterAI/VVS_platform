@@ -95,13 +95,21 @@ from vvs_database.schemas.job_schemas import (
 )
 
 from vvs_database.schemas.internal_schemas import (
+    PluginOverrideParams,
     ExecutePlugin,
+    ExecutePluginParams,
+    ExecutePluginCreate,
     ExecuteDataSource,
+    ExecuteDataParams,
+    ExecuteDataSourceCreate,
     Parent,
     AssemblyItemInternal,
     InternalAssemblyData,
     InternalItem,
     ScoreResult,
+    Query,
+    QueryEmbedding,
+    AssembledEmbedding,
 )
 
 __all__ = [
@@ -195,11 +203,19 @@ __all__ = [
     "QdrantUploadInternal",
 
     # internal schemas
+    "PluginOverrideParams",
     "ExecutePlugin",
+    "ExecutePluginParams",
+    "ExecutePluginCreate",
     "ExecuteDataSource",
+    "ExecuteDataParams",
+    "ExecuteDataSourceCreate",
     "Parent",
     "AssemblyItemInternal",
     "InternalAssemblyData",
     "InternalItem",
-    "ScoreResult"
+    "ScoreResult",
+    "Query",
+    "QueryEmbedding",
+    "AssembledEmbedding",
 ]

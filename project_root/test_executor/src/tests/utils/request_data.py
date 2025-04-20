@@ -17,11 +17,13 @@ random_item_key = ''.join(np.random.choice([i for i in string.ascii_lowercase], 
 EMBEDDING_SIZE = int(os.environ.get('TEST_EMBEDDING_SIZE', 32))
 NUM_PARENTS = int(os.environ.get('TEST_NUM_PARENTS', 2))
 
-def get_test_embedding(embedding_id, embedding_size=None):
+def get_test_embedding(embedding_id, embedding_size=None, plugin_name=None):
+    if plugin_name is None:
+        plugin_name = ''
     if embedding_size is None:
         embedding_size = EMBEDDING_SIZE
     return {'plugin_id' : embedding_id,
-            'plugin_name' : '',
+            'plugin_name' : plugin_name,
             'embedding' : [random.random() for i in range(embedding_size)]}
 
 def get_request_data(plugin_record, item_id=None):
