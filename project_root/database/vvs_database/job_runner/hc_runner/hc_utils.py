@@ -76,8 +76,6 @@ async def should_finalize_parent(db: AsyncSession, parent_id: int) -> Optional[J
     """Return final status for parent if every child finished, else None."""
     res = await db.execute(select(HCInputJob.status).where(HCInputJob.parent_id == parent_id))
     statuses = {row[0] for row in res}
-    print('terminal status check')
-    print(statuses)
     if statuses <= TERMINAL_STATUSES:
         if {JobStatus.COMPLETE_WITH_ERRORS, JobStatus.FAILED} & statuses:
             return JobStatus.COMPLETE_WITH_ERRORS

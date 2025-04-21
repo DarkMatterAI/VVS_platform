@@ -42,8 +42,8 @@ async def load_search_config_plugins(db: AsyncSession,
     validate_search_config_plugin_types(search_config)
                 
     search_config.update_embedding_dict(embeddings)
-    search_config.update_source_embeddings()
     search_config.update_data_configs()
+    search_config.update_source_embeddings()
         
     return search_config
 

@@ -110,11 +110,11 @@ class APIExecutionStrategy(ExecutionStrategy):
                     request = [i['request'].model_dump() for i in batch]
                     if is_single_item:
                         response = await make_post_request(request[0], url, timeout, retries, 
-                                                           retry_sleep=1.0, log_id=log_id)
+                                                           retry_sleep=1.0, log_id=log_id, verbose=False)
                         response = [response]
                     else:
                         response = await make_post_request(request, url, timeout, retries, 
-                                                           retry_sleep=1.0, log_id=log_id)
+                                                           retry_sleep=1.0, log_id=log_id, verbose=False)
 
                     for i, request in enumerate(batch):
                         request["response"] = {"valid": True, "response_data": response[i]}

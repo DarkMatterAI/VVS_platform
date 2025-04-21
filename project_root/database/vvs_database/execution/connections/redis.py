@@ -216,7 +216,8 @@ class RedisService:
         if type(identifiers) == str:
             identifiers = [identifiers]
 
-        logging.info(f"{self.log_id}: Releasing {len(identifiers)} locks for {name}")
+        if self.verbose:
+            logging.info(f"{self.log_id}: Releasing {len(identifiers)} locks for {name}")
             
         semaphore_key = f"semaphore:{name}"
         owner_key = f"{semaphore_key}:owner"

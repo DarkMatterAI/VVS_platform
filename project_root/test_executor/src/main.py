@@ -18,7 +18,8 @@ def load_config():
 def get_enabled_tests(config):
     test_paths = []
     for test, details in config.get('temp_services', {}).items():
-        if details.get('enabled', False):
+        if (details.get('enabled', False) and 
+            details.get('run_tests', False)):
             test_path = Path(f'{TEST_ROOT}/{test}')
             if test_path.exists():
                 test_paths.append(str(test_path))
@@ -35,6 +36,22 @@ def get_enabled_plugin_tests(plugin_config, test_config):
                 test_paths.append(str(test_path))
     return test_paths 
 
+def get_enabled_job_tests(config):
+    tmp_service_enabled = False 
+    for test, details in config.get('temp_services', {}).items():
+        if details.get('enabled', False):
+            tmp_service_enabled = True 
+
+    test_paths = []
+    if not tmp_service_enabled:
+        return test_paths 
+    
+    for job, details in config.get('jobs', {}).items():
+        if details.get('run_tests', False):
+            test_path = Path(f"{TEST_ROOT}/test_jobs/test_{job}")
+            test_paths.append(test_path)
+    return test_paths 
+
 def main():
     print('Starting Integration tests')
     print('Sleeping while test containers setup')
@@ -44,6 +61,7 @@ def main():
     test_paths = [f'{TEST_ROOT}/test_s3']
     test_paths += get_enabled_tests(test_config)
     test_paths += get_enabled_plugin_tests(plugin_config, test_config)
+    test_paths += get_enabled_job_tests(test_config)
     print(test_paths)
 
     if not test_paths:

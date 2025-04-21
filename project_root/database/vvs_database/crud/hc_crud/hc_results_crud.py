@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple, Optional, Any, Literal 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, aliased
 from sqlalchemy import (
     select, and_, func, desc, asc, nulls_last
 )
@@ -31,18 +31,6 @@ async def upsert_hc_results(
         return {}
 
     # ---------------- prepare rows -----------------
-    # rows = [
-    #     {
-    #         "job_id": job_id,
-    #         "item_id": itm.item_data.item_id,
-    #         "assembly_id": (
-    #             itm.assembly_data.assembly_id if itm.assembly_data else None
-    #         ),
-    #         "valid": itm.valid,
-    #     }
-    #     for itm in items
-    # ]
-
     dedup: dict[tuple[int, int | None], bool] = {}
     for itm in items:
         key = (itm.item_data.item_id,
@@ -293,6 +281,9 @@ async def _fetch_iteration_results(
 ):
     """Return list of dicts for one iteration sorted by score DESC."""
 
+    # alias because we need HCResult both for loading and for join target
+    HCR = aliased(HCResult)
+
     stmt = (
         select(HCIterationResult)
         .options(
@@ -303,10 +294,13 @@ async def _fetch_iteration_results(
             .selectinload(Assembly.components)
             .joinedload(AssemblyComponent.component),
         )
-        .outerjoin(
+        .join(                                # ← add this
+            HCR, HCR.result_id == HCIterationResult.result_id
+        )
+        .outerjoin(                           # ← fix condition
             ItemResult,
             and_(
-                ItemResult.item_id == HCIterationResult.result_id,
+                ItemResult.item_id == HCR.item_id,
                 ItemResult.plugin_id == score_plugin_id,
             ),
         )
@@ -318,6 +312,32 @@ async def _fetch_iteration_results(
         .where(HCIterationResult.iteration_id == iteration.id)
         .order_by(nulls_last(desc("item_score")))
     )
+
+    # stmt = (
+    #     select(HCIterationResult)
+    #     .options(
+    #         joinedload(HCIterationResult.result)
+    #         .joinedload(HCResult.item),
+    #         joinedload(HCIterationResult.result)
+    #         .joinedload(HCResult.assembly)
+    #         .selectinload(Assembly.components)
+    #         .joinedload(AssemblyComponent.component),
+    #     )
+    #     .outerjoin(
+    #         ItemResult,
+    #         and_(
+    #             ItemResult.item_id == HCIterationResult.result_id,
+    #             ItemResult.plugin_id == score_plugin_id,
+    #         ),
+    #     )
+    #     .add_columns(
+    #         ItemResult.score.label("item_score"),
+    #         ItemResult.valid.label("score_valid"),
+    #         HCIterationResult.count.label("dup_count"),
+    #     )
+    #     .where(HCIterationResult.iteration_id == iteration.id)
+    #     .order_by(nulls_last(desc("item_score")))
+    # )
 
     rows = await db.execute(stmt)
 

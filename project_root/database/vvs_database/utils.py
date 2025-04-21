@@ -102,7 +102,8 @@ def validate_updates(plugin: models.Plugin, update_data: dict):
     plugin_dict.update(update_data)
     plugin_type_map[plugin.type]['response_model'].model_validate(plugin_dict)
 
-async def make_post_request(data: dict, url: str, timeout: int, retries: int, retry_sleep=0, log_id=None):
+async def make_post_request(data: dict, url: str, timeout: int, retries: int, 
+                            retry_sleep=0, log_id=None, verbose=True):
     """Make HTTP POST request with retry logic."""
     if log_id is None:
         log_id = ''
@@ -110,7 +111,8 @@ async def make_post_request(data: dict, url: str, timeout: int, retries: int, re
         log_id = f"{log_id}: "
     async with httpx.AsyncClient() as client:
         for attempt in range(retries + 1):
-            logging.info(f"{log_id}Post Request to {url} attempt {attempt+1}")
+            if verbose:
+                logging.info(f"{log_id}Post Request to {url} attempt {attempt+1}")
             try:
                 response = await client.post(url, json=data, timeout=timeout)
                 response.raise_for_status()

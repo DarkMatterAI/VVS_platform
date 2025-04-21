@@ -56,9 +56,9 @@ class BasePluginExecutor:
         if log_id is None:
             log_id = str(uuid.uuid4())
 
-        self.log_id = log_id 
-        self.connections.init_log_id(self.log_id)
-        self.execution_strategy.log_id = f"{self.log_id}:Execute {self.plugin.execution_type}"
+        self.log_id = f"{log_id}: Executor" 
+        self.connections.init_log_id(log_id)
+        self.execution_strategy.log_id = f"{log_id}:Execute {self.plugin.execution_type}"
 
     async def close(self):
         """Close all resources"""
@@ -218,7 +218,7 @@ class BasePluginExecutor:
             logging.info(f"{self.log_id}: No requests - returning")
             return [], None, []
 
-        logging.info(f"{self.log_id}: Executing {len(requests)} requests for plugin {self.plugin.id}")
+        logging.info(f"{self.log_id}: Executing {len(requests)} requests for plugin {self.plugin.id} ({self.plugin.type})")
         
         # Step 1: Validate requests
         requests = self.validate_requests(requests)

@@ -2,6 +2,7 @@
 VVS V2
 
 todos
+    HC job crud unit test to verify early exit db checks
     "clear plugin records" api to delete associated item records without affecting things
     verbosity flag to executor 
     HC update api endpoint 

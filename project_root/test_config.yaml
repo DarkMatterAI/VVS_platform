@@ -1,6 +1,6 @@
 services:
   backend:
-    unit_test: True 
+    unit_test: False 
     integration_test: False 
   qdrant_plugin:
     integration_test: False   
@@ -12,11 +12,16 @@ services:
   triton_plugin:
     unit_test: False 
     integration_test: False 
+jobs: # note job tests require one of tmp_services to have enabled=True
+  hc_job:
+    run_tests: True 
 temp_services:
   test_consumer:
     enabled: False
+    run_tests: False
   test_server:
-    enabled: False
+    enabled: True
+    run_tests: False
 
 # services:
 #   backend:
