@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List 
+from typing import List
 
 from vvs_database.utils import get_plugin_response_model
 from vvs_database import logging 
@@ -9,18 +9,17 @@ from vvs_database.crud.plugin_crud import get_plugin
 from vvs_database.crud.item_checkin import item_checkin
 from vvs_database.crud.job_crud import create_job, bulk_create_job_plugins
 
-from vvs_database.models import HCInputItems, Job 
+from vvs_database.models import HCInputItems, Job
 
 from vvs_database.schemas.enums import JobType, PluginType
 from vvs_database.schemas.item_schemas import NewItem
-from vvs_database.schemas.hc_schemas import (SearchConfigs, 
-                                             HCAssembledUpdateParams,
+from vvs_database.schemas.hc_schemas import (HCSearchConfigs, 
                                              HCAssembedInputItem,
                                              HCCreateConfigs)
 
 
 async def load_search_config_plugins(db: AsyncSession, 
-                                     search_config: SearchConfigs):
+                                     search_config: HCSearchConfigs):
     embeddings = {}
     for plugin_config in search_config.iter_plugins():
         plugin_record = await get_plugin(db, plugin_config.plugin_id, with_error=True)
@@ -48,7 +47,7 @@ async def load_search_config_plugins(db: AsyncSession,
         
     return search_config
 
-def validate_search_config_plugin_types(search_config: SearchConfigs):
+def validate_search_config_plugin_types(search_config: HCSearchConfigs):
     plugin_type_iter = [
         (search_config.mapper_config, PluginType.MAPPER),
         (search_config.assembly_config, PluginType.ASSEMBLY),
@@ -67,7 +66,7 @@ def validate_search_config_plugin_types(search_config: SearchConfigs):
         for config in plugin_configs:
             assert config.plugin.type == plugin_type 
 
-def validtate_hc_mapper_config(search_config: SearchConfigs):
+def validtate_hc_mapper_config(search_config: HCSearchConfigs):
     mapper_config = search_config.mapper_config
     data_configs = search_config.data_configs
     if mapper_config is None:
@@ -90,7 +89,7 @@ def validtate_hc_mapper_config(search_config: SearchConfigs):
                                   f"with assembly index {assembly_index} routed to data source " \
                                   f"{data_config.plugin_id} which expects one of {data_embeddings}")
         
-def validate_hc_assembly_config(search_config: SearchConfigs):
+def validate_hc_assembly_config(search_config: HCSearchConfigs):
     assembly_config = search_config.assembly_config
     data_configs = search_config.data_configs
     if assembly_config is None:
@@ -131,7 +130,7 @@ async def hc_inputs_checkin(db: AsyncSession,
 
 async def create_hc_parent_job(db: AsyncSession, 
                                create_config: HCCreateConfigs, 
-                               search_config: SearchConfigs
+                               search_config: HCSearchConfigs
                                ) -> Job:
     job_params = create_config.job_params
     extra_args = job_params.model_dump()
@@ -189,26 +188,19 @@ async def create_hc_input_job(db: AsyncSession,
         
     return input_jobs 
 
-
 async def create_hc_job(db: AsyncSession, 
                         create_config: HCCreateConfigs):  
-    # validate update params  
     update_params = create_config.update_params.convert_internal()
-    # validate_hc_update_params(update_params)
-    
-    # validate job inputs 
     job_inputs = [i.convert_internal() for i in create_config.job_inputs]
-    # validate_hc_job_inputs(job_inputs)
     
     # load config records
     plugin_config = create_config.plugin_config
-    search_config = SearchConfigs.from_create_config(plugin_config)
+    search_config = HCSearchConfigs.from_create_config(plugin_config)
     job_json = {'search_config' : search_config.model_dump(),
                 'update_params' : update_params.model_dump()}
     search_config = await load_search_config_plugins(db, search_config)
     
     # validate config records
-    # validate_hc_data_config(search_config)
     validtate_hc_mapper_config(search_config)
     validate_hc_assembly_config(search_config)
     
@@ -222,4 +214,5 @@ async def create_hc_job(db: AsyncSession,
     input_jobs = await create_hc_input_job(db, item_dict, parent_job, job_json)
     
     return search_config, item_dict, parent_job, input_jobs
+
 

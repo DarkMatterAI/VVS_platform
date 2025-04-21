@@ -7,11 +7,13 @@ from vvs_database.schemas.internal_schemas import (ExecutePluginCreate,
                                                    ExecuteDataSourceCreate, 
                                                    ExecutePlugin,
                                                    ExecuteDataSource,
-                                                   ExecuteDataParams
+                                                   Query, 
+                                                   QueryEmbedding,
+                                                   GradientEmbedding, 
+                                                   InternalItem
                                                    )
 from vvs_database.schemas.enums import DistanceMetric
 from vvs_database.schemas.job_schemas import UserItem
-
 
 T = TypeVar("T")
 
@@ -133,7 +135,7 @@ class HCAssembledJobCreate(HCJobBase):
 
 HCCreateConfigs = Union[HCConfigCreate, HCAssembledConfigCreate, HCMapperConfigCreate]
 
-class SearchConfigs(BaseModel):
+class HCSearchConfigs(BaseModel):
     mapper_config: Optional[ExecutePlugin]=None
     data_configs: List[ExecuteDataSource]
     assembly_config: Optional[ExecutePlugin]=None
@@ -215,4 +217,34 @@ class SearchConfigs(BaseModel):
             else:
                 create_dict[key] = ExecutePlugin(**config.model_dump())
         return cls(**create_dict)
+
+class HCSearchIteration(BaseModel):
+    update_params: HCAssembledUpdateParams
+    query_embeddings: List[GradientEmbedding]
+    query: Optional[Query]=None
+    results: Optional[List[InternalItem]]=None
+        
+    def set_query(self):
+        embeddings = [q.get_embeddings() for q in self.query_embeddings]
+        if len(embeddings) == 1:
+            queries = [QueryEmbedding(query_group=i, embedding=e.embedding, assembled_embeddings=None)
+                       for i, e in enumerate(embeddings[0])]
+        else:
+            queries = [QueryEmbedding(query_group=i, embedding=None, assembled_embeddings=e)
+                       for i, e in enumerate(zip(*embeddings))]
+        self.query = Query(queries=queries)
+        
+    def get_results(self, query_group=None, deduplicate=False, only_valid=False):
+        results = self.results
+        if only_valid:
+            results = [i for i in results if i.valid]
+        
+        if query_group is not None:
+            results = [i for i in results if i.query_group == query_group]
+            
+        if deduplicate:
+            unique_results = {i.item_data.item_id:i for i in results}
+            results = list(unique_results.values())
+            
+        return results 
 

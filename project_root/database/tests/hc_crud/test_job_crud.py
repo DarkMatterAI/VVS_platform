@@ -40,35 +40,9 @@ from vvs_database.schemas.internal_schemas import (
     ExecuteParams
 )
 
-
 from vvs_database.schemas.enums import JobType
 
-def _hc_base_parts(*, embeddings, datasource_plugins, filter_plugins, score_plugin, 
-                   mapper_plugin=None, assembly_plugin=None):
-    """Return kwargs for the HC*Config* schemas."""
-    filter_configs = [ExecutePluginCreate(plugin_id=p.id) for p in filter_plugins]
-    score_config = ExecutePluginCreate(plugin_id=score_plugin.id, execute_params=ExecuteParams())
-
-    data_configs = [
-        ExecuteDataSourceCreate(
-            plugin_id=p.id,
-            data_source_params=ExecuteDataParams(k=10, assembly_index=i),
-        )
-        for i, p in enumerate(datasource_plugins)
-    ]
-    if embeddings is None:
-        embeddings = []
-
-    embedding_configs = [ExecutePluginCreate(plugin_id=e.id) for e in embeddings]
-
-    return dict(
-        filter_configs=filter_configs,
-        score_config=score_config,
-        embedding_configs=embedding_configs,
-        data_configs=data_configs,
-        assembly_config=ExecutePluginCreate(plugin_id=assembly_plugin.id) if assembly_plugin else None,
-        mapper_config=ExecutePluginCreate(plugin_id=mapper_plugin.id) if mapper_plugin else None,
-    )
+from tests.hc_crud.conftest import _hc_base_parts
 
 def _mk_job_inputs(single=True):
     if single:

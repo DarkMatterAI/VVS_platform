@@ -129,6 +129,23 @@ async def get_jobs(db: AsyncSession,
     
     return jobs
 
+async def update_helper(job: Job,
+                        update_data: dict
+                       ) -> Job:
+    # update directly on existing record without commit 
+    if 'status' in update_data:
+        status = update_data['status']
+        if status in TERMINAL_STATUSES:
+            update_data["completed_at"] = datetime.now(timezone.utc)
+        elif (status == JobStatus.RUNNING) and (job.started_at is None):
+            update_data["started_at"] = datetime.now(timezone.utc)
+
+    for key, value in update_data.items():
+        setattr(job, key, value)
+
+    job.updated_at = datetime.now(timezone.utc)
+    return job
+
 async def _update_job(db: AsyncSession,
                       job_id: int,
                       update_data: dict
