@@ -14,7 +14,7 @@ from vvs_database.crud.hc_crud.hc_results_crud import (
     upsert_hc_iteration_results,
 )
 from vvs_database.crud import create_job, assembly_checkin
-from vvs_database.schemas import NewAssembly 
+from vvs_database.schemas import NewAssembly
 
 # ────────────────────────────────────────────────────────────────────────────
 # Tiny stand-ins for InternalItem / AssemblyData (same as earlier)
@@ -130,7 +130,6 @@ async def test_upsert_hc_results_insert_then_update(
     assert asm_valid is True
     await db_session.commit()
 
-
 # ────────────────────────────────────────────────────────────────────────────
 # 2. upsert_hc_iteration_results – counts accumulate
 # ────────────────────────────────────────────────────────────────────────────
@@ -182,4 +181,68 @@ async def test_upsert_hc_iteration_results_accumulates(
     counts = {rid: cnt for rid, cnt in rows}
     assert counts[res_ids[0]] == 3
     assert counts[res_ids[1]] == 5
+    await db_session.commit()
+
+# ===========================================================================
+# 3. upsert_hc_results – exact‑same payload twice is a no‑op
+# ===========================================================================
+@pytest.mark.asyncio
+async def test_upsert_hc_results_idempotent(db_session, create_item):
+    parent, *_ = await _mk_hc_job_chain(db_session)
+
+    prod = await create_item("idem-plain")
+    mock = _mk_item(prod.id, prod.item, valid=True)
+
+    # first call
+    id_map_1 = await upsert_hc_results(db_session, parent.id, [mock])
+    rows_1 = (
+        await db_session.execute(
+            select(HCResult.valid).where(HCResult.job_id == parent.id)
+        )
+    ).scalars().all()
+    assert rows_1 == [True]
+
+    # second call with an *identical* InternalItem
+    id_map_2 = await upsert_hc_results(db_session, parent.id, [mock])
+    rows_2 = (
+        await db_session.execute(
+            select(HCResult.valid).where(HCResult.job_id == parent.id)
+        )
+    ).scalars().all()
+
+    assert id_map_1 == id_map_2         # same PK
+    assert rows_2 == rows_1             # still one row, unchanged validity
+    await db_session.commit()
+
+
+# ===========================================================================
+# 4. upsert_hc_iteration_results – zero‑delta truly no‑op
+# ===========================================================================
+@pytest.mark.asyncio
+async def test_upsert_hc_iteration_results_zero_idempotent(db_session, create_item):
+    parent, _ , iter_job = await _mk_hc_job_chain(db_session)
+    itm = await create_item("idem-count")
+    res_id = (
+        await db_session.execute(
+            pg_insert(HCResult)
+            .values(job_id=parent.id, item_id=itm.id, valid=True)
+            .returning(HCResult.result_id)
+        )
+    ).scalar_one()
+
+    # insert initial count 4
+    await upsert_hc_iteration_results(db_session, iter_job.id, {res_id: 4})
+
+    # call again with 0 – should leave count at 4
+    await upsert_hc_iteration_results(db_session, iter_job.id, {res_id: 0})
+
+    cnt = (
+        await db_session.execute(
+            select(HCIterationResult.count).where(
+                HCIterationResult.result_id == res_id,
+                HCIterationResult.iteration_id == iter_job.id,
+            )
+        )
+    ).scalar_one()
+    assert cnt == 4
     await db_session.commit()

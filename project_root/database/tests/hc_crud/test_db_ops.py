@@ -393,3 +393,38 @@ async def test_hc_runner_smoke(
     assert (await db_session.execute(select(HCResult))).scalars().first(), \
         "Runner failed to persist HCResult rows"
     await db_session.commit()
+
+# ===========================================================================
+# 9. should_stop_input – parent/child time & inference limits
+# ===========================================================================
+@pytest.mark.parametrize(
+    "child_inf,parent_inf,child_secs,parent_secs,expect_stop",
+    [
+        (10, 0, 0, 0, True),   # child inference limit hit
+        (0, 10, 0, 0, True),   # parent inference limit hit
+        (0, 0, 10, 0, True),   # child time limit hit
+        (0, 0, 0, 10, True),   # parent time limit hit
+        (1, 1, 0, 0, False),   # under all limits
+    ],
+)
+def test_should_stop_input_limits(child_inf, parent_inf, child_secs, parent_secs, expect_stop):
+    now = datetime.now(timezone.utc)
+    child = types.SimpleNamespace(
+        inference=child_inf,
+        inference_limit=5,
+        started_at=now - timedelta(seconds=child_secs),
+        time_limit=5 if child_secs else None,
+    )
+    parent = types.SimpleNamespace(
+        inference=parent_inf,
+        inference_limit=5,
+        started_at=now - timedelta(seconds=parent_secs),
+        time_limit=5 if parent_secs else None,
+    )
+
+    stop, status = should_stop_input(child, parent, iterate_i=0,
+                                     max_iter=5, new_queries=[[]])
+    assert stop is expect_stop
+    if expect_stop:
+        assert status == JobStatus.COMPLETE_EARLY_STOP
+
