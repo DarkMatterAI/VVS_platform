@@ -154,7 +154,10 @@ async def get_plugin_and_request(db_session,
                                  to_model=False,
                                  group_key=None,
                                  ):
-    plugins = backend_get_plugins_by_filter(backend_client, name_pattern=name_pattern, group_key=group_key)
+    plugins = backend_get_plugins_by_filter(backend_client, 
+                                            name_pattern=name_pattern, 
+                                            group_key=group_key,
+                                            plugin_type=plugin_type)
     assert len(plugins) > 0
     plugin = plugins[0]
     assert plugin['type'] == plugin_type

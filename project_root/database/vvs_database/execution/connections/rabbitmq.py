@@ -25,7 +25,7 @@ class RabbitMQService():
                 username=rabbitmq_connection.username,
                 password=rabbitmq_connection.password
             ),
-            heartbeat=30,
+            heartbeat=120,
             blocked_connection_timeout=10
         )
 

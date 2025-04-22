@@ -286,7 +286,7 @@ async def test_hc_runner_standard_end_to_end(
     parent_job, [input_job] = await _create_standard_hc_job(db_session, backend_client)
     job_cleanup(object_as_dict(parent_job))
 
-    _run_and_assert(db_session, parent_job, input_job)
+    await _run_and_assert(db_session, parent_job, input_job)
 
 @pytest.mark.asyncio
 async def test_runner_assembled(

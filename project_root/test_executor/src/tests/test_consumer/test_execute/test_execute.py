@@ -1,0 +1,59 @@
+import pytest 
+
+from tests.utils.request_data import get_plugin_and_request
+
+from vvs_database.schemas import ExecuteParams, PluginInDB
+from vvs_database.execution.connections import get_connections
+from vvs_database.execution.execution_strategy import QueueExecutionStrategy
+
+@pytest.mark.asyncio
+async def test_db_semaphore_failure(db_session, backend_client, monkeypatch):
+    """
+    APIExecutionStrategy should mark every request invalid when it cannot
+    obtain a semaphore token within `max_semaphore_attempts`.
+    """
+    # -------- 1. discover one mock EMBEDDING plugin + sample requests ------
+    plugin_type = "embedding"
+    plugin_rec, req_data = await get_plugin_and_request(
+        db_session,
+        backend_client,
+        plugin_type,
+        f"mock_{plugin_type}_queue_%",   # glob pattern used in your helpers
+        1,                             # how many plugins
+        to_model=True,
+    )
+    plugin = PluginInDB(**plugin_rec)
+
+    # -------- 2. Strategy under test ---------------------------------------
+    connections = get_connections(db_session)
+
+    execute_params = ExecuteParams(
+        cache=False,
+        db_lookup=False,
+        db_persist=False,
+        use_semaphore=True,
+        max_semaphore_attempts=1,      # fail after first empty acquisition
+    )
+    executor = QueueExecutionStrategy(connections, execute_params)
+    redis_service = connections.redis_service
+
+    # -------- 3. Monkey‑patch semaphore acquisition to *always* fail -------
+    async def fake_acquire_batch(*args, **kwargs):
+        return []                       # zero identifiers → failure path
+    monkeypatch.setattr(redis_service, "acquire_semaphores_batch", fake_acquire_batch)
+
+    # (release_semaphore will be called with empty list; leave it unchanged)
+
+    # -------- 4. Build request_dict & execute ------------------------------
+    request_dict = {r.generate_key(plugin_id=plugin.id): r for r in req_data}
+
+    response = await executor.execute(plugin, request_dict)
+
+    # -------- 5. All responses must be marked invalid ----------------------
+    assert response, "executor returned empty response"
+    for key, val in response.items():
+        assert val["valid"] is False, f"key {key} unexpectedly succeeded"
+        assert val["failure_reason"] == "Semaphore failure"
+
+    await connections.close()
+

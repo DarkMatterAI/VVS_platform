@@ -15,7 +15,7 @@ def get_create_data(plugin_type):
         "type" : plugin_type,
         "execution_type" : "api",
         "group_key" : "mock_api",
-        "timeout" : 20,
+        "timeout" : 4,
         "max_concurrency" : 4,
         "batch_size" : MAX_BATCH_SIZE,
         "max_retries" : 2,

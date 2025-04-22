@@ -1,366 +1,244 @@
-import asyncio 
-import time 
-import random 
-
-from typing import Dict
+import asyncio
+import time
+import random
+from typing import Dict, List, Tuple
 
 from vvs_database.schemas import (
-    ExecuteRequestUnion, 
-    ExecuteResponseUnion, 
+    ExecuteRequestUnion,
+    ExecuteResponseUnion,
     ExecuteParams,
-    PluginInDB
+    PluginInDB,
 )
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
 from vvs_database.execution.connections import Connections
-from vvs_database import logging 
+from vvs_database import logging
+
 
 class QueueExecutionStrategy(ExecutionStrategy):
-    """Strategy for executing queue-based plugins"""
+    """
+    Execute requests via RabbitMQ and poll Redis for responses.
+    Each *batch* of messages is published once a semaphore token has been
+    obtained; tokens are acquired in bulk to minimise Redis chatter.
+    """
 
-    def __init__(self, 
-                 connections: Connections,
-                 execute_params: ExecuteParams,
-                 ):
-        self.redis_service = connections.redis_service 
+    # --------------------------- life-cycle ---------------------------------
+
+    def __init__(self, connections: Connections, execute_params: ExecuteParams):
+        self.redis_service = connections.redis_service
         self.rabbitmq_service = connections.rabbitmq_service
         self.execute_params = execute_params
-        self.log_id = 'Queue Execute'
-        self.connection = None 
-        self.channel = None 
-        
-    async def execute(self, 
-                plugin: PluginInDB, 
-                requests: Dict[str, ExecuteRequestUnion]
-                ) -> Dict[str, ExecuteResponseUnion]:
-        """
-        Execute plugin requests through RabbitMQ queue system with intelligent backoff
-        
-        Flow:
-        1. Acquire semaphore locks for as many requests as possible
-        2. Queue locked requests to RabbitMQ
-        3. Calculate appropriate backoff time
-        4. Poll Redis for results and release semaphores during backoff period
-        5. Repeat until all requests are processed or timeout
-        """
+        self.log_id = "QueueExecute"
+
+    # --------------------------- public API ---------------------------------
+
+    async def execute(
+        self,
+        plugin: PluginInDB,
+        requests: Dict[str, ExecuteRequestUnion],
+    ) -> Dict[str, ExecuteResponseUnion]:
         logging.info(f"{self.log_id}: Queueing {len(requests.keys())} requests via RabbitMQ")
         if not requests:
             return {}
 
-        # Configuration
-        timeout = plugin.timeout
-        lock_timeout = int(1.1 * timeout)
-        max_concurrency = plugin.max_concurrency
-        semaphore_name = f"plugin:{plugin.id}"
-        
-        # Backoff settings
-        base_backoff = max(0.5, min(2.0, timeout / max_concurrency))
-        
-        # Prepare request tracking structure
-        request_tracker = self._prepare_requests(plugin, requests)
-        
-        # Track queue health
-        queue_errors = 0
-        max_queue_errors = 3
-        
-        # Main execution loop - continue until all requests processed or timed out
-        pending_count = self._count_pending_requests(request_tracker)
-        while pending_count > 0:
-            logging.info(f"{self.log_id}: Publishing messages: {pending_count} outstanding")
-            
-            # 1. Try to acquire semaphores for pending requests (just once per iteration)
-            await self._acquire_available_locks(request_tracker, semaphore_name, max_concurrency, 
-                                                lock_timeout, max_concurrency)
-            
-            # 2. Queue messages for newly acquired locks
-            messages_to_queue = self._get_unqueued_messages(request_tracker)
-            
-            if messages_to_queue:
-                try:
-                    successful_ids = self.rabbitmq_service.publish_messages(messages_to_queue)
-                    # successful_ids = self._publish_messages(messages_to_queue)
-                    self._update_queued_status(request_tracker, successful_ids)
-                    
-                    # Handle queue errors
-                    if len(successful_ids) < len(messages_to_queue):
-                        queue_errors += 1
-                        if queue_errors >= max_queue_errors:
-                            self._mark_failed_messages(request_tracker)
-                            
-                except Exception as e:
-                    logging.info(f"{self.log_id}: Error in queue publishing: {str(e)}")
-                    queue_errors += 1
-                    if queue_errors >= max_queue_errors:
-                        self._mark_failed_messages(request_tracker)
-            
-            # 3. Calculate appropriate backoff time
-            pending_before = pending_count 
-            pending_count = self._count_pending_requests(request_tracker)
-            acquired_this_round = pending_before - pending_count
-            logging.info(f"{self.log_id}: Published {acquired_this_round} messages")
+        # ── plugin-level knobs ─────────────────────────────────────────────
+        timeout          = plugin.timeout                     # sec
+        lock_timeout     = int(timeout * 1.1)
+        max_concurrency  = plugin.max_concurrency
+        batch_size       = plugin.batch_size
+        semaphore_name   = f"plugin:{plugin.id}"
 
-            backoff_time = max(self.execute_params.queue_polling_interval, base_backoff * (1 + random.random() * 0.2))
-            
-            # 4. Poll for results and handle timeouts during backoff period
-            backoff_start = time.time()
-            logging.info(f"{self.log_id}: Backoff time {backoff_time}")
-
-            remaining_backoff = float('inf') # init to inf to guarantee one poll
-            while remaining_backoff > self.execute_params.queue_polling_interval and pending_count > 0:
-                poll_interval = min(remaining_backoff, self.execute_params.queue_polling_interval)
-                await self._poll_and_release_cycle(request_tracker, plugin, semaphore_name, poll_interval)
-                remaining_backoff = backoff_time - (time.time() - backoff_start)
-                pending_count = self._count_pending_requests(request_tracker)
-
-            logging.info(f"{self.log_id}: {pending_count} requests still pending/processing/queued")
-        
-        # Compile final results
-        return self._compile_results(request_tracker)
-    
-    async def _poll_and_release_cycle(self, request_tracker, plugin, semaphore_name, wait_time):
-        """
-        Run a single poll-and-release cycle with a wait time
-        
-        Args:
-            request_tracker: The request tracking structure
-            plugin: The plugin being executed
-            semaphore_name: Name of the semaphore for this plugin
-            wait_time: Time to wait after polling before returning
-        """
-        # Poll for results
-        identifiers_to_release = await self._poll_for_results(request_tracker)
-        
-        # Release semaphores for completed requests
-        if identifiers_to_release and self.execute_params.use_semaphore:
-            await self.redis_service.release_semaphore(semaphore_name, identifiers_to_release)
-        
-        # Check for timeouts
-        timeout_identifiers = await self._check_for_timeouts(request_tracker, plugin.timeout)
-        
-        # Release semaphores for timed-out requests
-        if timeout_identifiers and self.execute_params.use_semaphore:
-            await self.redis_service.release_semaphore(semaphore_name, timeout_identifiers)
-        
-        # Wait before next cycle if needed
-        if wait_time > 0:
-            await asyncio.sleep(wait_time)
-    
-    def _prepare_requests(self, plugin, requests):
-        """
-        Prepare the request tracking structure
-        
-        Args:
-            plugin: The plugin being executed
-            requests: Dictionary of request objects
-            
-        Returns:
-            Dictionary tracking the state of each request
-        """
-        request_tracker = {}
-        for key, request_obj in requests.items():
-            request_id = request_obj.request_data.request_id
-            request_tracker[key] = {
-                "request": request_obj,
-                "request_id": request_id,
-                "response_id": request_id.replace('request', 'response').replace('.', ':'),
-                "status": "pending",  # pending, processing, queued, completed, error
-                "queued_at": None,
-                "identifier": None,  # semaphore identifier
-                "result": None,
-                "semaphore_count": 0
+        # ── build RequestTracker dict ─────────────────────────────────────
+        tracker: Dict[str, dict] = {}
+        for k, req in requests.items():
+            rid = req.request_data.request_id
+            tracker[k] = {
+                "request":        req,
+                "req_id":         rid,
+                "resp_id":        rid.replace("request", "response").replace(".", ":"),
+                "status":         "waiting",     # waiting | queued | done | error
+                "queued_at":      None,
+                "identifier":     None,          # semaphore token
+                "attempts_left":  self.execute_params.max_semaphore_attempts,
+                "queue_errors":   0,
+                "result":         None,
             }
-        return request_tracker
-    
-    def _count_pending_requests(self, request_tracker):
-        """Count requests that are still in progress"""
-        return sum(1 for req_data in request_tracker.values() 
-                  if req_data["status"] in ["pending", "processing", "queued"])
-    
-    def _get_unqueued_messages(self, request_tracker):
-        """Get messages that have lock but haven't been queued yet"""
-        return [
-            req_data["request"] 
-            for req_data in request_tracker.values()
-            if req_data["status"] == "processing" and req_data["queued_at"] is None
+
+        # split requests into *batches* that will share one token
+        pending_batches: List[List[str]] = []   # list[ list[key] ]
+        objs = list(tracker.keys())
+        for i in range(0, len(objs), batch_size):
+            pending_batches.append(objs[i : i + batch_size])
+
+        # ── constants for back-off & timeout checks ───────────────────────
+        poll_interval   = self.execute_params.queue_polling_interval
+        base_backoff    = max(0.5, min(2.0, timeout / max_concurrency))
+        backoff_factor  = self.execute_params.backoff_factor
+        max_queue_err   = 3
+
+        # ── main loop: continue while ANY request unfinished ──────────────
+        backoff_current = base_backoff
+
+        while True:
+            unfinished = [
+                k for k, v in tracker.items()
+                if v["status"] in ("waiting", "processing", "queued")
+            ]
+            if not unfinished:
+                break   # all done / error ➜ exit
+
+            # ----------------------------------------------------------
+            # Build (or rebuild) batches that still need publishing
+            # ----------------------------------------------------------
+            pending_batches = self._rebuild_waiting_batches(tracker, batch_size)
+            poll_count = len(unfinished) - len(pending_batches)
+            logging.info(f"{self.log_id}: Queue loop - {len(pending_batches)} unpublished, {poll_count} outstanding")
+
+            # ───── No more to publish → just poll/timeout & sleep ─────
+            if not pending_batches:
+                await self._poll_results(plugin, tracker)
+                self._apply_timeouts_and_errors(tracker, timeout, max_queue_err)
+                await asyncio.sleep(poll_interval)
+                continue
+
+            # ----------------------------------------------------------
+            # 1) Acquire semaphore tokens (or dummy tokens)
+            # ----------------------------------------------------------
+            n_need  = min(len(pending_batches), max_concurrency)
+            if self.execute_params.use_semaphore:
+                tokens = await self.redis_service.acquire_semaphores_batch(
+                    name=semaphore_name,
+                    n=n_need,
+                    max_locks=max_concurrency,
+                    lock_timeout=lock_timeout,
+                )
+            else:
+                tokens = [None] * n_need        # semaphore disabled
+
+            if not tokens:                      # no tokens this round
+                await self._handle_no_tokens(pending_batches, tracker)
+                jitter = 0.8 + random.random() * 0.4
+                await asyncio.sleep(backoff_current * jitter)
+                backoff_current = min(backoff_current * backoff_factor, timeout)
+                self._apply_timeouts_and_errors(tracker, timeout, max_queue_err)
+                continue
+
+            backoff_current = base_backoff      # progress → reset back‑off
+
+            # ----------------------------------------------------------
+            # 2) Launch wave for len(tokens) batches
+            # ----------------------------------------------------------
+            wave_batches = [pending_batches.pop(0) for _ in range(len(tokens))]
+
+            # mark “processing” + remember token
+            for batch_keys, tok in zip(wave_batches, tokens):
+                for k in batch_keys:
+                    tracker[k]["status"] = "processing"
+                    tracker[k]["identifier"] = tok
+
+            await asyncio.gather(
+                *[self._publish_batch(plugin, b, tracker) for b in wave_batches]
+            )
+
+            # release real tokens
+            real_tokens = [t for t in tokens if t]
+            if self.execute_params.use_semaphore and real_tokens:
+                await self.redis_service.release_semaphore(semaphore_name, real_tokens)
+
+            # ----------------------------------------------------------
+            # 3) After publishing, poll / handle errors immediately
+            # ----------------------------------------------------------
+            await self._poll_results(plugin, tracker)
+            self._apply_timeouts_and_errors(tracker, timeout, max_queue_err)
+
+        # ── compile final dict[orig_key] → ExecuteResponseUnion ────────────
+        return {k: v["result"] for k, v in tracker.items()}
+
+    # --------------------------- helpers -----------------------------------
+
+    async def _publish_batch(self, plugin, batch_keys: List[str], tracker: Dict[str, dict]):
+        """Try to publish a batch; on failure increment queue_errors per key."""
+        messages = [tracker[k]["request"] for k in batch_keys]
+        try:
+            sent_ids = self.rabbitmq_service.publish_messages(messages)
+        except Exception as exc:  # network / channel failure
+            logging.error("%s: RabbitMQ publish failed - %s", self.log_id, exc)
+            sent_ids = []
+
+        now = time.time()
+        sent_set = set(sent_ids)
+        for k in batch_keys:
+            if tracker[k]["req_id"] in sent_set:
+                tracker[k]["status"] = "queued"
+                tracker[k]["queued_at"] = now
+            else:  # failed publish
+                tracker[k]["queue_errors"] += 1
+
+    async def _poll_results(self, plugin, tracker: Dict[str, dict]):
+        """Fetch any available responses from Redis in one MGET."""
+        polling_ids = [
+            v["resp_id"] for v in tracker.values() if v["status"] == "queued"
         ]
-    
-    def _update_queued_status(self, request_tracker, successful_ids):
-        """Update status for successfully queued messages"""
-        current_time = time.time()
-        for req_data in request_tracker.values():
-            if req_data["status"] == "processing" and req_data["request_id"] in successful_ids:
-                req_data["queued_at"] = current_time
-                req_data["status"] = "queued"
-    
-    def _mark_failed_messages(self, request_tracker):
-        """Mark messages that failed to queue as error"""
-        logging.info(f"{self.log_id}: Too many queue errors, marking failed messages as error")
-        for req_data in request_tracker.values():
-            if req_data["status"] == "processing" and req_data["queued_at"] is None:
-                req_data["status"] = "error"
-                req_data["result"] = {"valid": False, 
-                                      "response_data": None, 
-                                      "failure_reason": "Queue error",
-                                      "failure_detail": "Too many queue errors, marking failed messages as error"
-                                    }
+        if not polling_ids:
+            return 
+        res = await self.redis_service.get_results(polling_ids, delete=True)
+        for resp_id, payload in res.items():
+            for k, meta in tracker.items():
+                if meta["resp_id"] == resp_id:
+                    meta["status"] = "done"
+                    meta["result"] = payload
+                    break
 
-    async def _acquire_available_locks(
-        self,
-        request_tracker,
-        semaphore_name,
-        max_locks,
-        lock_timeout,
-        max_concurrency,
-    ):
-        """
-        Try once per outer loop to get as many free slots as possible
-        and assign them to waiting requests.
-        """
-        # Fast path when semaphore off
-        if not self.execute_params.use_semaphore:
-            for req in request_tracker.values():
-                if req["status"] == "pending":
-                    req["status"] = "processing"
-            return
+    def _apply_timeouts_and_errors(self, tracker, timeout, max_queue_err):
+        """Mark requests error if queue timeout or too many publish failures."""
+        now = time.time()
+        for meta in tracker.values():
+            if meta["status"] == "done" or meta["status"] == "error":
+                continue
 
-        logging.info(f"{self.log_id}: Acquiring locks")
-        # 1) Collect the requests still waiting for a token
-        waiting = [req for req in request_tracker.values()
-                if req["status"] == "pending"]
+            # semaphore exhaustion
+            if meta["attempts_left"] <= 0:
+                logging.error(f"{self.log_id}: Message failed to acquire semaphore")
+                self._fail(meta, "Semaphore failure",
+                           f"Exceeded max attempts ({self.execute_params.max_semaphore_attempts})")
+                continue
 
-        # Nothing to do?
-        if not waiting:
-            return
+            # publish failures
+            if meta["queue_errors"] > max_queue_err:
+                logging.error(f"{self.log_id}: Message failed to post to queue")
+                self._fail(meta, "Queue error", "Exceeded publish retries")
+                continue
 
-        # 2) Ask Redis once for *up to* len(waiting) locks
-        wanted = min(len(waiting), max_concurrency)
-        identifiers = await self.redis_service.acquire_semaphores_batch(
-            name         = semaphore_name,
-            n            = wanted,
-            max_locks    = max_locks,
-            lock_timeout = lock_timeout,
-        )
+            # queue timeout
+            if meta["status"] == "queued" and meta["queued_at"] is not None:
+                if now - meta["queued_at"] > timeout:
+                    logging.error(f"{self.log_id}: Message failed timeout")
+                    self._fail(meta, "Queue timeout", "No response within timeout")
 
-        # 3) Mark the lucky ones; the rest stay “pending”
-        for req, ident in zip(waiting, identifiers):
-            req["status"]      = "processing"
-            req["identifier"]  = ident
-            req["semaphore_count"] += 1
-
-        # For book‑keeping, increment attempts even if we didn’t succeed
-        for req in waiting[len(identifiers):]:
-            req["semaphore_count"] += 1
-
-        logging.info(f"{self.log_id}: Acquired {len(identifiers)} locks")
-    
-    async def _poll_for_results(self, request_tracker):
-        """
-        Poll Redis for results in a batch operation
-        
-        Args:
-            request_tracker: The request tracking structure
-            
-        Returns:
-            List of semaphore identifiers to release
-        """
-        logging.info(f"{self.log_id}: Polling results")
-
-        # Collect request IDs to poll
-        processing_requests = {
-            req_data["response_id"]: (key, req_data) 
-            for key, req_data in request_tracker.items()
-            if req_data["status"] == "queued" and req_data["queued_at"] is not None
+    def _fail(self, meta, reason, detail):
+        meta["status"] = "error"
+        meta["result"] = {
+            "valid": False,
+            "response_data": None,
+            "failure_reason": reason,
+            "failure_detail": detail,
         }
-        
-        identifiers_to_release = []
-        
-        if not processing_requests:
-            return identifiers_to_release
-        
-        # Get results in a single Redis operation
-        request_ids = list(processing_requests.keys())
-        results = await self.redis_service.get_results(request_ids, delete=True)
-        
-        # Process results
-        for response_id, result in results.items():
-            if response_id in processing_requests:
-                orig_key, req_data = processing_requests[response_id]
-                req_data["status"] = "completed"
-                req_data["result"] = result 
-                
-                # Add this identifier to the release list
-                if req_data["identifier"]:
-                    identifiers_to_release.append(req_data["identifier"])
-                    req_data["identifier"] = None  # Mark as scheduled for release
-        
-        logging.info(f"{self.log_id}: Found {len(identifiers_to_release)} results")
-        return identifiers_to_release
-    
-    async def _check_for_timeouts(self, request_tracker, timeout):
+
+    async def _handle_no_tokens(self, pending_batches, tracker):
+        """Decrement attempts for batches that *need* a token."""
+        for batch_keys in pending_batches:
+            for k in batch_keys:
+                tracker[k]["attempts_left"] -= 1
+
+    def _rebuild_waiting_batches(self, tracker, batch_size):
         """
-        Check for timed out requests
-        
-        Args:
-            request_tracker: The request tracking structure
-            timeout: Timeout duration in seconds
-            
-        Returns:
-            List of semaphore identifiers to release
+        Re-chunk not-yet-sent requests (status waiting|processing) into
+        fresh batches.  'queued' items stay out so we never republish them.
         """
-        logging.info(f"{self.log_id}: Checking timeouts")
-        timeout_count = 0
-        semaphore_count = 0
-        current_time = time.time()
-        identifiers_to_release = []
-
-        for key, req_data in request_tracker.items():
-            fail_request = False 
-            failure_reason = None 
-            failure_detail = None 
-
-            # timeout on queue
-            if req_data["status"] == "queued" and req_data["queued_at"] is not None:
-                elapsed = current_time - req_data["queued_at"]
-                if elapsed > timeout:
-                    fail_request = True 
-                    timeout_count += 1
-                    failure_reason = "Queue timeout error"
-                    failure_detail = "Failed to return message response in time "
-
-            # unable to acquire semaphore 
-            if ((req_data["status"] not in ["complete", "error"]) and 
-                (req_data["semaphore_count"] > self.execute_params.max_semaphore_attempts)):
-                fail_request = True 
-                semaphore_count += 1 
-                failure_reason = "Semaphore failure"
-                failure_detail = f"Unable to acquire semaphore after {self.execute_params.max_semaphore_attempts} attempts"
-
-            if fail_request:
-                req_data["status"] = "error"
-                req_data["result"] = {"valid": False, 
-                        "response_data": None, 
-                        "failure_reason": failure_reason,
-                        "failure_detail": failure_detail
-                    }
-                if req_data["identifier"]:
-                    identifiers_to_release.append(req_data["identifier"])
-                    req_data["identifier"] = None  # Mark as scheduled for release
-
-        logging.info(f"{self.log_id}: Found {timeout_count} message timeouts, {semaphore_count} semaphore timeouts")
-        
-        return identifiers_to_release
-    
-    def _compile_results(self, request_tracker):
-        """
-        Compile final results from request tracker
-        
-        Args:
-            request_tracker: The request tracking structure
-            
-        Returns:
-            Dictionary mapping original keys to results
-        """
-        results = {}
-        for key, req_data in request_tracker.items():
-            results[key] = req_data['result']
-        return results
-
+        waiting_keys = [
+            k for k, v in tracker.items()
+            if v["status"] in ("waiting", "processing")
+        ]
+        return [
+            waiting_keys[i : i + batch_size]
+            for i in range(0, len(waiting_keys), batch_size)
+        ]

@@ -2,118 +2,31 @@
 VVS V2
 
 todos
-    "clear plugin records" api to delete associated item records without affecting things
-    verbosity flag to executor 
-    HC update plugin type and api endpoint 
+    misc
+        "clear plugin records" api to delete associated item records without affecting things
+            HC job with assembly results in item records with assembly. these records persist after 
+                job deletion due to the assembly
+        verbosity flag to executor
+            generally reduce log spam 
+        update plugin endpoint
+            allow custom update for HC job
+            need plugin type, plugin crud, api schema
+    qdrant job
+        think more about running concurrent jobs. maybe restrict to one?
+        could use existing semaphore for qdrant, would need way of releasing on job failure 
+        idea
+            do embed and upload in same step? worse for reproduciblity (lose checkpoint between embed and upload)
+            allows for trading off embed concurrency and upload concurrency (less embed semaphore pressure)
+            embed seems to be the big time sink anyway 
+            food for thought 
+    HC job
+        dagster implementation
+        dagster fail sensor probably needs something for HC job hierarchy 
     dagster
-        think more about concurrent qdrant uploads
-            acquire semaphore at start of job, release at end
-            requires above cancellation/failure handling to release on fail/cancel 
-    jobs
-        search
-            standard
-            mapper
-            bb
+        job -> identifier map for semaphore to clear after job failure 
     test gaps
-        anything related to dagster 
-        qdrant failure uploads 
-        unit tests on ops 
-
-setting up HC data models
-    figure out crud and job json format
-    make sure unique constraints are working 
-
-
-
-search job control flow
-    start iteration
-        check record
-        if status is complete_early_stop, early exit
-        run iteration 
-    at end of iteration
-        update iteration record
-        update input/job parent records
-        check inference and timeout 
-    create next iteration
-        if pass, create with status queued
-        else, create with status complete_early_stop
-
-
-locks/control of plugins/jobs
-    inference budget
-    time limit
-    concurrency         
-
-
-search iteration flow
-    check time/inference limit
-    inputs
-        query embedding
-        gradient embedding
-        job id / info
-    data source
-        generate gradient arc queries
-        standard
-            data query with checkin
-        mapper
-            mapper
-            split data query with checkin
-            generate assembly pools
-            assembly with checkin
-        bb
-            deconcat
-            split data query with checkin
-            generate assembly pools
-            assembly with checkin
-        parse result into items format
-    check inference limit
-    filter
-        for each filter
-            compute embedding(s) as needed
-            execute filter (checkin optional)
-            subset for valid results
-    score
-        compute embedding(s) as needed
-        execute score with checkin
-    update
-        select best result
-        compute gradient around result 
-    save search iteration
-    check time/inference limit 
-    create next iteration if applicable 
-
-
-search crud
-    name
-    plugins
-        data plugins
-            data source
-            mapper/data sources/assembly
-            data sources/assembly
-        filters
-        score
-    update
-        topk
-        lrs
-        etc 
-    job params
-        filename
-        delete file
-        time
-            time limit
-            global time limit
-        inference
-            inference budget
-            global inference budget 
-    
-all plugin params
-    persist, cache, semaphore
-    runtime args 
-
-data params
-    k
-
-
+        anything on dagster
+        qdrant upload failures 
 
 
 
@@ -127,66 +40,4 @@ documentation notes
             reactions assume no reagents 
         tei
         triton 
-
-search job data model
-    data source
-        id, k, runtime args
-    query embeddings
-        id, from data source
-    filters
-        id, runtime args
-    filter embeddings
-        id, from filters
-    scores
-        id, runtime args
-    score embeddings
-        id, from scores
-    update 
-        params
-    initial queries
-        json 
-
-standard data
-    data source
-
-mapper data
-    mapper
-    parent data sources (one per parent)
-    assembly
-
-bb data
-    parent data sources
-    assembly
-
-standard
-    initialize
-        embed queries
-        no gradient
-    iteration
-        (embed, grad) pair
-
-
-saved data
-    results
-        item id, item, job id, filter results, score results
-    search iteration
-        query/gradient
-        num results, other metadata
-        result ids
-            link back to results table
-        parent id 
-        job id 
-
-iteration approach
-    dagster job is a single iteration
-        query
-            map/assemble as needed
-        filter/score
-        update
-        grad
-    stash on redis after job
-    next job reads from redis 
-    integrates with having a database for iterations 
-    one issue - need way of generating consistent IDs for assembled molecules 
-
 
