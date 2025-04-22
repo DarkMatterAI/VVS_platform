@@ -25,6 +25,7 @@ async def test_item_checkin_duplicates(item_checkin, create_test_embedding):
     ]
 
     results = await item_checkin(items_data, plugin.id)
+    assert len(results['items'])==3
     assert results['items'][0].item == results['items'][2].item
     assert results['items'][0].id == results['items'][2].id
 
@@ -39,8 +40,7 @@ async def test_item_checkin_conflict(item_checkin, create_item_plugin_source):
     ]
 
     results = await item_checkin(items_data, plugin.id)
-
-
+    assert len(results['items'])==3
 
 @pytest.mark.asyncio
 async def test_result_checkin(item_checkin, result_checkin, create_test_embedding):

@@ -51,6 +51,7 @@ class HCRunner(JobRunner):
         cfg = self.ctx.search_cfg
         self.data_op = OpFactory.build_data_op(cfg, connections, self.log_id)
         self.filter_ops, self.score_op = OpFactory.build_item_ops(cfg, connections, self.log_id)
+        self.score_op.last_executed_count = 0
 
     async def init_job(self, connections: Connections):
         logging.info(f"{self.log_id}: Embedding inputs & creating initial queries")
@@ -60,7 +61,8 @@ class HCRunner(JobRunner):
     async def init_first_iteration(self, db_session: AsyncSession):
         logging.info(f"{self.log_id}: Initializing first iteration")
         self.ctx.parent = await update_helper(self.ctx.parent, {"status": JobStatus.RUNNING})
-        self.ctx.job = await update_helper(self.ctx.job, {"status": JobStatus.RUNNING})
+        self.ctx.job = await update_helper(self.ctx.job, {"status": JobStatus.RUNNING,
+                                                          "dagster_run_id": self.ctx.parent.dagster_run_id})
         iter_job = await self._create_iteration_job(db_session, 0, self.initial_queries)
         await db_session.commit()
         return iter_job

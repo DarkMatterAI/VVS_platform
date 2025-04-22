@@ -22,8 +22,6 @@ todos
     HC job
         dagster implementation
         dagster fail sensor probably needs something for HC job hierarchy 
-    dagster
-        job -> identifier map for semaphore to clear after job failure 
     test gaps
         anything on dagster
         qdrant upload failures 

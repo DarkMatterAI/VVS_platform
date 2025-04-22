@@ -1,6 +1,9 @@
 from sqlalchemy.orm import class_mapper
 import httpx 
-import asyncio
+import asyncio, random
+from typing import Iterable, AsyncIterator, Callable, Any
+from asyncpg.exceptions import DeadlockDetectedError
+from sqlalchemy.exc import DBAPIError
 
 from vvs_database import schemas, models, logging
 
@@ -178,4 +181,29 @@ async def clear_plugin_cache(plugin_id, redis_client, batch_size=500):
     total_deleted += len(keys_batch)
 
     return total_deleted
+
+def chunked(seq: Iterable[Any], size: int) -> list[list[Any]]:
+    """[[seq[0..size-1]], [seq[size..2*size-1]], …]."""
+    seq = list(seq)
+    return [seq[i:i + size] for i in range(0, len(seq), size)]
+
+async def with_deadlock_retry(
+    db,
+    coro_factory: Callable[[], "Awaitable[Any]"],
+    max_tries: int = 5,
+    base_sleep: float = 0.05,
+) -> Any:
+    """
+    Run *coro_factory()*; if the DB raises a dead-lock, roll back,
+    back-off exponentially and retry (≤ max_tries).
+    """
+    for attempt in range(max_tries):
+        try:
+            return await coro_factory()
+        except DBAPIError as exc:
+            if not isinstance(exc.orig, DeadlockDetectedError):
+                raise
+            await db.rollback()
+            await asyncio.sleep((2 ** attempt) * base_sleep * (1 + random.random()))
+    raise RuntimeError("too many dead-lock retries")
 

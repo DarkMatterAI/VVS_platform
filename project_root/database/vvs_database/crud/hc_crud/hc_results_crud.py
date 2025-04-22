@@ -20,109 +20,225 @@ from vvs_database.models import (
     JobPlugin
 )
 from vvs_database.schemas.internal_schemas import InternalItem
+from vvs_database.utils import chunked, with_deadlock_retry
+
+# async def upsert_hc_results(
+#     db: AsyncSession,
+#     job_id: int,
+#     items: List[InternalItem],
+# ) -> Dict[Tuple[int, int], int]:
+#     """Return {(item_id, assembly_id): result_id} after bulk-upsert."""
+#     if not items:
+#         return {}
+
+#     # ---------------- prepare rows -----------------
+#     dedup: dict[tuple[int, int | None], bool] = {}
+#     for itm in items:
+#         key = (itm.item_data.item_id,
+#                getattr(itm.assembly_data, "assembly_id", None))
+#         # last ‘valid’ flag wins – tweak if you want OR/AND semantics
+#         dedup[key] = itm.valid
+
+#     rows = [
+#         {
+#             "job_id": job_id,
+#             "item_id": k[0],
+#             "assembly_id": k[1],
+#             "valid": v,
+#         }
+#         for k, v in dedup.items()
+#     ]
+
+#     # split by NULL / NOT-NULL assembly_id because they use different indexes
+#     with_null, with_value = [], []
+#     for r in rows:
+#         (with_null if r["assembly_id"] is None else with_value).append(r)
+
+#     id_map: Dict[Tuple[int, int], int] = {}
+
+#     # ---------- 1) assembly_id IS NOT NULL -------------
+#     if with_value:
+#         stmt = (
+#             pg_insert(HCResult)
+#             .values(with_value)
+#             .on_conflict_do_update(
+#                 index_elements=["job_id", "item_id", "assembly_id"],
+#                 index_where=HCResult.assembly_id.isnot(None),
+#                 set_={"valid": pg_insert(HCResult).excluded.valid},
+#             )
+#             .returning(HCResult.result_id,
+#                       HCResult.item_id,
+#                       HCResult.assembly_id)
+#         )
+#         res = await db.execute(stmt)
+#         id_map.update({(r.item_id, r.assembly_id): r.result_id for r in res})
+        
+        
+
+#     # ---------- 2) assembly_id IS NULL -----------------
+#     if with_null:
+#         stmt = (
+#             pg_insert(HCResult)
+#             .values(with_null)
+#             .on_conflict_do_update(
+#                 index_elements=["job_id", "item_id"],
+#                 index_where=HCResult.assembly_id.is_(None),
+#                 set_={"valid": pg_insert(HCResult).excluded.valid},
+#             )
+#             .returning(HCResult.result_id,
+#                        HCResult.item_id,
+#                        HCResult.assembly_id)
+#         )
+#         res = await db.execute(stmt)
+#         id_map.update({(r.item_id, None): r.result_id for r in res})
+
+#     await db.flush()
+#     return id_map
+
+# async def upsert_hc_iteration_results(
+#     db: AsyncSession,
+#     iteration_id: int,
+#     counts_by_result: Dict[int, int],
+# ) -> None:
+#     """
+#     Bulk-upsert into HCIterationResult.  If a (result_id, iteration_id) pair
+#     already exists, increment its count.
+#     """
+#     if not counts_by_result:
+#         return
+
+#     rows = [
+#         {"result_id": rid, "iteration_id": iteration_id, "count": cnt}
+#         for rid, cnt in counts_by_result.items()
+#     ]
+
+#     stmt = (
+#         pg_insert(HCIterationResult)
+#         .values(rows)
+#         .on_conflict_do_update(
+#             index_elements=["result_id", "iteration_id"],
+#             set_={
+#                 "count": HCIterationResult.count + pg_insert(HCIterationResult).excluded.count
+#             },
+#         )
+#     )
+
+#     await db.execute(stmt)
+#     await db.flush()
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# 1. HCResult bulk‑upsert  (product vs assembly rows use different indexes)
+# ────────────────────────────────────────────────────────────────────────────
+async def _insert_hc_results_single(db: AsyncSession, rows, idx_cols, idx_where):
+    if not rows:
+        return []
+    stmt = (
+        pg_insert(HCResult)
+        .values(rows)
+        .on_conflict_do_update(
+            index_elements=idx_cols,
+            index_where=idx_where,
+            set_={"valid": pg_insert(HCResult).excluded.valid},
+        )
+        .returning(HCResult.result_id, HCResult.item_id, HCResult.assembly_id)
+    )
+    return (await db.execute(stmt)).fetchall()
+
 
 async def upsert_hc_results(
     db: AsyncSession,
     job_id: int,
-    items: List[InternalItem],
-) -> Dict[Tuple[int, int], int]:
-    """Return {(item_id, assembly_id): result_id} after bulk-upsert."""
+    items: list[InternalItem],
+    *,
+    batch_size: int = 500,
+) -> dict[tuple[int, int | None], int]:
+    """Dead-lock safe; preserves previous semantics."""
     if not items:
         return {}
 
-    # ---------------- prepare rows -----------------
-    dedup: dict[tuple[int, int | None], bool] = {}
+    # ── deduplicate on (item_id, assembly_id) – last valid flag wins ──────
+    latest: dict[tuple[int, int | None], bool] = {}
     for itm in items:
         key = (itm.item_data.item_id,
                getattr(itm.assembly_data, "assembly_id", None))
-        # last ‘valid’ flag wins – tweak if you want OR/AND semantics
-        dedup[key] = itm.valid
+        latest[key] = itm.valid
 
-    rows = [
-        {
-            "job_id": job_id,
-            "item_id": k[0],
-            "assembly_id": k[1],
-            "valid": v,
-        }
-        for k, v in dedup.items()
+    payload = [
+        {"job_id": job_id,
+         "item_id": item,
+         "assembly_id": asm,
+         "valid": flag}
+        for (item, asm), flag in latest.items()
     ]
 
-    # split by NULL / NOT-NULL assembly_id because they use different indexes
-    with_null, with_value = [], []
-    for r in rows:
-        (with_null if r["assembly_id"] is None else with_value).append(r)
+    # split per NULL / NOT‑NULL index
+    with_asm  = [r for r in payload if r["assembly_id"] is not None]
+    no_asm    = [r for r in payload if r["assembly_id"] is None]
 
-    id_map: Dict[Tuple[int, int], int] = {}
+    id_map: dict[tuple[int, int | None], int] = {}
 
-    # ---------- 1) assembly_id IS NOT NULL -------------
-    if with_value:
-        stmt = (
-            pg_insert(HCResult)
-            .values(with_value)
-            .on_conflict_do_update(
-                index_elements=["job_id", "item_id", "assembly_id"],
-                index_where=HCResult.assembly_id.isnot(None),
-                set_={"valid": pg_insert(HCResult).excluded.valid},
+    async def _do_chunks(rows, idx_cols, idx_where):
+        for chunk in chunked(rows, batch_size):
+            res = await with_deadlock_retry(
+                db,
+                lambda: _insert_hc_results_single(db, chunk, idx_cols, idx_where),
             )
-            .returning(HCResult.result_id,
-                      HCResult.item_id,
-                      HCResult.assembly_id)
-        )
-        res = await db.execute(stmt)
-        id_map.update({(r.item_id, r.assembly_id): r.result_id for r in res})
-        
-        
+            id_map.update({(r.item_id, r.assembly_id): r.result_id for r in res})
 
-    # ---------- 2) assembly_id IS NULL -----------------
-    if with_null:
-        stmt = (
-            pg_insert(HCResult)
-            .values(with_null)
-            .on_conflict_do_update(
-                index_elements=["job_id", "item_id"],
-                index_where=HCResult.assembly_id.is_(None),
-                set_={"valid": pg_insert(HCResult).excluded.valid},
-            )
-            .returning(HCResult.result_id,
-                       HCResult.item_id,
-                       HCResult.assembly_id)
-        )
-        res = await db.execute(stmt)
-        id_map.update({(r.item_id, None): r.result_id for r in res})
+    # assembly_id ≠ NULL
+    await _do_chunks(
+        with_asm,
+        idx_cols=["job_id", "item_id", "assembly_id"],
+        idx_where=HCResult.assembly_id.isnot(None),
+    )
+    # assembly_id IS NULL
+    await _do_chunks(
+        no_asm,
+        idx_cols=["job_id", "item_id"],
+        idx_where=HCResult.assembly_id.is_(None),
+    )
 
     await db.flush()
     return id_map
 
-async def upsert_hc_iteration_results(
-    db: AsyncSession,
-    iteration_id: int,
-    counts_by_result: Dict[int, int],
-) -> None:
-    """
-    Bulk-upsert into HCIterationResult.  If a (result_id, iteration_id) pair
-    already exists, increment its count.
-    """
-    if not counts_by_result:
-        return
 
-    rows = [
-        {"result_id": rid, "iteration_id": iteration_id, "count": cnt}
-        for rid, cnt in counts_by_result.items()
-    ]
-
+# ────────────────────────────────────────────────────────────────────────────
+# 2. HCIterationResult bulk‑upsert (count accumulator)
+# ────────────────────────────────────────────────────────────────────────────
+async def _insert_iteration_single(db: AsyncSession, rows):
     stmt = (
         pg_insert(HCIterationResult)
         .values(rows)
         .on_conflict_do_update(
             index_elements=["result_id", "iteration_id"],
             set_={
-                "count": HCIterationResult.count + pg_insert(HCIterationResult).excluded.count
+                "count": HCIterationResult.count
+                         + pg_insert(HCIterationResult).excluded.count
             },
         )
     )
-
     await db.execute(stmt)
+
+
+async def upsert_hc_iteration_results(
+    db: AsyncSession,
+    iteration_id: int,
+    counts_by_result: dict[int, int],
+    *,
+    batch_size: int = 500,
+) -> None:
+    if not counts_by_result:
+        return
+
+    payload = [
+        {"result_id": rid, "iteration_id": iteration_id, "count": cnt}
+        for rid, cnt in counts_by_result.items()
+    ]
+
+    for chunk in chunked(payload, batch_size):
+        await with_deadlock_retry(db, lambda: _insert_iteration_single(db, chunk))
+
     await db.flush()
 
 async def sum_inference_for_hc_input_job(db: AsyncSession, input_id: int) -> int:
@@ -312,32 +428,6 @@ async def _fetch_iteration_results(
         .where(HCIterationResult.iteration_id == iteration.id)
         .order_by(nulls_last(desc("item_score")))
     )
-
-    # stmt = (
-    #     select(HCIterationResult)
-    #     .options(
-    #         joinedload(HCIterationResult.result)
-    #         .joinedload(HCResult.item),
-    #         joinedload(HCIterationResult.result)
-    #         .joinedload(HCResult.assembly)
-    #         .selectinload(Assembly.components)
-    #         .joinedload(AssemblyComponent.component),
-    #     )
-    #     .outerjoin(
-    #         ItemResult,
-    #         and_(
-    #             ItemResult.item_id == HCIterationResult.result_id,
-    #             ItemResult.plugin_id == score_plugin_id,
-    #         ),
-    #     )
-    #     .add_columns(
-    #         ItemResult.score.label("item_score"),
-    #         ItemResult.valid.label("score_valid"),
-    #         HCIterationResult.count.label("dup_count"),
-    #     )
-    #     .where(HCIterationResult.iteration_id == iteration.id)
-    #     .order_by(nulls_last(desc("item_score")))
-    # )
 
     rows = await db.execute(stmt)
 
