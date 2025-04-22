@@ -141,7 +141,6 @@ async def create_test_mapper_plugin(db_session, create_test_embedding):
         )
         plugin = await crud.create_plugin(db_session, mapper_schema)
 
-        # await db_session.commit()
         return plugin, input_embedding, output_embeddings
 
     return _create_test_mapper

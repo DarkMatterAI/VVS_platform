@@ -29,6 +29,7 @@ async def test_server_endpoint(db_session, test_api_client, backend_client, plug
         status_code = 200
 
     validate_api_response(plugin, response, status_code)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_server_endpoint_fail(db_session, test_api_client, backend_client):
@@ -44,3 +45,4 @@ async def test_server_endpoint_fail(db_session, test_api_client, backend_client)
     response = test_api_client.post(f"/{plugin_type}", json=request_data)
 
     validate_api_response(plugin, response, 422)
+    await db_session.commit()

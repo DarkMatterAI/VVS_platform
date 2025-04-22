@@ -35,3 +35,4 @@ async def test_backend_triton_mapper_execute(db_session, backend_client):
                                                         batch_size=3)
     response = backend_execute_plugin(backend_client, request_data, plugin['id'])
     validate_api_response(plugin, response, 200)
+    await db_session.commit()

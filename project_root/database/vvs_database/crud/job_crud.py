@@ -120,9 +120,6 @@ async def get_jobs(db: AsyncSession,
     
     for job in jobs:
         await db.refresh(job)
-
-    # required for sqlalchemy to close transaction after refresh
-    await db.commit()
     
     return jobs
 
@@ -161,7 +158,6 @@ async def _update_job(db: AsyncSession,
 
     job.updated_at = datetime.now(timezone.utc)
 
-    await db.commit()
     return job 
 
 async def update_job(db: AsyncSession,
@@ -187,6 +183,7 @@ async def update_job(db: AsyncSession,
         return await get_job(db, job_id)
     
     job = await _update_job(db, job_id, update_data)
+    await db.commit()
     
     return job
 
@@ -219,21 +216,58 @@ async def create_job_plugin(db: AsyncSession,
     await db.commit()
     return job_plugin
 
-async def bulk_create_job_plugins(db: AsyncSession,
-                                  job_id: int,
-                                  plugin_ids: List[int]
-                                 ) -> List[JobPlugin]:
-    """Bulk create multiple job-plugin associations."""
-    job_plugins = [JobPlugin(job_id=job_id, plugin_id=plugin_id) for plugin_id in plugin_ids]
-    db.add_all(job_plugins)
-    await db.commit()
+# async def bulk_create_job_plugins(db: AsyncSession,
+#                                   job_id: int,
+#                                   plugin_ids: List[int]
+#                                  ) -> List[JobPlugin]:
+#     """Bulk create multiple job-plugin associations."""
+#     job_plugins = [JobPlugin(job_id=job_id, plugin_id=plugin_id) for plugin_id in plugin_ids]
+#     db.add_all(job_plugins)
+#     await db.commit()
     
-    # Refresh all created objects
-    for job_plugin in job_plugins:
-        await db.refresh(job_plugin)
-    await db.commit()
+#     # Refresh all created objects
+#     for job_plugin in job_plugins:
+#         await db.refresh(job_plugin)
+#     await db.commit()
     
-    return job_plugins
+#     return job_plugins
+
+async def bulk_create_job_plugins(
+    db: AsyncSession,
+    job_id: int,
+    plugin_ids: list[int],
+) -> list[JobPlugin]:
+    """
+    Create (job_id, plugin_id) rows in **vvs_job_plugins**.
+
+    - duplicates in *plugin_ids* are ignored  
+    - only **one round-trip** and **one commit**
+    """
+    if not plugin_ids:
+        return []
+
+    # ------------------------------------------------------------------
+    # bulk‑insert with “ignore duplicates”
+    # ------------------------------------------------------------------
+    stmt = (
+        pg_insert(JobPlugin)
+        .values([{"job_id": job_id, "plugin_id": pid} for pid in set(plugin_ids)])
+        .on_conflict_do_nothing(index_elements=["job_id", "plugin_id"])
+        .returning(JobPlugin.job_id, JobPlugin.plugin_id)
+    )
+    await db.execute(stmt)
+    await db.flush()
+
+    rows = (
+        await db.execute(
+            select(JobPlugin)
+            .where(JobPlugin.job_id == job_id, JobPlugin.plugin_id.in_(plugin_ids))
+            .order_by(JobPlugin.plugin_id)
+        )
+    ).scalars().all()
+    await db.commit()
+
+    return rows
 
 async def get_job_plugin(db: AsyncSession,
                          job_id: int,
@@ -368,21 +402,52 @@ async def create_qdrant_upload_job(db: AsyncSession,
     
     return job, job_plugins
 
-async def create_qdrant_upload_failures(db: AsyncSession,
-                                        job_id: int,
-                                        records: List[dict],
-                                        return_records: bool=False
-                                        ) -> Optional[List[QdrantUploadFailed]]:
-    failed_uploads = [QdrantUploadFailed(job_id=job_id,
-                                         item=record['item'],
-                                         external_id=record['external_id'])
-                      for record in records]
-    db.add_all(failed_uploads)
-    await db.commit()
+# async def create_qdrant_upload_failures(db: AsyncSession,
+#                                         job_id: int,
+#                                         records: List[dict],
+#                                         return_records: bool=False
+#                                         ) -> Optional[List[QdrantUploadFailed]]:
+#     failed_uploads = [QdrantUploadFailed(job_id=job_id,
+#                                          item=record['item'],
+#                                          external_id=record['external_id'])
+#                       for record in records]
+#     db.add_all(failed_uploads)
+#     await db.commit()
+
+#     if return_records:
+#         for record in failed_uploads:
+#             await db.refresh(record)
+#         await db.commit()
+#         return records 
+
+async def create_qdrant_upload_failures(
+    db: AsyncSession,
+    job_id: int,
+    records: list[dict],
+    *,
+    return_records: bool = False,
+) -> list[QdrantUploadFailed] | None:
+
+    failures = [
+        QdrantUploadFailed(
+            job_id=job_id,
+            item=r["item"],
+            external_id=r["external_id"],
+        )
+        for r in records
+    ]
+    db.add_all(failures)
+
+    # ── 1. make PKs & defaults available inside this tx ────────────
+    await db.flush()
 
     if return_records:
-        for record in failed_uploads:
-            await db.refresh(record)
-        await db.commit()
-        return records 
+        # refresh only if caller wants the ORM objects fully populated
+        for obj in failures:
+            await db.refresh(obj) 
+
+    # ── 2. durably persist everything ──────────────────────────────
+    await db.commit()
+
+    return failures if return_records else None
 

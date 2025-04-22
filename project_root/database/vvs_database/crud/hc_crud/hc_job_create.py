@@ -165,7 +165,7 @@ async def create_hc_input_item(db: AsyncSession,
                                   external_id=external_id)
         db.add(input_item)
         input_items.append(input_item)
-    await db.commit()
+    # await db.commit()
     return input_items 
     
 async def create_hc_input_job(db: AsyncSession, 
@@ -185,6 +185,7 @@ async def create_hc_input_job(db: AsyncSession,
                                extra_args=job_args)
         input_jobs.append(job)
         input_items = await create_hc_input_item(db, job, input_data)
+    await db.commit()
         
     return input_jobs 
 

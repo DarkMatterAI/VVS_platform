@@ -25,7 +25,7 @@ async def test_message_consumer(db_session, rabbitmq_connection, redis_connectio
     responses = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
     for response in responses:
         assert response['valid'] == True, response 
-
+    await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding', 'assembly', 'mapper', 'data_source'])
@@ -50,6 +50,7 @@ async def test_alt_queue(db_session, rabbitmq_connection, redis_connection, back
     for response in responses:
         assert response['valid'] == False, response 
         assert response['failure_reason'] == 'Alt Ex', response 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding', 'assembly', 'mapper', 'data_source'])
@@ -74,4 +75,5 @@ async def test_dlx_queue(db_session, rabbitmq_connection, redis_connection, back
     for response in responses:
         assert response['valid'] == False, response 
         assert response['failure_reason'] == 'Dead Letter', response 
+    await db_session.commit()
 

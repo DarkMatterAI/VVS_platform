@@ -66,6 +66,7 @@ async def upsert_items(
         # map back to original order (duplicates kept)
         row_map = {r.item: r for r in batch_rows}
         results.extend(row_map[s] for s in batch_strings)
+        await db.commit()
 
     return results
 
@@ -99,6 +100,7 @@ async def upsert_item_sources(
     for chunk in chunked(new_item_sources, batch_size):
         rows = await with_deadlock_retry(db, lambda: _upsert_item_sources_single(db, chunk))
         out.extend(rows)
+        await db.commit()
     return out
 
 async def item_checkin(
@@ -210,8 +212,8 @@ async def result_checkin(
         # 3) copy back to *out* preserving duplicates & original order
         for pos, rec in batch:
             out[pos] = row_map[rec.item_id]
+        await db.commit()
 
-    await db.commit()
     return out      # list[ItemResult] in same order/length as input
 
 async def _insert_assemblies_single(
@@ -318,6 +320,7 @@ async def assembly_checkin(
     for chunk in chunked(missing_rows, batch_size):
         rows = await with_deadlock_retry(db, lambda: _insert_assemblies_single(db, chunk))
         asm_id_map.update({k: i for i, k in rows})
+        await db.commit()
 
     # ----------------------------------------------------------------------
     # 3) Insert components for the assemblies we just created
@@ -334,6 +337,7 @@ async def assembly_checkin(
             )
     for chunk in chunked(comp_rows, batch_size):
         await with_deadlock_retry(db, lambda: _insert_components_single(db, chunk))
+        await db.commit()
 
     # ----------------------------------------------------------------------
     # 4) Load all assemblies with components for the response

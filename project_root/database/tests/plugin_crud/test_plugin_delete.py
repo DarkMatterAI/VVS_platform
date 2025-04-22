@@ -12,8 +12,8 @@ async def test_delete_plugin(db_session, create_test_embedding):
     assert deleted_plugin.id == plugin.id
 
     plugin = await crud.get_plugin(db_session, plugin.id, with_error=False)
-    
     assert plugin is None
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_cannot_delete_embedding_with_references(db_session, create_test_embedding):

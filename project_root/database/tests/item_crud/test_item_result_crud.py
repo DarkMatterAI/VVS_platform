@@ -109,6 +109,7 @@ async def test_item_delete_result_propagation(db_session,
     # check plugin still exists
     response = await crud.get_plugin(db_session, plugin.id)
     assert response is not None 
+    await db_session.commit()
 
 
 @pytest.mark.asyncio

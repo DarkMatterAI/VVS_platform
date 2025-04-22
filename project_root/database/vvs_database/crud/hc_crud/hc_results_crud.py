@@ -80,6 +80,7 @@ async def upsert_hc_results(
                 lambda: _insert_hc_results_single(db, chunk, idx_cols, idx_where),
             )
             id_map.update({(r.item_id, r.assembly_id): r.result_id for r in res})
+            await db.commit()
 
     # assembly_id ≠ NULL
     await _do_chunks(
@@ -133,6 +134,7 @@ async def upsert_hc_iteration_results(
 
     for chunk in chunked(payload, batch_size):
         await with_deadlock_retry(db, lambda: _insert_iteration_single(db, chunk))
+        await db.commit()
 
     await db.flush()
 

@@ -155,6 +155,5 @@ async def test_qdrant_upload_wrong_plugin_type(db_session,
         create_data = CreateQdrantUploadJob(**create_data)
         with pytest.raises(ValidationError):
             job, _ = await create_qdrant_upload_job(db_session, create_data, auto_execute=False)
-            # job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
-
+    await db_session.commit()
 
