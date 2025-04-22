@@ -287,6 +287,7 @@ async def test_hc_runner_standard_end_to_end(
     job_cleanup(object_as_dict(parent_job))
 
     await _run_and_assert(db_session, parent_job, input_job)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_runner_assembled(
@@ -295,6 +296,7 @@ async def test_runner_assembled(
     parent_job, [input_job] = await _create_assembled_job(db_session, backend_client)
     job_cleanup(object_as_dict(parent_job))
     await _run_and_assert(db_session, parent_job, input_job)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_runner_mapper(
@@ -303,4 +305,5 @@ async def test_runner_mapper(
     parent, [input_job] = await _create_mapper_job(db_session, backend_client, plugin_cleanup)
     job_cleanup(object_as_dict(parent))
     await _run_and_assert(db_session, parent, input_job)
+    await db_session.commit()
 

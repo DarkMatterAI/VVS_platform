@@ -1,7 +1,7 @@
 services:
   backend:
     unit_test: False 
-    integration_test: False 
+    integration_test: True 
   qdrant_plugin:
     integration_test: False   
   tei_plugin:
@@ -14,14 +14,14 @@ services:
     integration_test: False 
 jobs: # note job tests require one of tmp_services to have enabled=True
   hc_job:
-    run_tests: False 
+    run_tests: True 
 temp_services:
   test_consumer:
     enabled: False
     run_tests: True
   test_server:
-    enabled: False
-    run_tests: True
+    enabled: True
+    run_tests: False
 
 # services:
 #   backend:

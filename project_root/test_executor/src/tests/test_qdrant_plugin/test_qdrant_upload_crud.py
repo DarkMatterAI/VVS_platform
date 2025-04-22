@@ -106,7 +106,7 @@ async def test_qdrant_upload_missing_plugin(db_session,
         create_data = CreateQdrantUploadJob(**create_data)
         with pytest.raises(NotFoundError):
             job, _ = await create_qdrant_upload_job(db_session, create_data, auto_execute=False)
-            # job, _ = await create_qdrant_upload_job(db_session, create_data, test=True)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("use_backend", [True, False])

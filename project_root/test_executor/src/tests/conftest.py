@@ -53,6 +53,13 @@ def redis_connection():
     yield redis_client
     redis_client.close()
 
+@pytest_asyncio.fixture(scope="function")
+async def redis_service():
+    from vvs_database.execution.connections.redis import RedisService, RedisConnection
+    redis_service = RedisService(RedisConnection(), verbose=True)
+    yield redis_service
+    await redis_service.close()
+
 @pytest.fixture(scope="session")
 def rabbitmq_connection():
     rabbitmq_params = pika.ConnectionParameters(

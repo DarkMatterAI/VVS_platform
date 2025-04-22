@@ -112,6 +112,7 @@ async def test_backend_api_execution_error(db_session, backend_client):
     validate_api_response(plugin, response_data, 200)
     final_errors = await get_execution_failures(db_session, plugin['id'])
     assert final_errors > initial_errors
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_backend_api_execute_item_error_checkin(db_session, backend_client):
@@ -134,5 +135,6 @@ async def test_backend_api_execute_item_error_checkin(db_session, backend_client
     await validate_item_checkin(db_session, request_data, response_data, plugin, False)
     final_errors = await get_execution_failures(db_session, plugin['id'])
     assert final_errors > initial_errors
+    await db_session.commit()
 
 

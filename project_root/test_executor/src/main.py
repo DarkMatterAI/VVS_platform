@@ -58,7 +58,7 @@ def main():
     time.sleep(3)
     test_config, plugin_config = load_config()
 
-    test_paths = [f'{TEST_ROOT}/test_s3']
+    test_paths = [f'{TEST_ROOT}/test_s3', f'{TEST_ROOT}/test_redis']
     test_paths += get_enabled_tests(test_config)
     test_paths += get_enabled_plugin_tests(plugin_config, test_config)
     test_paths += get_enabled_job_tests(test_config)

@@ -18,7 +18,8 @@ class RedisService:
                  redis_connection: RedisConnection,
                  verbose: bool=False):
         self.init(redis_connection)
-        self.verbose = verbose 
+        self.verbose: bool = verbose 
+        self.job_id: int | None = None
     
     def init(self, redis_connection: RedisConnection):
         self.redis_url = redis_connection.redis_url
@@ -78,6 +79,18 @@ class RedisService:
         await pipeline.execute()
         return
     
+    async def _record_identifiers_for_job(self, name: str, identifiers: list[str]):
+        """
+        Store “plugin_name:identifier” strings in a Redis SET keyed by job id.
+        Only runs when self.job_id is not None.
+        """
+        if not self.job_id or not identifiers:
+            return
+        job_key = f"job:{self.job_id}:semaphores"
+        # store e.g.  "plugin:42:abcd‑uuid"
+        values = [f"{name}:{ident}" for ident in identifiers]
+        await self.redis.sadd(job_key, *values)
+    
     async def acquire_semaphore(
         self, 
         name: str, 
@@ -130,6 +143,7 @@ class RedisService:
                 rank = (await pipe.execute())[-1]
 
                 if rank is not None and rank < max_locks:
+                    await self._record_identifiers_for_job(name, [identifier])
                     if self.verbose:
                         logging.info(f"{self.log_id}: Successfully acquired semaphore for {name}")
                     return True, identifier 
@@ -200,37 +214,88 @@ class RedisService:
                 pipe.zadd(owner_key,    {ident: current + i})
             await pipe.execute()
 
+        await self._record_identifiers_for_job(name, identifiers)
+
         return identifiers
 
-    async def release_semaphore(self, name: str, identifiers: Union[str, List[str]]) -> bool:
+    async def release_semaphore(
+        self,
+        name: str,
+        identifiers: Union[str, List[str]],
+    ) -> int:
         """
-        Release a previously acquired semaphore.
-        
-        Args:
-            name: Name of the semaphore
-            
-        Returns:
-            bool: True if semaphore was released, False if it didn't exist or was expired
+        Release one or several semaphore tokens.
+        Returns the number of tokens actually removed from the semaphore set.
         """
-
-        if type(identifiers) == str:
+        if isinstance(identifiers, str):
             identifiers = [identifiers]
 
+        if not identifiers:
+            return 0
+
         if self.verbose:
-            logging.info(f"{self.log_id}: Releasing {len(identifiers)} locks for {name}")
-            
+            logging.info(
+                "%s: Releasing %d locks for %s", self.log_id, len(identifiers), name
+            )
+
         semaphore_key = f"semaphore:{name}"
-        owner_key = f"{semaphore_key}:owner"
+        owner_key     = f"{semaphore_key}:owner"
         self.init_redis_connection()
-        
-        # Remove our lock from both sets
+
+        # ── 1. remove from the semaphore + owner ZSETs ───────────────────
         async with self.redis.pipeline(transaction=True) as pipe:
-            for identifier in identifiers:
-                pipe.zrem(semaphore_key, identifier)
-                pipe.zrem(owner_key, identifier)
+            for ident in identifiers:
+                pipe.zrem(semaphore_key, ident)
+                pipe.zrem(owner_key, ident)
             results = await pipe.execute()
 
-        released = sum(results[::2])  # Every other result is from zrem on semaphore_key
+        removed = sum(results[::2])   # every second result is semaphore_key.zrem
+
+        # ── 2. also prune from the per‑job bookkeeping SET ───────────────
+        if self.job_id:
+            job_key = f"job:{self.job_id}:semaphores"
+            # stored values look like  "plugin_name:identifier"
+            job_members = [f"{name}:{ident}" for ident in identifiers]
+            await self.redis.srem(job_key, *job_members)
+
         if self.verbose:
-            logging.info(f"{self.log_id}: Released {released} locks for {name}")
-        return released 
+            logging.info(
+                "%s: Released %d locks for %s (job_id=%s)",
+                self.log_id,
+                removed,
+                name,
+                self.job_id,
+            )
+        return removed
+    
+    async def clear_job_semaphores(self, job_id: Optional[int] = None) -> int:
+        if job_id is None:
+            job_id = self.job_id
+        if job_id is None:
+            return 0
+
+        self.init_redis_connection()
+        job_key = f"job:{job_id}:semaphores"
+        members = await self.redis.smembers(job_key)
+        if not members:
+            return 0
+
+        removed = 0
+        async with self.redis.pipeline(transaction=True) as pipe:
+            for m in members:
+                # split from the RIGHT; plugin name may contain ':'
+                try:
+                    plugin_name, ident = m.rsplit(":", 1)         # ← FIX
+                except ValueError:
+                    continue
+
+                sem_key   = f"semaphore:{plugin_name}"
+                owner_key = f"{sem_key}:owner"
+                pipe.zrem(sem_key, ident)
+                pipe.zrem(owner_key, ident)
+                removed += 1
+
+            pipe.delete(job_key)
+            await pipe.execute()
+
+        return removed
