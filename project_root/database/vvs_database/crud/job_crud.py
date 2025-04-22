@@ -216,22 +216,6 @@ async def create_job_plugin(db: AsyncSession,
     await db.commit()
     return job_plugin
 
-# async def bulk_create_job_plugins(db: AsyncSession,
-#                                   job_id: int,
-#                                   plugin_ids: List[int]
-#                                  ) -> List[JobPlugin]:
-#     """Bulk create multiple job-plugin associations."""
-#     job_plugins = [JobPlugin(job_id=job_id, plugin_id=plugin_id) for plugin_id in plugin_ids]
-#     db.add_all(job_plugins)
-#     await db.commit()
-    
-#     # Refresh all created objects
-#     for job_plugin in job_plugins:
-#         await db.refresh(job_plugin)
-#     await db.commit()
-    
-#     return job_plugins
-
 async def bulk_create_job_plugins(
     db: AsyncSession,
     job_id: int,
@@ -401,24 +385,6 @@ async def create_qdrant_upload_job(db: AsyncSession,
     job_plugins = await bulk_create_job_plugins(db, job.id, plugin_ids)
     
     return job, job_plugins
-
-# async def create_qdrant_upload_failures(db: AsyncSession,
-#                                         job_id: int,
-#                                         records: List[dict],
-#                                         return_records: bool=False
-#                                         ) -> Optional[List[QdrantUploadFailed]]:
-#     failed_uploads = [QdrantUploadFailed(job_id=job_id,
-#                                          item=record['item'],
-#                                          external_id=record['external_id'])
-#                       for record in records]
-#     db.add_all(failed_uploads)
-#     await db.commit()
-
-#     if return_records:
-#         for record in failed_uploads:
-#             await db.refresh(record)
-#         await db.commit()
-#         return records 
 
 async def create_qdrant_upload_failures(
     db: AsyncSession,

@@ -20,8 +20,15 @@ todos
             embed seems to be the big time sink anyway 
             food for thought 
     HC job
-        dagster implementation
         dagster fail sensor probably needs something for HC job hierarchy 
+            consider redis semaphore release - probably on hc iteration 
+        add "n_results" column in addition to inference
+        sensor
+        k expansion on first iteration 
+        pre-commit before anything with the deadlock wrapper 
+        way of tracking inference vs db/cache lookup for scores 
+    backend
+        endpoints for creating HC jobs
     test gaps
         anything on dagster
         qdrant upload failures 

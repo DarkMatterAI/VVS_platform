@@ -77,6 +77,7 @@ class QdrantUploadRunner(JobRunner):
     async def execute_item_ops(self, records: List[dict], connections: Connections):
         logging.info(f"{self.log_id}: Starting Qdrant upload embedding")
         connections.db_service.job_id = self.job_id
+        connections.redis_service.job_id = self.job_id
         items = records_to_items(records)
 
         for plugin_config in self.plugin_configs:

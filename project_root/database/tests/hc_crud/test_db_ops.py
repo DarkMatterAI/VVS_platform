@@ -359,6 +359,15 @@ async def test_hc_runner_smoke(
         query_group=None,
     )
     dummy_score = types.SimpleNamespace(last_executed_count=1)
+    dummy_connections = types.SimpleNamespace(
+        db_service=types.SimpleNamespace(job_id=None),
+        redis_service=types.SimpleNamespace(job_id=None)
+    )
+    async def fake_semaphore():
+        return None 
+    
+    setattr(dummy_connections.redis_service, 'acquire_postgres_semaphore', fake_semaphore)
+    setattr(dummy_connections.redis_service, 'release_postgres_semaphore', fake_semaphore)
 
     async def fake_run_iteration(self, iter_job, connections):
         uniq = {f"{dummy_item.item_data.item_id}_None": dummy_item}
@@ -375,11 +384,11 @@ async def test_hc_runner_smoke(
     runner = HCRunner(job_id=input_job.id)
     runner.score_op = dummy_score
     await runner.load_job(db_session)           # loads ctx + job
-    await runner.init_job(connections=None)     # patched no‑op
+    await runner.init_job(connections=dummy_connections)     # patched no‑op
     next_iter = await runner.init_first_iteration(db_session)
     count = 0
     while next_iter is not None:
-        next_iter = await runner(connections=None)              # runs once, stops
+        next_iter = await runner(connections=dummy_connections)              # runs once, stops
         count += 1
     assert count == 1
     await db_session.commit()

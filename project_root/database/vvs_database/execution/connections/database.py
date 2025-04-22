@@ -161,7 +161,7 @@ class DatabaseService:
                                        })
 
         if new_items:
-            checkin_result = await item_checkin(self.db, new_items, plugin.id)
+            checkin_result = await item_checkin(self.db, new_items, plugin.id, batch_size=100)
             item_to_id = {i.item : i.id for i in checkin_result['items']}
             for response in results:
                 if response.valid and response.result:
@@ -179,7 +179,7 @@ class DatabaseService:
                     record = NewResult(**record)
                     new_results.append(record)
 
-                _ = await result_checkin(self.db, new_results, embedding_plugin_id)
+                _ = await result_checkin(self.db, new_results, embedding_plugin_id, batch_size=100)
 
         return checkin_result
     
@@ -213,7 +213,7 @@ class DatabaseService:
                                                   components=components))
                     
         if new_assemblies:
-            checkin_result = await assembly_checkin(self.db, new_assemblies, plugin.id)
+            checkin_result = await assembly_checkin(self.db, new_assemblies, plugin.id, batch_size=100)
             item_to_id = {i.item : i.id for i in checkin_result['items']}
             item_id_to_assembly_id = {i.product_id: i.assembly_id for i in checkin_result['assemblies']}
             for response in results:

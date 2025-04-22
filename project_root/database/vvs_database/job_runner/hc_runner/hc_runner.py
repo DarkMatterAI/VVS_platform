@@ -73,6 +73,8 @@ class HCRunner(JobRunner):
 
     async def __call__(self, connections: Connections):
         db = self.ctx.db
+        connections.db_service.job_id = self.job_id
+        connections.redis_service.job_id = self.job_id
 
         iter_job = await self._fetch_latest_iteration(db)
         if iter_job is None:
@@ -83,7 +85,7 @@ class HCRunner(JobRunner):
 
         uniq_items, dup_counts, new_queries = await self._run_iteration(iter_job, connections)
 
-        await self._persist_iteration_results(iter_job, uniq_items, dup_counts)
+        await self._persist_iteration_results(iter_job, uniq_items, dup_counts, connections)
         await self._update_inference_stats(iter_job)
 
         next_iter = await self._maybe_create_next_iteration(iter_job, new_queries)
@@ -117,13 +119,14 @@ class HCRunner(JobRunner):
             self._accumulate(items, unique_items, dup_counter)
         return unique_items, dup_counter, new_queries
 
-    async def _persist_iteration_results(self, iter_job: HCIterationJob, items, dup_counts):
+    async def _persist_iteration_results(self, iter_job: HCIterationJob, items, dup_counts, connections: Connections):
         await ResultPersister(self.ctx.db, self.log_id).persist(
             parent_job_id=self.ctx.parent.id,
             iteration_id=iter_job.id,
             items=items,
             dup_counts=dup_counts,
         )
+        await self.ctx.db.commit()
 
     async def _update_inference_stats(self, iter_job: HCIterationJob):
         db = self.ctx.db
@@ -133,6 +136,7 @@ class HCRunner(JobRunner):
                                            {"inference": await sum_inference_for_hc_input_job(db, self.ctx.job.id)})
         self.ctx.parent = await update_helper(self.ctx.parent, 
                                               {"inference": await sum_inference_for_hc_job(db, self.ctx.parent.id)})
+        await db.commit()
 
     async def _maybe_create_next_iteration(self, iter_job: HCIterationJob, new_queries):
         stop, new_status = should_stop_input(

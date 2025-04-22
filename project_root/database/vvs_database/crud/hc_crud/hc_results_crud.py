@@ -20,7 +20,7 @@ from vvs_database.models import (
     JobPlugin
 )
 from vvs_database.schemas.internal_schemas import InternalItem
-from vvs_database.utils import chunked, with_deadlock_retry
+from vvs_database.utils import chunked, with_deadlock_retry, LOCK_NS, with_lock_and_retry
 
 # ────────────────────────────────────────────────────────────────────────────
 # 1. HCResult bulk‑upsert  (product vs assembly rows use different indexes)
@@ -75,9 +75,10 @@ async def upsert_hc_results(
 
     async def _do_chunks(rows, idx_cols, idx_where):
         for chunk in chunked(rows, batch_size):
-            res = await with_deadlock_retry(
+            res = await with_lock_and_retry(
                 db,
-                lambda: _insert_hc_results_single(db, chunk, idx_cols, idx_where),
+                LOCK_NS["hc_results"],
+                lambda: _insert_hc_results_single(db, chunk, idx_cols, idx_where)
             )
             id_map.update({(r.item_id, r.assembly_id): r.result_id for r in res})
             await db.commit()
@@ -133,7 +134,11 @@ async def upsert_hc_iteration_results(
     ]
 
     for chunk in chunked(payload, batch_size):
-        await with_deadlock_retry(db, lambda: _insert_iteration_single(db, chunk))
+        await with_lock_and_retry(
+            db,
+            LOCK_NS["hc_iter"],
+            lambda: _insert_iteration_single(db, chunk)
+        )
         await db.commit()
 
     await db.flush()

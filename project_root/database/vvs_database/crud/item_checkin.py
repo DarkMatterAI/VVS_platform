@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+import asyncio 
 from typing import List, Dict, Optional 
 
 from vvs_database.models import (
@@ -13,8 +13,8 @@ from vvs_database.models import (
     AssemblyComponent, 
     PluginExecutionFailure
 )
-from vvs_database import schemas 
-from vvs_database.utils import chunked, with_deadlock_retry
+from vvs_database import schemas
+from vvs_database.utils import chunked, with_deadlock_retry, LOCK_NS, with_lock_and_retry
 
 async def _upsert_items_single_batch(
     db: AsyncSession, payload: list[str]
@@ -60,8 +60,10 @@ async def upsert_items(
 
     for batch_strings in batches:
         unique_payload = list({s for s in batch_strings})
-        batch_rows = await with_deadlock_retry(
-            db, lambda: _upsert_items_single_batch(db, unique_payload)
+        batch_rows = await with_lock_and_retry(
+            db,
+            LOCK_NS["items"],
+            lambda: _upsert_items_single_batch(db, unique_payload)
         )
         # map back to original order (duplicates kept)
         row_map = {r.item: r for r in batch_rows}
@@ -98,7 +100,11 @@ async def upsert_item_sources(
 
     out = []
     for chunk in chunked(new_item_sources, batch_size):
-        rows = await with_deadlock_retry(db, lambda: _upsert_item_sources_single(db, chunk))
+        rows = await with_lock_and_retry(
+            db,
+            LOCK_NS["item_sources"],
+            lambda: _upsert_item_sources_single(db, chunk)
+        )
         out.extend(rows)
         await db.commit()
     return out
@@ -204,8 +210,11 @@ async def result_checkin(
         ]
 
         # 2) run the SQL with dead‑lock retry
-        rows = await with_deadlock_retry(
-            db, lambda: _upsert_item_results_single(db, values, plugin_id)
+        lock_id = LOCK_NS["item_results"] * 1_000_000 + plugin_id
+        rows = await with_lock_and_retry(
+            db,
+            lock_id,
+            lambda: _upsert_item_results_single(db, values, plugin_id)
         )
         row_map = {r.item_id: r for r in rows}
 
@@ -318,7 +327,11 @@ async def assembly_checkin(
         asm_payload[k] for k in asm_payload.keys() if k not in asm_id_map
     ]
     for chunk in chunked(missing_rows, batch_size):
-        rows = await with_deadlock_retry(db, lambda: _insert_assemblies_single(db, chunk))
+        rows = await with_lock_and_retry(
+            db,
+            LOCK_NS["assemblies"],
+            lambda: _insert_assemblies_single(db, chunk)
+        )
         asm_id_map.update({k: i for i, k in rows})
         await db.commit()
 
@@ -336,7 +349,11 @@ async def assembly_checkin(
                 }
             )
     for chunk in chunked(comp_rows, batch_size):
-        await with_deadlock_retry(db, lambda: _insert_components_single(db, chunk))
+        await with_lock_and_retry(
+            db,
+            LOCK_NS["components"],
+            lambda: _insert_components_single(db, chunk)
+        )
         await db.commit()
 
     # ----------------------------------------------------------------------

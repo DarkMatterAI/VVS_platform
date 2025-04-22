@@ -2,8 +2,9 @@ from sqlalchemy.orm import class_mapper
 import httpx 
 import asyncio, random
 from typing import Iterable, AsyncIterator, Callable, Any
-from asyncpg.exceptions import DeadlockDetectedError
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text 
 
 from vvs_database import schemas, models, logging
 
@@ -187,23 +188,93 @@ def chunked(seq: Iterable[Any], size: int) -> list[list[Any]]:
     seq = list(seq)
     return [seq[i:i + size] for i in range(0, len(seq), size)]
 
+def is_deadlock_error(exception):
+    """
+    Checks if the given exception is a deadlock error.
+
+    Args:
+        exception: The exception to check.
+
+    Returns:
+        True if the exception is a deadlock error, False otherwise.
+    """
+    # Check for specific error codes or messages for different databases
+    if "Deadlock" in str(exception) or "1205" in str(exception):  # MySQL
+        return True
+    elif "deadlock detected" in str(exception):  # PostgreSQL
+        return True
+    return False
+
 async def with_deadlock_retry(
-    db,
+    db: AsyncSession,
     coro_factory: Callable[[], "Awaitable[Any]"],
+    *,
     max_tries: int = 5,
-    base_sleep: float = 0.05,
+    base_sleep: float = 0.1,
 ) -> Any:
     """
-    Run *coro_factory()*; if the DB raises a dead-lock, roll back,
-    back-off exponentially and retry (≤ max_tries).
+    Execute *coro_factory()* inside a save-point.
+
+    If a dead-lock occurs:
+      • rollback only to the save-point (objects outside stay alive)
+      • back-off exponentially and retry (≤ *max_tries*).
+
+    Any non-dead-lock DBAPIError is re-raised immediately.
     """
     for attempt in range(max_tries):
         try:
-            return await coro_factory()
+            async with db.begin_nested():           # SAVEPOINT …
+                return await coro_factory()         # … run code
         except DBAPIError as exc:
-            if not isinstance(exc.orig, DeadlockDetectedError):
-                raise
-            await db.rollback()
-            await asyncio.sleep((2 ** attempt) * base_sleep * (1 + random.random()))
+            logging.warning(f"Deadlock error on attempt {attempt} - retrying")
+            if not is_deadlock_error(exc):
+                logging.warning(f"Raising Anyway - {exc} - {str(exc)}")
+                raise                                # not a dead-lock → bubble up
+
+            # don't sleep for final error 
+            if attempt+1 < max_tries:
+                wait = (2 ** attempt) * base_sleep * (1 + random.random())
+                logging.warning(
+                    f"Dead-lock detected (attempt {attempt+1}/{max_tries}) - "
+                    f"sleeping {wait:.2f}s then retrying"
+                )
+                await asyncio.sleep(wait)
+
     raise RuntimeError("too many dead-lock retries")
+
+# A small deterministic namespace for locks ― just pick distinct integers
+LOCK_NS = {
+    "items"         : 10_001,
+    "item_sources"  : 10_002,
+    "item_results"  : 10_003,   # + plugin_id will be added at run‑time
+    "assemblies"    : 10_004,
+    "components"    : 10_005,
+    "hc_results"    : 10_006,
+    "hc_iter"       : 10_007,
+}
+
+async def with_lock_and_retry(
+    db: AsyncSession,
+    lock_id: int,
+    coro_factory: Callable[[], "Awaitable[Any]"],
+    *,
+    max_tries: int = 5,
+    base_sleep: float = 0.1,
+):
+    """
+    Acquire `pg_advisory_xact_lock(lock_id)` **inside** each retry
+    transaction, then run `coro_factory()`.  Falls back to the same
+    back-off/rollback logic as `with_deadlock_retry`.
+    """
+    async def _locked_coro():
+        # advisory lock that lives only for this transaction
+        await db.execute(text("SELECT pg_advisory_xact_lock(:id)").params(id=lock_id))
+        return await coro_factory()
+
+    return await with_deadlock_retry(
+        db,
+        _locked_coro,
+        max_tries=max_tries,
+        base_sleep=base_sleep,
+    )
 

@@ -38,7 +38,7 @@ class RedisService:
     
     async def get_results(self, keys: List[str], delete: bool=False) -> Dict[str, Any]:
         """Get multiple results from Redis cache"""
-        logging.info(f"{self.log_id}: Checking redis with {len(keys)} keys")
+        # logging.info(f"{self.log_id}: Checking redis with {len(keys)} keys")
         if not keys:
             return {}
         
@@ -67,7 +67,7 @@ class RedisService:
         if not results:
             return
         
-        logging.info(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
+        # logging.info(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
             
         self.init_redis_connection()
         pipeline = self.redis.pipeline()
@@ -99,7 +99,7 @@ class RedisService:
         max_attempts: int = 10,
         initial_backoff: float = 0.1,
         max_backoff: float = 5.0,
-        backoff_factor: float = 2.0
+        backoff_factor: float = 2.0,
     ) -> bool:
         """
         Try to acquire a slot in the semaphore with retry logic.

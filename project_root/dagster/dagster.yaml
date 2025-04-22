@@ -14,7 +14,7 @@ run_coordinator:
 
 concurrency:
   runs:
-    max_concurrent_runs: 25
+    max_concurrent_runs: 32
 
 run_launcher:
   module: dagster_docker

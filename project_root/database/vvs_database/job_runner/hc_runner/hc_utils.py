@@ -30,6 +30,7 @@ from vvs_database.schemas.hc_schemas import (
     HCSearchIteration,
 )
 from vvs_database.schemas.internal_schemas import ExecutePlugin
+from vvs_database import logging
 
 ################################################################################
 # 1.  Pure helpers & utilities – no side‑effects                                #
@@ -152,9 +153,12 @@ class IterationExecutor:
             search_iter.set_query()
         items = await self.data_op(search_iter.query)
         if not items:
+            logging.info(f"Data op failed to produce results")
             return [], None
+        
         for f in self.filter_ops:
             items = await f(items)
+
         items = await self.score_op(items)
         search_iter.results = items
         valid = search_iter.get_results(deduplicate=True, only_valid=True)
@@ -174,7 +178,10 @@ class ResultPersister:
         self.db, self.log_id = db, log_id
 
     async def persist(self, parent_job_id: int, iteration_id: int, items, dup_counts):
-        result_id_map = await upsert_hc_results(self.db, job_id=parent_job_id, items=list(items.values()))
+        result_id_map = await upsert_hc_results(self.db, 
+                                                job_id=parent_job_id, 
+                                                items=list(items.values()), 
+                                                batch_size=100)
         counts_by_result_id = {
             rid: dup_counts[f"{item.item_data.item_id}_{getattr(item.assembly_data, 'assembly_id', None)}"]
             for (item_id, asm_id), rid in result_id_map.items()

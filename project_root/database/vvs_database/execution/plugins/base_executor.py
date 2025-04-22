@@ -68,7 +68,7 @@ class BasePluginExecutor:
                           requests: List[ExecuteRequestUnion]
                           ) -> List[ExecuteRequestUnion]:
         """Validate request schema"""
-        logging.info(f"{self.log_id}: Validating {len(requests)} requests")
+        # logging.info(f"{self.log_id}: Validating {len(requests)} requests")
         processed_requests = []
         for request in requests:
             request = self.request_model.model_validate(request)
@@ -80,7 +80,7 @@ class BasePluginExecutor:
                     requests: List[ExecuteRequestUnion]
                     ) -> Tuple[Dict[str, ExecuteRequestUnion], Dict[str, List[int]]]:
         """Deduplicate requests based on their keys"""
-        logging.info(f"{self.log_id}: Deduplicating {len(requests)} requests")
+        # logging.info(f"{self.log_id}: Deduplicating {len(requests)} requests")
         keys = [r.generate_key(plugin_id=self.plugin.id) for r in requests]
         key_to_request = {}
         key_to_index = {}  # Maps keys to their original indices
@@ -90,7 +90,7 @@ class BasePluginExecutor:
                 key_to_request[key] = request
             key_to_index.setdefault(key, []).append(i)
 
-        logging.info(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
+        # logging.info(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
         
         return key_to_request, key_to_index
     

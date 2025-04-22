@@ -142,7 +142,9 @@ def reaction_assembly(plugin_record, message_data):
     if not reactions.valid:
         return {}, False, 'All reactions failed to parse' 
     
-    products = reactions.react(parent_mols)
+    products1 = reactions.react(parent_mols)
+    products2 = reactions.react(parent_mols[::-1])
+    products = list(set(products1+products2))
     inchi_keys = [to_inchi_key(i) for i in products]
     
     result = {'valid' : bool(products), 
