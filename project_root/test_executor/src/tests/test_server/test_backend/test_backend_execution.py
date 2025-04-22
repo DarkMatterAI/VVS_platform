@@ -21,6 +21,7 @@ async def test_backend_api_execute(db_session, backend_client, plugin_type, batc
                                                         batch_size)
     response = backend_execute_plugin(backend_client, request_data, plugin['id'])
     validate_api_response(plugin, response, 200)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_backend_invalid_plugin(db_session, backend_client):
@@ -31,6 +32,7 @@ async def test_backend_invalid_plugin(db_session, backend_client):
                                                         1)
     response = backend_execute_plugin(backend_client, request_data, '1234567890')
     validate_api_response(plugin, response, 404)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding', 'assembly', 'mapper', 'data_source'])
@@ -44,6 +46,7 @@ async def test_backend_api_execute_cache(db_session, backend_client, redis_conne
                                       plugin['id'], params={'cache' : True})
     validate_api_response(plugin, response, 200)
     validate_execution_cache(redis_connection, request_data, plugin)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding', 'assembly', 'mapper', 'data_source'])
@@ -56,6 +59,7 @@ async def test_backend_api_execute_semaphore(db_session, backend_client, redis_c
     response = backend_execute_plugin(backend_client, request_data, 
                                       plugin['id'], params={'use_semaphore' : True})
     validate_api_response(plugin, response, 200)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("plugin_type", ['filter', 'score', 'embedding'])
@@ -70,6 +74,7 @@ async def test_backend_api_execute_item_checkin(db_session, backend_client, plug
                                            plugin['id'], params={'db_persist' : db_persist})
     validate_api_response(plugin, response_data, 200)
     await validate_item_checkin(db_session, request_data, response_data.json(), plugin, db_persist)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("db_persist", [True, False])
@@ -83,6 +88,7 @@ async def test_backend_api_execute_data_source_checkin(db_session, backend_clien
                                            plugin['id'], params={'db_persist' : db_persist})
     validate_api_response(plugin, response_data, 200)
     await validate_data_source_checkin(db_session, response_data.json(), plugin, db_persist)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_backend_api_execute_assembly_checkin(db_session, backend_client):
@@ -94,6 +100,7 @@ async def test_backend_api_execute_assembly_checkin(db_session, backend_client):
     response_data = backend_execute_plugin(backend_client, request_data, plugin['id'])
     validate_api_response(plugin, response_data, 200)
     await validate_assembly_checkin(db_session, request_data, response_data.json(), plugin)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_backend_api_execution_error(db_session, backend_client):

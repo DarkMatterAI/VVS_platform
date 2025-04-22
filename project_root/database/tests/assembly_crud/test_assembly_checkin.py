@@ -141,9 +141,12 @@ async def test_assembly_checkin_deduplication(db_session,
     assembly = await crud.get_assembly_by_id(db_session, assembly1_id)
     assert assembly is not None
     assert len(assembly.components) == 2
+    await db_session.commit()
 
 @pytest.mark.asyncio
-async def test_assembly_checkin_same_components_different_order(assembly_checkin, create_item, 
+async def test_assembly_checkin_same_components_different_order(db_session,
+                                                                assembly_checkin, 
+                                                                create_item, 
                                                                 create_test_assembly_plugin):
     # Create components
     component1 = await create_item()
@@ -187,6 +190,7 @@ async def test_assembly_checkin_same_components_different_order(assembly_checkin
     assembly2_id = result2["assemblies"][0].assembly_id
     
     assert assembly1_id != assembly2_id
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_checkin_existing_item(assembly_checkin, create_item, create_test_assembly_plugin):

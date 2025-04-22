@@ -30,6 +30,7 @@ async def test_item_source_get(db_session, create_item_plugin_source):
     item_source_get = await crud.get_item_source(db_session, item.id, plugin.id)
     assert item_source_get is not None 
     assert item_source_get.external_id==external_id
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_get_item_sources(db_session,
@@ -52,6 +53,7 @@ async def test_get_item_sources(db_session,
         assert source.plugin_id == plugin.id
         assert source.item_id in item_ids 
         assert source.external_id == item_ids[source.item_id]
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_item_source_delete(db_session, 
@@ -62,6 +64,7 @@ async def test_item_source_delete(db_session,
 
     item_source_get = await crud.get_item_source(db_session, item.id, plugin.id)
     assert item_source_get is None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_cleanup_items(db_session,
@@ -81,6 +84,7 @@ async def test_cleanup_items(db_session,
 
     item2_get = await crud.get_item(db_session, item2.id)
     assert item2_get is None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_item_delete_source_propagation(db_session, 
@@ -97,6 +101,7 @@ async def test_item_delete_source_propagation(db_session,
     # check plugin still exists
     response = await crud.get_plugin(db_session, plugin.id)
     assert response is not None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_plugin_delete_source_propagation(db_session, 
@@ -126,4 +131,5 @@ async def test_plugin_delete_source_propagation(db_session,
     # check item deleted
     item_record = await crud.get_item(db_session, item.id)
     assert item_record is None 
+    await db_session.commit()
 

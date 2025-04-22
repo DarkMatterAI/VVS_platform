@@ -51,6 +51,7 @@ async def test_item_result_get(db_session,
     assert item_result_get is not None
     assert item_result_get.valid is True
     assert item_result_get.score == item_result.score
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_get_item_results(db_session,
@@ -71,6 +72,7 @@ async def test_get_item_results(db_session,
 
     item_results_get = await crud.get_item_results(db_session, [i.id for i in items], plugin.id)
     assert len(item_results_get) == len(items)
+    await db_session.commit()
 
 
 @pytest.mark.asyncio
@@ -84,6 +86,7 @@ async def test_item_result_delete(db_session,
 
     item_result_get = await crud.get_item_result(db_session, item.id, plugin.id)
     assert item_result_get is None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_item_delete_result_propagation(db_session, 
@@ -141,3 +144,4 @@ async def test_plugin_delete_result_propagation(db_session,
     # check item deleted
     item_record = await crud.get_item(db_session, item.id)
     assert item_record is None
+    await db_session.commit()

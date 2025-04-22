@@ -73,8 +73,7 @@ async def get_job(db: AsyncSession,
     if load_plugins:
         query = query.options(selectinload(Job.plugins))
     
-    async with db.begin():
-        result = await db.execute(query)
+    result = await db.execute(query)
     
     result = result.scalar_one_or_none()
 
@@ -91,8 +90,6 @@ async def get_job(db: AsyncSession,
                 await db.refresh(plugin)
                 if isinstance(plugin, (DataSourcePlugin, FilterPlugin, ScorePlugin, MapperPlugin)):
                     await db.refresh(plugin, ["embeddings"])
-
-        await db.commit()
 
     return result
 
@@ -243,23 +240,21 @@ async def get_job_plugin(db: AsyncSession,
                          plugin_id: int
                         ) -> Optional[JobPlugin]:
     """Get a specific job-plugin association."""
-    async with db.begin():
-        result = await db.execute(
-            select(JobPlugin).filter(
-                JobPlugin.job_id == job_id,
-                JobPlugin.plugin_id == plugin_id
-            )
+    result = await db.execute(
+        select(JobPlugin).filter(
+            JobPlugin.job_id == job_id,
+            JobPlugin.plugin_id == plugin_id
         )
+    )
     return result.scalar_one_or_none()
 
 async def get_job_plugins(db: AsyncSession,
                           job_id: int
                          ) -> List[JobPlugin]:
     """Get all plugin associations for a job."""
-    async with db.begin():
-        result = await db.execute(
-            select(JobPlugin).filter(JobPlugin.job_id == job_id)
-        )
+    result = await db.execute(
+        select(JobPlugin).filter(JobPlugin.job_id == job_id)
+    )
     return result.scalars().all()
 
 async def delete_job_plugin(db: AsyncSession,

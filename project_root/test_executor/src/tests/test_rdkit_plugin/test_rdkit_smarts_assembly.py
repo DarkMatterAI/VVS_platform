@@ -20,7 +20,7 @@ async def test_rdkit_smarts_assembly_consumer(db_session, rabbitmq_connection, r
     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
     response = [i['response_data'] for i in response]
     response = validate_response(plugin, response)
-
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_rdkit_assembly_backend(db_session, backend_client, rdkit_test_assembly):
@@ -29,5 +29,6 @@ async def test_rdkit_assembly_backend(db_session, backend_client, rdkit_test_ass
     response = backend_execute_plugin(backend_client, request_data, plugin['id'])
     validate_api_response(plugin, response, 200)
     await validate_assembly_checkin(db_session, request_data, response.json(), plugin)
+    await db_session.commit()
 
 

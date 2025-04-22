@@ -75,6 +75,7 @@ async def test_upsert_hc_results_same_batch_dedup(db_session, create_item):
         valid=True,
     )
     id_map = await upsert_hc_results(db_session, parent.id, [mock, mock])
+    await db_session.commit()
     # exactly one row written
     rows = (await db_session.execute(select(HCResult))).scalars().all()
     assert len(rows) == 1

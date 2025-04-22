@@ -30,6 +30,7 @@ async def test_assembly_create(db_session, create_item, create_test_assembly_plu
     sorted_components = sorted(assembly.components, key=lambda x: x.assembly_index)
     assert sorted_components[0].component_id == component1.id
     assert sorted_components[1].component_id == component2.id
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_get_by_id(db_session, 
@@ -62,6 +63,7 @@ async def test_assembly_get_by_id(db_session,
     assert retrieved_assembly.plugin_id == plugin.id
     assert retrieved_assembly.product_id == product.id
     assert len(retrieved_assembly.components) == 2
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_get_by_product_plugin(db_session, 
@@ -93,6 +95,7 @@ async def test_assembly_get_by_product_plugin(db_session,
     assert retrieved_assembly.assembly_id == assembly.assembly_id
     assert retrieved_assembly.plugin_id == plugin.id
     assert retrieved_assembly.product_id == product.id
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_get_by_component(db_session, 
@@ -126,6 +129,7 @@ async def test_assembly_get_by_component(db_session,
     
     assert len(assemblies2) == 1
     assert assemblies2[0].assembly_id == assembly.assembly_id
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_get_by_component_key(db_session, 
@@ -159,6 +163,7 @@ async def test_assembly_get_by_component_key(db_session,
     assert len(assemblies) == 2
     for assembly in assemblies:
         assert assembly.assembly_id in assembly_ids
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_get_by_component_keys(db_session, 
@@ -188,6 +193,7 @@ async def test_assembly_get_by_component_keys(db_session,
     assert len(assembly_records) == len(assemblies)
     for record in assembly_records:
         assert record.assembly_id in assembly_ids 
+    await db_session.commit()
 
 
 @pytest.mark.asyncio
@@ -228,6 +234,7 @@ async def test_assembly_continuous_indices_validation(db_session,
     assembly = await crud.create_assembly(db_session, plugin.id, 
                                           product.id, component_data)
     assert len(assembly.components) == 3
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_delete(db_session, 
@@ -257,6 +264,7 @@ async def test_assembly_delete(db_session,
     # Verify assembly is deleted
     deleted_assembly = await crud.get_assembly_by_id(db_session, assembly.assembly_id)
     assert deleted_assembly is None
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_assembly_deduplication(db_session, 
@@ -285,6 +293,7 @@ async def test_assembly_deduplication(db_session,
     # Verify both references are the same assembly
     assert assembly1.assembly_id == assembly2.assembly_id
     assert assembly1.assembly_key == assembly2.assembly_key
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_product_delete_propagation(db_session, 
@@ -313,4 +322,5 @@ async def test_product_delete_propagation(db_session,
     # Verify assembly is deleted due to cascade
     deleted_assembly = await crud.get_assembly_by_id(db_session, assembly.assembly_id)
     assert deleted_assembly is None
+    await db_session.commit()
 

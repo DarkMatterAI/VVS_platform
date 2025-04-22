@@ -18,6 +18,7 @@ async def test_job_get(db_session, create_job):
 
     job_record = await crud.get_job(db_session, job.id)
     assert job_record is not None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_job_delete(db_session, create_job):
@@ -27,6 +28,7 @@ async def test_job_delete(db_session, create_job):
 
     job_record = await crud.get_job(db_session, job.id)
     assert job_record is None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_job_update(db_session, create_job):
@@ -38,6 +40,7 @@ async def test_job_update(db_session, create_job):
 
     job_record = await crud.get_job(db_session, job.id)
     assert job_record.job_json == job_json 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_job_complete_timestamp(db_session, create_job):
@@ -46,6 +49,7 @@ async def test_job_complete_timestamp(db_session, create_job):
 
     job = await crud.update_job(db_session, job.id, status=schemas.JobStatus.COMPLETE)
     assert job.completed_at is not None  
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_qdrant_fail_create(db_session, create_job):

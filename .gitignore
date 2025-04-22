@@ -17,3 +17,5 @@ design_doc.md
 dagster_old/
 
 .vscode/*
+
+out.txt

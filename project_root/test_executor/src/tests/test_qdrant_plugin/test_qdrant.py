@@ -67,6 +67,7 @@ async def test_qdrant_execute(db_session, backend_client, qdrant_client, test_da
     response = backend_execute_plugin(backend_client, request_data, data_record['id'])
     validate_api_response(data_record, response, 200)
     await validate_data_source_checkin(db_session, response.json(), data_record, False)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_qdrant_execute_two_embedding(db_session, 
@@ -80,6 +81,7 @@ async def test_qdrant_execute_two_embedding(db_session,
     response = backend_execute_plugin(backend_client, request_data, data_record['id'])
     validate_api_response(data_record, response, 200)
     await validate_data_source_checkin(db_session, response.json(), data_record, False)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_qdrant_execute_wrong_embedding(db_session, 
@@ -98,4 +100,5 @@ async def test_qdrant_execute_wrong_embedding(db_session,
     validate_api_response(data_record2, response, 200)
     for r in response.json():
         assert r['valid'] == False, r
+    await db_session.commit()
 

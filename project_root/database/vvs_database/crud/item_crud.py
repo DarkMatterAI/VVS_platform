@@ -13,14 +13,12 @@ async def create_item(db: AsyncSession, item: str) -> Item:
 
 async def get_item(db: AsyncSession, item_id: int) -> Optional[Item]:
     """Get an item by ID."""
-    async with db.begin():
-        result = await db.execute(select(Item).filter(Item.id == item_id))
+    result = await db.execute(select(Item).filter(Item.id == item_id))
     return result.scalar_one_or_none()
 
 async def get_items(db: AsyncSession, item_ids: List[int]) -> List[Item]:
     """Get items by list of IDs"""
-    async with db.begin():
-        results = await db.execute(select(Item).filter(Item.id.in_(item_ids)))
+    results = await db.execute(select(Item).filter(Item.id.in_(item_ids)))
     results = results.scalars().all()
     return results 
 
@@ -53,14 +51,13 @@ async def get_item_source(
     plugin_id: int
 ) -> Optional[ItemSource]:
     """Get an item source by item ID and plugin ID."""
-    async with db.begin():
-        result = await db.execute(
-            select(ItemSource)
-            .filter(
-                ItemSource.item_id == item_id,
-                ItemSource.plugin_id == plugin_id
-            )
+    result = await db.execute(
+        select(ItemSource)
+        .filter(
+            ItemSource.item_id == item_id,
+            ItemSource.plugin_id == plugin_id
         )
+    )
     return result.scalar_one_or_none()
 
 async def get_item_sources(
@@ -69,14 +66,14 @@ async def get_item_sources(
     plugin_id: int
 ) -> List[ItemSource]:
     """Get item sources by item IDs and plugin id"""
-    async with db.begin():
-        result = await db.execute(
-            select(ItemSource)
-            .where(
-                ItemSource.item_id.in_(item_ids),
-                ItemSource.plugin_id == plugin_id
-            )
+    # async with db.begin():
+    result = await db.execute(
+        select(ItemSource)
+        .where(
+            ItemSource.item_id.in_(item_ids),
+            ItemSource.plugin_id == plugin_id
         )
+    )
     item_sources = result.scalars().all()
     return item_sources 
 
@@ -112,14 +109,13 @@ async def get_item_result(
     plugin_id: int
 ) -> Optional[ItemResult]:
     """Get an item result by item ID and plugin ID."""
-    async with db.begin():
-        result = await db.execute(
-            select(ItemResult)
-            .filter(
-                ItemResult.item_id == item_id,
-                ItemResult.plugin_id == plugin_id
-            )
+    result = await db.execute(
+        select(ItemResult)
+        .filter(
+            ItemResult.item_id == item_id,
+            ItemResult.plugin_id == plugin_id
         )
+    )
     return result.scalar_one_or_none()
 
 async def get_item_results(
@@ -131,14 +127,13 @@ async def get_item_results(
     if not item_ids:
         return [] 
     
-    async with db.begin():
-        stmt = select(ItemResult).where(
-            and_(
-                ItemResult.item_id.in_(item_ids),
-                ItemResult.plugin_id == plugin_id
-            )
+    stmt = select(ItemResult).where(
+        and_(
+            ItemResult.item_id.in_(item_ids),
+            ItemResult.plugin_id == plugin_id
         )
-        results = await db.execute(stmt)
+    )
+    results = await db.execute(stmt)
     item_results = results.scalars().all()
     return item_results 
 

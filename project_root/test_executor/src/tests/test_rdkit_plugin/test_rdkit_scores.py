@@ -23,6 +23,7 @@ async def test_rdkit_score_consumer(db_session, rabbitmq_connection, redis_conne
     response = [i['response_data'] for i in response]
     validate_response(plugin, response)
     assert response[0]['score']>0
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_rdkit_score_backend(db_session, backend_client, rdkit_test_score):
@@ -32,4 +33,5 @@ async def test_rdkit_score_backend(db_session, backend_client, rdkit_test_score)
                                       plugin['id'], params={'db_persist' : True})
     validate_api_response(plugin, response, 200)
     await validate_item_checkin(db_session, request_data, response.json(), plugin, True)
+    await db_session.commit()
 

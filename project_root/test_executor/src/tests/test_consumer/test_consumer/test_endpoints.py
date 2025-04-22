@@ -17,4 +17,5 @@ async def test_consumer_endpoint(db_session, rabbitmq_connection, redis_connecti
     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
     response = [i['response_data'] for i in response]
     validate_response(plugin, response)
+    await db_session.commit()
 

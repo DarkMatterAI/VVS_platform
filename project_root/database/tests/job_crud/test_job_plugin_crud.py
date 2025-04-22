@@ -30,6 +30,7 @@ async def test_job_plugin_get(db_session, create_job_plugin):
     assert job_plugin_get is not None 
     assert job_plugin_get.job_id == job.id
     assert job_plugin_get.plugin_id == plugin.id 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_get_job_plugins(db_session,
@@ -52,6 +53,7 @@ async def test_get_job_plugins(db_session,
     for jp in job_record.plugins:
         assert jp.plugin_id in plugin_ids
         assert jp.plugin.id in plugin_ids
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_job_plugin_delete(db_session, 
@@ -61,6 +63,7 @@ async def test_job_plugin_delete(db_session,
 
     job_plugin_get = await crud.get_job_plugin(db_session, job.id, plugin.id)
     assert job_plugin_get is None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_job_plugin_delete_job_propagation(db_session, 
@@ -73,6 +76,7 @@ async def test_job_plugin_delete_job_propagation(db_session,
 
     response = await crud.get_plugin(db_session, plugin.id)
     assert response is not None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_job_plugin_delete_plugin_propagation(db_session, 
@@ -85,3 +89,4 @@ async def test_job_plugin_delete_plugin_propagation(db_session,
 
     response = await crud.get_job(db_session, job.id)
     assert response is not None 
+    await db_session.commit()

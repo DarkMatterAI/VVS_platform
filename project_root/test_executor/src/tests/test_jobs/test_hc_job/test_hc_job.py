@@ -250,6 +250,7 @@ async def _run_and_assert(db, parent_job, input_job):
     runner.load_ops(conns)
     await runner.init_job(conns)
     await runner.init_first_iteration(db)
+    await db.commit()
 
     for _ in range(15):          # safety cap: 15 iterations max
         nxt = await runner(conns)
@@ -258,6 +259,7 @@ async def _run_and_assert(db, parent_job, input_job):
     else:  # pragma: no cover
         pytest.fail("Runner did not converge within 15 iterations")
 
+    await db.commit()
     await conns.close()
 
     await db.refresh(parent_job); await db.refresh(input_job)
@@ -273,6 +275,7 @@ async def _run_and_assert(db, parent_job, input_job):
     export_nested = await export_hc_job_hierarchy(db, parent_job.id)
     top = export_nested[0]["iterations"][0]["results"][0]
     assert top["score"] is not None
+    await db.commit()
 
 
 # ----------------------------------------------------------------------------

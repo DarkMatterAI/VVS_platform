@@ -16,6 +16,7 @@ async def test_item_get(db_session, create_item):
     item = await create_item()
     item_record = await crud.get_item(db_session, item.id)
     assert item_record is not None
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_item_delete(db_session, create_item):
@@ -25,6 +26,7 @@ async def test_item_delete(db_session, create_item):
 
     item_record = await crud.get_item(db_session, item.id)
     assert item_record is None 
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_get_items(db_session, create_item):
@@ -38,3 +40,4 @@ async def test_get_items(db_session, create_item):
     assert len(records) == len(items)
     for record in records:
         assert record.id in item_ids 
+    await db_session.commit()

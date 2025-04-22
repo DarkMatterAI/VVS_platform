@@ -22,6 +22,7 @@ async def test_rdkit_filter_consumer(db_session, rabbitmq_connection, redis_conn
     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
     response = [i['response_data'] for i in response]
     validate_response(plugin, response)
+    await db_session.commit()
 
 @pytest.mark.asyncio
 async def test_rdkit_filter_backend(db_session, backend_client, rdkit_test_filter):
@@ -31,4 +32,5 @@ async def test_rdkit_filter_backend(db_session, backend_client, rdkit_test_filte
                                       plugin['id'], params={'db_persist' : True})
     validate_api_response(plugin, response, 200)
     await validate_item_checkin(db_session, request_data, response.json(), plugin, True)
+    await db_session.commit()
 
