@@ -62,6 +62,9 @@ def create_records():
             else:
                 create_data = create_func()
 
+            if plugin_type == 'filter':
+                create_data["batch_size"] = 1 # to test single batch size
+
             plugin = create_plugin(create_data)
             records[plugin_type].append(plugin)
             target_count[plugin_type] -= 1

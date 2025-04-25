@@ -1,6 +1,6 @@
 # services:
 #   backend:
-#     unit_test: True 
+#     unit_test: False 
 #     integration_test: False 
 #   qdrant_plugin:
 #     integration_test: False   

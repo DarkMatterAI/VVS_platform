@@ -2,7 +2,7 @@ plugins:
   qdrant_plugin:
     enabled: True
   tei_plugin:
-    enabled: False
+    enabled: True
   rdkit_plugin:
     enabled: True
   triton_plugin:

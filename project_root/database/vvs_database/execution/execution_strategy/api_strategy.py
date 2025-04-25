@@ -11,6 +11,7 @@ from vvs_database.schemas import (
 from vvs_database.utils import make_post_request
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
 from vvs_database.execution.connections import Connections
+from vvs_database.execution.execution_strategy.formatters import get_formatter
 from vvs_database import logging
 
 async def concurrency_bounded_func(semaphore, func, input, kwargs):
@@ -38,13 +39,21 @@ class APIExecutionStrategy(ExecutionStrategy):
         self.execute_params = execute_params
         self.log_id = 'API Execute'
 
+    # def batch_requests(self, 
+    #                    request_list: List[Tuple[str, ExecuteRequestUnion]],
+    #                    batch_size: int
+    #                    ):
+    #     if batch_size == 1:
+    #         return request_list 
+        
+    #     batches = [request_list[i:i+batch_size] 
+    #                for i in range(0, len(request_list), batch_size)]
+    #     return batches 
+
     def batch_requests(self, 
                        request_list: List[Tuple[str, ExecuteRequestUnion]],
                        batch_size: int
                        ):
-        if batch_size == 1:
-            return request_list 
-        
         batches = [request_list[i:i+batch_size] 
                    for i in range(0, len(request_list), batch_size)]
         return batches 
@@ -77,6 +86,7 @@ class APIExecutionStrategy(ExecutionStrategy):
         initial_backoff  = timeout / max_concurrency  # first guess
         backoff_factor   = self.execute_params.backoff_factor
         log_id           = self.log_id
+        formatter        = get_formatter(plugin)
 
         # ───────── build request‑batches *once* ───────────────────────────
         req_list = [
@@ -87,33 +97,57 @@ class APIExecutionStrategy(ExecutionStrategy):
 
         # ───────── helper: fire N batches concurrently ────────────────────
         async def process_batch(batch):
-            is_single = not isinstance(batch, list)
-            batch = [batch] if is_single else batch
-
+            payload = formatter.build_payload(batch, batch_size)
             try:
-                payload = [b["request"].model_dump() for b in batch]
-                if is_single:
-                    resp = await make_post_request(
-                        payload[0], url, timeout, retries, retry_sleep=1.0,
-                        log_id=log_id, verbose=False
-                    )
-                    resp = [resp]
-                else:
-                    resp = await make_post_request(
-                        payload, url, timeout, retries, retry_sleep=1.0,
-                        log_id=log_id, verbose=False
-                    )
-
+                response = await make_post_request(
+                    payload,
+                    url,
+                    timeout,
+                    retries,
+                    retry_sleep=1.0,
+                    log_id=log_id,
+                    verbose=False
+                )
+                response = formatter.parse_response(response, batch_size)
                 for slot, b in enumerate(batch):
                     b["response"] = {
                         "valid": True,
-                        "response_data": resp[slot],
+                        "response_data": response[slot],
                     }
             except Exception as e:                      # network failure
                 logging.error("%s: POST to %s failed - %s", log_id, url, e)
                 self._add_failure_result(batch, "Post request failure", str(e))
+            return batch 
 
-            return batch[0] if is_single else batch
+
+        # async def process_batch(batch):
+        #     is_single = not isinstance(batch, list)
+        #     batch = [batch] if is_single else batch
+
+        #     try:
+        #         payload = [b["request"].model_dump() for b in batch]
+        #         if is_single:
+        #             resp = await make_post_request(
+        #                 payload[0], url, timeout, retries, retry_sleep=1.0,
+        #                 log_id=log_id, verbose=False
+        #             )
+        #             resp = [resp]
+        #         else:
+        #             resp = await make_post_request(
+        #                 payload, url, timeout, retries, retry_sleep=1.0,
+        #                 log_id=log_id, verbose=False
+        #             )
+
+        #         for slot, b in enumerate(batch):
+        #             b["response"] = {
+        #                 "valid": True,
+        #                 "response_data": resp[slot],
+        #             }
+        #     except Exception as e:                      # network failure
+        #         logging.error("%s: POST to %s failed - %s", log_id, url, e)
+        #         self._add_failure_result(batch, "Post request failure", str(e))
+
+        #     return batch[0] if is_single else batch
 
         # ------------------------------------------------------------------
         # build pending_batches :: list[ dict(batch=..., attempts_left=int) ]
@@ -152,9 +186,10 @@ class APIExecutionStrategy(ExecutionStrategy):
                 for entry in timed_out:
                     self._add_failure_result(entry["batch"], "Semaphore failure",
                                              "Exceeded max attempts")
-                    all_results.extend(
-                        entry["batch"] if isinstance(entry["batch"], list) else [entry["batch"]]
-                    )
+                    all_results.extend(entry["batch"])
+                    # all_results.extend(
+                    #     entry["batch"] if isinstance(entry["batch"], list) else [entry["batch"]]
+                    # )
 
                 # back‑off then continue
                 jitter = 0.8 + (random.random() * 0.4)
@@ -177,9 +212,10 @@ class APIExecutionStrategy(ExecutionStrategy):
             for ex in exhausted:
                 self._add_failure_result(ex["batch"], "Semaphore failure",
                                          "Exceeded max attempts")
-                all_results.extend(
-                    ex["batch"] if isinstance(ex["batch"], list) else [ex["batch"]]
-                )
+                all_results.extend(ex["batch"])
+                # all_results.extend(
+                #     ex["batch"] if isinstance(ex["batch"], list) else [ex["batch"]]
+                # )
 
             # run the wave we actually got tokens for
             wave = [e["batch"] for e in wave_entries]
@@ -187,7 +223,8 @@ class APIExecutionStrategy(ExecutionStrategy):
                 max_concurrency, process_batch, wave, {}
             )
             for wr in wave_results:
-                all_results.extend(wr if isinstance(wr, list) else [wr])
+                all_results.extend(wr)
+                # all_results.extend(wr if isinstance(wr, list) else [wr])
 
             if self.execute_params.use_semaphore and identifiers:
                 await self.redis_service.release_semaphore(semaphore_name, identifiers)

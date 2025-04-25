@@ -1,11 +1,6 @@
 import os
 
 PLUGIN_CONFIG = {
-    'tei': {
-        'url': f"http://tei_plugin:{os.environ.get('TEI_PORT', '')}/embed",
-        'timeout': 120,
-        'retries': 3
-    },
     'triton' : {
         'base_url': f"http://triton_plugin:{os.environ.get('TRITON_HTTP_PORT', '')}/v2/models",
         'timeout': 120,
