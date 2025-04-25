@@ -78,9 +78,6 @@ async def create_qdrant(db: AsyncSession, plugin: schemas.QdrantDataSourceCreate
 
     endpoint_url = f"http://qdrant:{os.environ.get('QDRANT__SERVICE__HTTP_PORT')}"
     endpoint_url = f"{endpoint_url}/collections/data_source_{create_record.id}/points/query/batch"
-
-    # endpoint_url = f"http://plugin_integration_server:{os.environ.get('PLUGIN_INTEGRATION_SERVER_PORT')}"
-    # endpoint_url = f"{endpoint_url}/data_source_qdrant/data_source_{create_record.id}"
     setattr(create_record, 'endpoint_url', endpoint_url)
 
     await db.commit()

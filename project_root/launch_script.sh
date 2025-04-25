@@ -15,26 +15,6 @@ get_enabled_profiles() {
     done
 }
 
-# check_integration_required() {
-#     # Get enabled services into an array
-#     readarray -t enabled_services < <(yq e '.plugins[] | select(.enabled == True) | path | .[1]' "$CONFIG_FILE")
-    
-#     # Debug output
-#     echo "Enabled services: ${enabled_services[*]}" >&2
-    
-#     count=0
-#     for service in "${enabled_services[@]}"; do
-#         requires_integration=$(yq e ".services.$service.requires_integration" "$META_CONFIG_FILE")
-#         # Debug output
-#         echo "Service $service requires integration: $requires_integration" >&2
-        
-#         if [ "$requires_integration" = "True" ]; then
-#             ((count++))
-#         fi
-#     done
-#     echo $count
-# }
-
 build_docker_compose_command() {
     local profiles=$(get_enabled_profiles)
     local cmd="docker compose"
@@ -42,13 +22,6 @@ build_docker_compose_command() {
     for profile in $profiles; do
         cmd+=" --profile $profile"
     done
-    
-    # # Check if any enabled plugin requires integration
-    # local integration_count=$(check_integration_required)
-    
-    # if [ "$integration_count" -gt 0 ]; then
-    #     cmd+=" --profile plugin_integration_server"
-    # fi
     
     echo "$cmd"
 }

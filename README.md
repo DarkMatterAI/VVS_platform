@@ -34,9 +34,6 @@ todos
         bbknn endpoint 
     refactor
         replace message consumer with direct reply (correlation id)
-        replace plugin integration server
-            special api subclass for tritiom/TEI
-            special executor for qdrant
         "semaphore group" on plugin 
             could also use plugin type (internal flags, etc)
         deduplicate rdkit reactions

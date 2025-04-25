@@ -17,6 +17,3 @@ services:
     volumes:
       - ${QDRANT_STORAGE_DIR}:/qdrant/storage
       - ${QDRANT_SNAPSHOT_DIR}:/qdrant/qdrant_snapshots
-    # depends_on:
-    #   - plugin_integration_server
-

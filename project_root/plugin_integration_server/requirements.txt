@@ -1,4 +1,0 @@
-fastapi[standard]
-pydantic==2.10.6
-httpx
-qdrant-client==1.11.2

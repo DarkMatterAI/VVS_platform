@@ -22,6 +22,3 @@ services:
     ports:
       - ${TRITON_HTTP_PORT}:${TRITON_HTTP_PORT}
       - ${TRITON_METRICS_PORT}:${TRITON_METRICS_PORT}
-    # depends_on:
-    #   - plugin_integration_server
-
