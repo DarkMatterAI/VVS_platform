@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Union
 
-from vvs_database.schemas import PluginInDB, PluginClass
+from vvs_database.schemas import PluginInDB, PluginClass, PluginType
 
 class BaseFormatter(ABC):
     """Translate between VVS request / response objects and a remote REST schema."""
@@ -53,10 +53,10 @@ class TEIFormatter(BaseFormatter):
                       batch: List[Dict],
                       batch_size: int 
                       ) -> Union[Dict, List[Dict]]:
-        tei_data = {"inputs": [i["request"].item_data.item for i in batch]}
-        tei_data.update(self.plugin.config)
-        print(tei_data)
-        return tei_data 
+        payload = {"inputs": [i["request"].item_data.item for i in batch]}
+        payload.update(self.plugin.config)
+        print(payload)
+        return payload 
     
     def parse_response(self, 
                        http_resp: Any,
@@ -65,64 +65,72 @@ class TEIFormatter(BaseFormatter):
         http_resp = [{"embedding": i, "valid": True} for i in http_resp]
         return http_resp 
 
-# # ---------------------------------------------------------------------------
-# # 3. Triton embedding / mapper ----------------------------------------------
-# # ---------------------------------------------------------------------------
-# class TritonFormatter(BaseFormatter):
-#     def __init__(self, model_name: str):
-#         self.model = model_name
+# ---------------------------------------------------------------------------
+# 3. Triton embedding / mapper ----------------------------------------------
+# ---------------------------------------------------------------------------
+class TritonMapperFormatter(BaseFormatter):
+    def build_payload(self, 
+                      batch: List[Dict],
+                      batch_size: int 
+                      ) -> Union[Dict, List[Dict]]:
+        emb = [r["request"].embedding.embedding for r in batch]
+        payload = {
+            "inputs": [
+                {
+                    "name":     "embedding",
+                    "shape":    [len(batch), len(emb[0])],
+                    "datatype": "FP32",
+                    "data":     emb,
+                }
+            ]
+        }
+        return payload 
 
-#     # decide once whether this model is “embedding” or “mapper”
-#     def _is_mapper(self):
-#         return self.model.startswith("mapper")
+    def parse_response(self, 
+                       http_resp: Any,
+                       batch_size: int 
+                       ) -> List[Dict]:
+        response_data = http_resp["outputs"][0]
+        data = response_data["data"]
+        bs, n_out, d_emb = response_data["shape"]
 
-#     def build_payload(self, batch):
-#         if self._is_mapper():
-#             emb = [r.embedding.embedding for r in batch]
-#             return {
-#                 "inputs": [
-#                     {
-#                         "name": "embedding",
-#                         "shape": [len(batch), len(emb[0])],
-#                         "datatype": "FP32",
-#                         "data": emb,
-#                     }
-#                 ]
-#             }
-#         else:  # embedding
-#             return {
-#                 "inputs": [
-#                     {
-#                         "name": "sequence",
-#                         "shape": [len(batch), 1],
-#                         "datatype": "BYTES",
-#                         "data": [r.item_data.item for r in batch],
-#                     }
-#                 ]
-#             }
+        result = []
+        for i in range(bs):
+            r = {"valid": True, "embedding": []}
 
-#     def parse_response(self, http_resp, batch_size):
-#         data = http_resp["outputs"][0]["data"]
-#         shape = http_resp["outputs"][0]["shape"]
-#         if self._is_mapper():           # shape = [bs, N, d]
-#             bs, n_out, d = shape
-#             out = []
-#             for i in range(bs):
-#                 embeddings = [
-#                     data[i * n_out * d + j * d : i * n_out * d + (j + 1) * d]
-#                     for j in range(n_out)
-#                 ]
-#                 out.append(ExecuteResponse(valid=True, embedding=embeddings))
-#             return out
-#         else:                           # embedding model
-#             bs, d = shape               # type: ignore
-#             return [
-#                 ExecuteResponse(
-#                     valid=True,
-#                     embedding=data[i * d : (i + 1) * d],
-#                 )
-#                 for i in range(bs)
-#             ]
+            for j in range(n_out):
+                embedding = data[i * n_out * d_emb + j * d_emb : i * n_out * d_emb + (j + 1) * d_emb]
+                r["embedding"].append(embedding)
+            result.append(r)
+        return result 
+    
+class TritonEmbeddingFormatter(BaseFormatter):
+    def build_payload(self, 
+                      batch: List[Dict],
+                      batch_size: int 
+                      ) -> Union[Dict, List[Dict]]:
+        payload = {
+            "inputs" : [
+                {
+                    "name" :     "sequence",
+                    "shape" :    [len(batch), 1],
+                    "datatype" : "BYTES",
+                    "data" :     [i["request"].item_data.item for i in batch]
+                }
+            ]
+        }
+        return payload 
+
+    
+    def parse_response(self, 
+                       http_resp: Any,
+                       batch_size: int 
+                       ) -> List[Dict]:
+        response_data = http_resp["outputs"][0]
+        data = response_data["data"]
+        n_out, d_out = response_data["shape"]
+        result = output = [{"embedding": data[i*d_out:(i+1)*d_out], "valid": True} for i in range(n_out)]
+        return result 
 
 # ---------------------------------------------------------------------------
 # 4. Routing ----------------------------------------------------------------
@@ -132,6 +140,10 @@ def get_formatter(plugin: PluginInDB):
     fmt_cls = GenericFormatter
     if plugin.plugin_class == PluginClass.INTERNAL_TEI:
         fmt_cls = TEIFormatter
+    elif plugin.plugin_class == PluginClass.INTERNAL_TRITON:
+        if plugin.type == PluginType.EMBEDDING:
+            fmt_cls = TritonEmbeddingFormatter
+        elif plugin.type == PluginType.MAPPER:
+            fmt_cls = TritonMapperFormatter
 
     return fmt_cls(plugin)
-

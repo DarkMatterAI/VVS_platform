@@ -1,13 +1,18 @@
-import os 
+import os, json 
 
 from app import crud 
 from app import schemas 
 
 from vvs_database import logging 
 
-EMBEDDING_SIZES = [768, 512, 256, 128, 64, 32]
-MAPPER_SIZES = [64]
-INTEGRATION_URL = f"http://plugin_integration_server:{os.environ.get('PLUGIN_INTEGRATION_SERVER_PORT')}"
+def load_env_size_list(varname):
+    raw = os.getenv(varname, "[]")
+    sizes = [int(x) for x in json.loads(raw)]
+    return sizes 
+
+EMBEDDING_SIZES = load_env_size_list("TRITON_EMBEDDING_SIZES")
+MAPPER_SIZES = load_env_size_list("TRITON_MAPPER_SIZES")
+TRITON_BASE_URL = f"http://triton_plugin:{os.environ.get('TRITON_HTTP_PORT', '')}/v2/models"
 
 TRITON_EMBEDDINGS = [
     {
@@ -19,8 +24,8 @@ TRITON_EMBEDDINGS = [
         "timeout": 600,
         "max_concurrency": os.environ.get('TRITON_REQUEST_CONCURRENCY', 24),
         "batch_size": int(os.environ.get('TRITON_EMBED_BATCH_SIZE', 1024))//2,
-        "max_retries": 2,
-        "endpoint_url" : f"{INTEGRATION_URL}/triton_embed/EMBED_{size}",
+        "max_retries": 3,
+        "endpoint_url": f"{TRITON_BASE_URL}/EMBED_{size}/infer",
         "vector_length": size,
         "distance_metric": 'Cosine',
         "config": {}
@@ -38,15 +43,14 @@ TRITON_MAPPERS = [
         "timeout": 600,
         "max_concurrency": os.environ.get('TRITON_REQUEST_CONCURRENCY', 24),
         "batch_size": int(os.environ.get('TRITON_MAPPER_BATCH_SIZE', 1024))//2,
-        "max_retries": 2,
+        "max_retries": 3,
         "input_embedding_id": None,
         "output_order": [],
-        "endpoint_url" : f"{INTEGRATION_URL}/triton_map/ENAMINE_MAPPER_{size}",
+        "endpoint_url": f"{TRITON_BASE_URL}/ENAMINE_MAPPER_{size}/infer",
         "config": {}
     }
     for size in MAPPER_SIZES
 ]
-
 
 async def init_triton_embeddings(db):
     current_records = await crud.get_plugins(db, filter_params={'plugin_class' : 'internal_triton',
