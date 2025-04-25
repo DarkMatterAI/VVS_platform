@@ -28,7 +28,6 @@ async def concurrency_wrapper(concurrency, func, iterable, kwargs):
     results = await asyncio.gather(*tasks)
     return results
 
-
 class APIExecutionStrategy(ExecutionStrategy):
     """Strategy for executing API-based plugins"""
     def __init__(self, 
@@ -38,17 +37,6 @@ class APIExecutionStrategy(ExecutionStrategy):
         self.redis_service = connections.redis_service 
         self.execute_params = execute_params
         self.log_id = 'API Execute'
-
-    # def batch_requests(self, 
-    #                    request_list: List[Tuple[str, ExecuteRequestUnion]],
-    #                    batch_size: int
-    #                    ):
-    #     if batch_size == 1:
-    #         return request_list 
-        
-    #     batches = [request_list[i:i+batch_size] 
-    #                for i in range(0, len(request_list), batch_size)]
-    #     return batches 
 
     def batch_requests(self, 
                        request_list: List[Tuple[str, ExecuteRequestUnion]],
@@ -119,36 +107,6 @@ class APIExecutionStrategy(ExecutionStrategy):
                 self._add_failure_result(batch, "Post request failure", str(e))
             return batch 
 
-
-        # async def process_batch(batch):
-        #     is_single = not isinstance(batch, list)
-        #     batch = [batch] if is_single else batch
-
-        #     try:
-        #         payload = [b["request"].model_dump() for b in batch]
-        #         if is_single:
-        #             resp = await make_post_request(
-        #                 payload[0], url, timeout, retries, retry_sleep=1.0,
-        #                 log_id=log_id, verbose=False
-        #             )
-        #             resp = [resp]
-        #         else:
-        #             resp = await make_post_request(
-        #                 payload, url, timeout, retries, retry_sleep=1.0,
-        #                 log_id=log_id, verbose=False
-        #             )
-
-        #         for slot, b in enumerate(batch):
-        #             b["response"] = {
-        #                 "valid": True,
-        #                 "response_data": resp[slot],
-        #             }
-        #     except Exception as e:                      # network failure
-        #         logging.error("%s: POST to %s failed - %s", log_id, url, e)
-        #         self._add_failure_result(batch, "Post request failure", str(e))
-
-        #     return batch[0] if is_single else batch
-
         # ------------------------------------------------------------------
         # build pending_batches :: list[ dict(batch=..., attempts_left=int) ]
         # ------------------------------------------------------------------
@@ -187,9 +145,6 @@ class APIExecutionStrategy(ExecutionStrategy):
                     self._add_failure_result(entry["batch"], "Semaphore failure",
                                              "Exceeded max attempts")
                     all_results.extend(entry["batch"])
-                    # all_results.extend(
-                    #     entry["batch"] if isinstance(entry["batch"], list) else [entry["batch"]]
-                    # )
 
                 # back‑off then continue
                 jitter = 0.8 + (random.random() * 0.4)
@@ -213,9 +168,6 @@ class APIExecutionStrategy(ExecutionStrategy):
                 self._add_failure_result(ex["batch"], "Semaphore failure",
                                          "Exceeded max attempts")
                 all_results.extend(ex["batch"])
-                # all_results.extend(
-                #     ex["batch"] if isinstance(ex["batch"], list) else [ex["batch"]]
-                # )
 
             # run the wave we actually got tokens for
             wave = [e["batch"] for e in wave_entries]

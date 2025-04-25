@@ -1,6 +1,8 @@
 # vvs_database.execution.execution_strategy.formatters.py
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Union
+import numpy as np 
+import httpx 
 
 from vvs_database.schemas import PluginInDB, PluginClass, PluginType
 
@@ -131,9 +133,63 @@ class TritonEmbeddingFormatter(BaseFormatter):
         n_out, d_out = response_data["shape"]
         result = output = [{"embedding": data[i*d_out:(i+1)*d_out], "valid": True} for i in range(n_out)]
         return result 
+    
+# ---------------------------------------------------------------------------
+# 4. Qdrant -----------------------------------------------------------------
+# ---------------------------------------------------------------------------
+
+class QdrantFormatter(BaseFormatter):
+    def build_payload(self, 
+                      batch: List[Dict],
+                      batch_size: int 
+                      ) -> Union[Dict, List[Dict]]:
+        search_queries = []
+        embedding_names = []
+        
+        requests = [r["request"] for r in batch]
+        for r in requests:
+            embedding_name = f"embedding_{r.embedding.plugin_id}"
+            query = {
+                "query": r.embedding.embedding,
+                "using": embedding_name,
+                "limit": r.k,
+                "with_vector": True,
+                "with_payload": True
+            }
+            search_queries.append(query)
+            embedding_names.append(embedding_name)
+            
+        payload = {"searches": search_queries}
+        self.last_embedding_names = embedding_names
+        return payload
+
+    def parse_response(self, 
+                       http_resp: Any,
+                       batch_size: int 
+                       ) -> List[Dict]:
+        results_batch = []
+        for i, result in enumerate(http_resp["result"]):
+            results = []
+            for point in result["points"]:
+                embedding = point["vector"][self.last_embedding_names[i]]
+                payload = point["payload"]
+                norm = payload.get('norm', None)
+                if norm is not None:
+                    embedding = (np.array(embedding) * norm).tolist()
+                    
+                result_data = {
+                    "external_id": payload.get("external_id", 0),
+                    "item":        payload.get("item", ""),
+                    "embedding":   embedding,
+                    "distance":    point["score"]
+                }
+                results.append(result_data)
+            results_batch.append({"valid": bool(results), "result": results})
+        return results_batch
+
 
 # ---------------------------------------------------------------------------
-# 4. Routing ----------------------------------------------------------------
+# 5. Routing ----------------------------------------------------------------
 # ---------------------------------------------------------------------------
 
 def get_formatter(plugin: PluginInDB):
@@ -145,5 +201,7 @@ def get_formatter(plugin: PluginInDB):
             fmt_cls = TritonEmbeddingFormatter
         elif plugin.type == PluginType.MAPPER:
             fmt_cls = TritonMapperFormatter
+    elif plugin.plugin_class == PluginClass.INTERNAL_QDRANT:
+        fmt_cls = QdrantFormatter
 
     return fmt_cls(plugin)

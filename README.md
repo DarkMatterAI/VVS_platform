@@ -10,6 +10,9 @@ todos
         update plugin endpoint
             allow custom update for HC job
             need plugin type, plugin crud, api schema
+        qdrant
+            check postgres persist actually fixes handing collection issue
+        version pin requirements, install before db lib for editing speed
     qdrant job
         think more about running concurrent jobs. maybe restrict to one?
         could use existing semaphore for qdrant, would need way of releasing on job failure 
