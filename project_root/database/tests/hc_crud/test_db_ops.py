@@ -35,7 +35,6 @@ from vvs_database.crud.hc_crud.hc_results_crud import (
 )
 
 from vvs_database.crud.job_crud import create_job, update_helper
-# from vvs_database.execution.ops import GradientEmbedding           # typing only
 from vvs_database.job_runner.hc_runner.hc_runner import HCRunner     # integration
 from vvs_database.job_runner.hc_runner.hc_utils import should_stop_input, should_finalize_parent
 

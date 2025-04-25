@@ -3,7 +3,7 @@
 #     unit_test: False 
 #     integration_test: False 
 #   qdrant_plugin:
-#     integration_test: True   
+#     integration_test: False   
 #   tei_plugin:
 #     integration_test: False 
 #   rdkit_plugin:
@@ -20,7 +20,7 @@
 #     enabled: False
 #     run_tests: True
 #   test_server:
-#     enabled: False
+#     enabled: True
 #     run_tests: True
 
 services:

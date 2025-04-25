@@ -13,6 +13,7 @@ todos
         qdrant
             check postgres persist actually fixes handing collection issue
         version pin requirements, install before db lib for editing speed
+        check exeuction failures during jobs are being accurately tracked
     qdrant job
         think more about running concurrent jobs. maybe restrict to one?
         could use existing semaphore for qdrant, would need way of releasing on job failure 

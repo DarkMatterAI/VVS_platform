@@ -2,13 +2,13 @@
 services:
   qdrant_plugin:
     profile: qdrant_plugin
-    requires_integration: True
+    # requires_integration: True
   tei_plugin:
     profile: tei_plugin
-    requires_integration: True
+    # requires_integration: True
   rdkit_plugin:
     profile: rdkit_plugin
-    requires_integration: False
+    # requires_integration: False
   triton_plugin:
     profile: triton_plugin
-    requires_integration: True
+    # requires_integration: True
