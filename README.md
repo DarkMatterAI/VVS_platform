@@ -29,6 +29,8 @@ todos
         add "n_results" column in addition to inference
         k expansion on first iteration 
         way of tracking inference vs db/cache lookup for scores 
+            add to iteration results table?
+        export results api 
     backend
         endpoints for creating HC jobs
         bbknn endpoint 
@@ -37,9 +39,33 @@ todos
         "semaphore group" on plugin 
             could also use plugin type (internal flags, etc)
         deduplicate rdkit reactions
+        move qdrant/rdkit crud into db lib and out of backend
+        move tests into single folder
+        move plugins into single folder 
     test gaps
         anything on dagster
         qdrant upload failures 
+
+
+thinking about bbknn job
+    ideally would work for bbknn + lr sweep
+    would re-use HCSearchConfigs and whatnot (subclass to make score/update optional)
+        if score/update provided, compute scores and gradient 
+    do we want to add update params to individual items for HC?
+    do we want to add query group tracking to HC results?
+    line of thinking:
+        for bbknn, want to be able to do lr sweep as well
+            requires doing query, scoring results, computing gradient, doing grad query
+            analysis requires knowing query groups and embeddings
+
+hc thoughts
+    would be nice to have different update params on different inputs
+    would be nice to have embedding/gradient inputs
+        make `HCInputEmbedding` similar to `HCInputItems`
+            job_id, plugin_id (for embedding), assembly_index, embedding (jsonb, optionally with gradient)
+    okay lets think about the param thing though
+        makes the schema busier
+        user could just create another job 
 
 
 

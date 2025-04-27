@@ -36,7 +36,7 @@ from vvs_database.schemas.internal_schemas import GradientEmbedding
 
 
 class HCRunner(JobRunner):
-    """High-level orchestration for HC input jobs."""
+    """High-level orchestration for a single `HCInputJob`."""
 
     ###############
     # Life‑cycle  #

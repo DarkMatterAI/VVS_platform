@@ -1,4 +1,14 @@
 fastapi[standard]
 pydantic==2.10.6
+pydantic-settings
+sqlalchemy[asyncio]
+asyncpg
+psycopg2-binary
+pytest
+pytest-asyncio
 httpx
+redis
+aioredis
+pika
 numpy
+boto3

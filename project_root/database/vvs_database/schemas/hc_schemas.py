@@ -64,9 +64,11 @@ class HCJobParams(HCInferenceParams):
         
 class AssembledUserItem(UserItem):
     assembly_index: int 
-        
-class HCAssembedInputItem(HCInferenceParams):
+
+class HCAssembedInputItem(BaseModel):
     max_iterations: int
+    inference_params: Optional[HCInferenceParams] = None
+    update_params: Optional[HCAssembledUpdateParams]=None
     items: List[AssembledUserItem]
 
     @field_validator("items", mode="after")
@@ -80,17 +82,52 @@ class HCAssembedInputItem(HCInferenceParams):
     
     def convert_internal(self):
         return self
-
-        
+    
 class HCInputItem(HCInferenceParams):
     max_iterations: int 
+    inference_params: Optional[HCInferenceParams] = None
+    update_params: Optional[HCUpdateParams]=None
     item: UserItem 
         
     def convert_internal(self):
-        data = self.model_dump()
-        item = data.pop('item')
-        data['items'] = [AssembledUserItem(**item, assembly_index=0)]
+        data  = self.model_dump()
+        item  = data.pop("item")
+
+        upd   = data.pop("update_params", None)
+        if upd is not None: 
+            upd = HCUpdateParams(**upd).convert_internal()
+            # upd = upd.convert_internal()
+        data["update_params"] = upd
+        data["items"] = [AssembledUserItem(**item, assembly_index=0)]
         return HCAssembedInputItem(**data)
+
+        
+# class HCAssembedInputItem(HCInferenceParams):
+#     max_iterations: int
+#     items: List[AssembledUserItem]
+
+#     @field_validator("items", mode="after")
+#     def _check_assembly_indices(cls, v: List[AssembledUserItem]):
+#         indices = sorted(i.assembly_index for i in v)
+#         if indices != list(range(len(indices))):
+#             raise ValueError(
+#                 f"assembly_index values must be 0..{len(indices)-1} with no gaps; got {indices}"
+#             )
+#         return v
+    
+#     def convert_internal(self):
+#         return self
+
+        
+# class HCInputItem(HCInferenceParams):
+#     max_iterations: int 
+#     item: UserItem 
+        
+#     def convert_internal(self):
+#         data = self.model_dump()
+#         item = data.pop('item')
+#         data['items'] = [AssembledUserItem(**item, assembly_index=0)]
+#         return HCAssembedInputItem(**data)
     
 class HCConfigCreateBase(BaseModel):
     filter_configs: Optional[List[ExecutePluginCreate]]=None
