@@ -362,6 +362,7 @@ async def test_hc_runner_smoke(
         db_service=types.SimpleNamespace(job_id=None),
         redis_service=types.SimpleNamespace(job_id=None)
     )
+
     async def fake_semaphore():
         return None 
     
@@ -376,8 +377,17 @@ async def test_hc_runner_smoke(
     async def fake_init_job(self, connections):
         # skip _embed_inputs; provide one trivial query tuple
         self.initial_queries = [tuple()]        # len==1 satisfies downstream logic
+
+    def fake_update_dict(self):
+        return {
+            "status": JobStatus.COMPLETE,
+            "inference": 1,
+            "job_json": {}
+        }
+
     monkeypatch.setattr(HCRunner, "init_job", fake_init_job)
     monkeypatch.setattr(HCRunner, "load_ops", lambda self, connections: None)
+    monkeypatch.setattr(HCRunner, "_get_iteration_update_dict", fake_update_dict)
 
     # ── 3. Launch runner ───────────────────────────────────────────────────
     runner = HCRunner(job_id=input_job.id)

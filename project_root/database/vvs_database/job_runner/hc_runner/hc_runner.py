@@ -51,7 +51,7 @@ class HCRunner(JobRunner):
         cfg = self.ctx.search_cfg
         self.data_op = OpFactory.build_data_op(cfg, connections, self.log_id)
         self.filter_ops, self.score_op = OpFactory.build_item_ops(cfg, connections, self.log_id)
-        self.score_op.last_executed_count = 0
+        # self.score_op.last_executed_count = 0
 
     async def init_job(self, connections: Connections):
         logging.info(f"{self.log_id}: Embedding inputs & creating initial queries")
@@ -130,8 +130,8 @@ class HCRunner(JobRunner):
 
     async def _update_inference_stats(self, iter_job: HCIterationJob):
         db = self.ctx.db
-        iter_job = await update_helper(iter_job, {"status": JobStatus.COMPLETE, 
-                                                  "inference": self.score_op.last_executed_count})
+        update_dict = self._get_iteration_update_dict()
+        iter_job = await update_helper(iter_job, update_dict)
         self.ctx.job = await update_helper(self.ctx.job, 
                                            {"inference": await sum_inference_for_hc_input_job(db, self.ctx.job.id)})
         self.ctx.parent = await update_helper(self.ctx.parent, 
@@ -203,9 +203,18 @@ class HCRunner(JobRunner):
             extra_args=extra_args,
         )
 
-    def _hc_iter_to_search_iters(self, rec: HCIterationJob):
+    def _hc_iter_to_search_iters(self, rec: HCIterationJob) -> List[HCSearchIteration]:
         qs = [tuple(GradientEmbedding(**e) for e in tup) for tup in rec.query_embedding["query"]]
         return [HCSearchIteration(update_params=self.ctx.update_params, query_embeddings=q) for q in qs]
+    
+    def _get_iteration_update_dict(self):
+        score_log = self.score_op.execution_log
+        inference_count = score_log.execute_stats.num_executed
+        return {
+            "status": JobStatus.COMPLETE,
+            "inference": inference_count,
+            "job_json": self.score_op.execution_log.model_dump()
+        }
 
     @staticmethod
     def _accumulate(items, uniq: dict, dup: dict):

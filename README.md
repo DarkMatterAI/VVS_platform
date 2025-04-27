@@ -45,6 +45,11 @@ todos
     test gaps
         anything on dagster
         qdrant upload failures 
+    hanging design decisions
+        vector database with multiple embeddings
+            does it work for HC/qdrant upload?
+        HC update
+            does it work to return multiple update outputs? ie fan out
 
 
 thinking about bbknn job

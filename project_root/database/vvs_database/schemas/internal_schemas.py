@@ -11,6 +11,18 @@ from vvs_database.schemas.execute_schemas import (
     AssemblyItem
 )
 
+class ExecuteStats(BaseModel):
+    num_inputs: Optional[int]=None
+    num_unique_inputs: Optional[int]=None
+    num_cache_hits: Optional[int]=None
+    num_db_hits: Optional[int]=None
+    num_executed: Optional[int]=None
+
+class ExecutionLog(BaseModel):
+    plugin_id: int 
+    execute_params: ExecuteParams
+    execute_stats: ExecuteStats=ExecuteStats()
+
 class PluginRecord(BaseModel):
     plugin: Optional[PluginInDBUnion]=None 
 

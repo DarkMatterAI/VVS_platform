@@ -9,6 +9,7 @@ from vvs_database.schemas import (
     ExecuteParams,
     PluginInDB
 )
+from vvs_database.schemas.internal_schemas import ExecutionLog
 from vvs_database import logging 
 
 from vvs_database.execution.connections import Connections
@@ -46,10 +47,18 @@ class BasePluginExecutor:
                 self.connections,
                 self.execute_params
             )
-        self.last_executed_count = 0
+        self.execution_log = None
+        self.execution_logs = []
 
     def update_params(self, execute_params: ExecuteParams):
+        # used by subclasses 
         return execute_params 
+
+    def init_execution_log(self):
+        if self.execution_log is not None:
+            self.execution_logs.append(self.execution_log)
+        self.execution_log = ExecutionLog(plugin_id=self.plugin.id,
+                                          execute_params=self.execute_params)
     
     def init_log_id(self, log_id: Optional[str]=None):
         """Initialize the logging ID for this execution"""
@@ -81,6 +90,7 @@ class BasePluginExecutor:
                     ) -> Tuple[Dict[str, ExecuteRequestUnion], Dict[str, List[int]]]:
         """Deduplicate requests based on their keys"""
         # logging.info(f"{self.log_id}: Deduplicating {len(requests)} requests")
+        self.execution_log.execute_stats.num_inputs = len(requests)
         keys = [r.generate_key(plugin_id=self.plugin.id) for r in requests]
         key_to_request = {}
         key_to_index = {}  # Maps keys to their original indices
@@ -91,7 +101,7 @@ class BasePluginExecutor:
             key_to_index.setdefault(key, []).append(i)
 
         # logging.info(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
-        
+        self.execution_log.execute_stats.num_unique_inputs = len(key_to_request.keys())
         return key_to_request, key_to_index
     
     async def get_cache_results(self, keys: List[str]) -> Dict[str, Any]:
@@ -118,6 +128,7 @@ class BasePluginExecutor:
         cached_results = await self.get_cache_results(unique_keys)
         cached_results = {k: self.response_model.model_validate(v) 
                           for k, v in cached_results.items()}
+        self.execution_log.execute_stats.num_cache_hits = len(cached_results.keys())
         
         uncached_keys = [k for k in unique_keys if k not in cached_results]
         uncached_requests = {k: key_to_request[k] for k in uncached_keys}
@@ -126,6 +137,7 @@ class BasePluginExecutor:
 
         # Check database for records
         db_results = await self.query_database(self.plugin, uncached_requests)
+        self.execution_log.execute_stats.num_db_hits = len(db_results.keys())
         
         # Determine remaining requests to execute
         remaining_keys = [k for k in uncached_keys if k not in db_results]
@@ -139,7 +151,7 @@ class BasePluginExecutor:
                              ) -> Dict[str, ExecuteResponseUnion]:
         """Execute plugin request. Optionally cache/persist results"""
         logging.info(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
-        self.last_executed_count = len(remaining_requests.keys())
+        self.execution_log.execute_stats.num_executed = len(remaining_requests.keys())
         executed_results = {}
         if not remaining_requests:
             return executed_results
@@ -212,7 +224,7 @@ class BasePluginExecutor:
     async def execute(self, requests: List[ExecuteRequestUnion], log_id: Optional[str]=None):
         """Main execution flow that orchestrates the execution process"""
         self.init_log_id(log_id)
-        self.last_executed_count = 0
+        self.init_execution_log()
 
         if not requests:
             logging.info(f"{self.log_id}: No requests - returning")

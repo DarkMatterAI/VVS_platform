@@ -103,33 +103,6 @@ def validate_hc_assembly_config(search_config: HCSearchConfigs):
     if n_data_configs != n_parents:
         raise ValidationError(f"Expected {n_parents} data configs to match assembly, found {n_data_configs}")
 
-# async def hc_inputs_checkin(db: AsyncSession, 
-#                             job_inputs: List[HCAssembedInputItem]):
-#     new_items = []
-#     new_item_idxs = []
-#     external_ids = []
-#     output = {}
-#     for input_idx, input_item in enumerate(job_inputs):
-#         output[input_idx] = {
-#             'job_args' : {'inference_limit' : input_item.inference_limit, 
-#                           'time_limit' : input_item.time_limit,
-#                           'max_iterations' : input_item.max_iterations},
-#             'job_inputs' : {}
-#         }
-#         for item in input_item.items:
-#             new_items.append(NewItem(**item.model_dump()))
-#             new_item_idxs.append((input_idx, item.assembly_index))
-#             external_ids.append(item.external_id)
-            
-#     new_items = await item_checkin(db, new_items, None)
-#     new_items = new_items['items']
-#     for new_item_idxs, external_id, new_item in zip(new_item_idxs, external_ids, new_items):
-#         input_idx, assembly_idx = new_item_idxs
-#         output[input_idx]['job_inputs'][assembly_idx] = {'item' : new_item,
-#                                                          'external_id' : external_id}
-    
-#     return output
-
 async def hc_inputs_checkin(db: AsyncSession, 
                             job_inputs: List[HCAssembedInputItem]):
     new_items = []
@@ -197,27 +170,6 @@ async def create_hc_input_item(db: AsyncSession,
         db.add(input_item)
         input_items.append(input_item)
     return input_items 
-    
-# async def create_hc_input_job(db: AsyncSession, 
-#                               item_dict: dict, 
-#                               parent_job: Job, 
-#                               job_json: dict):
-#     input_jobs = []
-#     for idx, input_data in item_dict.items():
-#         job_args = input_data['job_args']
-#         job_args['parent_id'] = parent_job.id
-#         job_inputs = input_data['job_inputs']
-        
-#         job = await create_job(db,
-#                                job_type=JobType.HILL_CLIMB_JOB_INPUT,
-#                                job_json=job_json,
-#                                auto_execute=parent_job.auto_execute,
-#                                extra_args=job_args)
-#         input_jobs.append(job)
-#         input_items = await create_hc_input_item(db, job, input_data)
-#     await db.commit()
-        
-#     return input_jobs 
 
 async def create_hc_input_job(db: AsyncSession, 
                               item_dict: dict, 

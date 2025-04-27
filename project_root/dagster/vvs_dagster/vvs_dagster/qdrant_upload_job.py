@@ -7,7 +7,6 @@ import asyncio
 
 from vvs_database import crud, schemas 
 from vvs_database.job_runner import QdrantUploadRunner
-# from vvs_database.execution.connections import Connections
 
 from vvs_dagster.resources import (
     PostgresResource, 
@@ -20,16 +19,6 @@ from vvs_dagster.utils import get_logger, get_connection
 
 class QdrantUploadConfig(dg.Config):
     job_id: int 
-
-# def get_connection(postgres_resource: PostgresResource,
-#                    rabbitmq_resource: RabbitMQResource,
-#                    redis_resource: RedisResource):
-#     db_service = postgres_resource.get_service()
-#     redis_service = redis_resource.get_service()
-#     rabbitmq_service = rabbitmq_resource.get_service()
-#     return Connections(db_service=db_service,
-#                        redis_service=redis_service,
-#                        rabbitmq_service=rabbitmq_service)
 
 @dg.op(out={"runner": dg.Out(), "user_data": dg.Out(), "job_params": dg.Out()})
 async def load_job_data(context: dg.OpExecutionContext,

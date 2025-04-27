@@ -44,16 +44,6 @@ from vvs_database.schemas.enums import JobType
 
 from tests.hc_crud.conftest import _hc_base_parts, _mk_job_inputs
 
-# def _mk_job_inputs(single=True):
-#     if single:
-#         return [HCInputItem(item={"external_id": "ZINC1", "item": "C1=CC=CC=C1"}, max_iterations=5)]
-#     # assembled – two sub‑items, indices 0 and 1
-#     sub_items = [
-#         {"external_id": "EN1", "item": "NCC", "assembly_index": 0},
-#         {"external_id": "EN2", "item": "CCC", "assembly_index": 1},
-#     ]
-#     return [HCAssembedInputItem(items=sub_items, max_iterations=5)]
-
 async def _assert_parent_and_input_rows(db_session, parent_job, input_jobs):
     assert parent_job.job_type == JobType.HILL_CLIMB_JOB
     assert len(input_jobs) == 1

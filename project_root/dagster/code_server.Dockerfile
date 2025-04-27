@@ -2,6 +2,10 @@ FROM python:3.10-slim
 
 WORKDIR /opt/dagster/app
 
+COPY ./dagster/code_server_requirements.txt ./requirements.txt
+
+RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
+
 COPY ./database /opt/dagster/app/database
 
 RUN pip install -e /opt/dagster/app/database
