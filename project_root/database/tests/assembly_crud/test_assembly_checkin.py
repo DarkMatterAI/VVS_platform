@@ -16,7 +16,7 @@ def validate_assembly(assembly_data, result, plugin):
             assert response_comp[assembly_index].component_id == item_id
 
 @pytest.mark.asyncio
-async def test_assembly_checkin_basic(event_loop, assembly_checkin, create_item, create_test_assembly_plugin):
+async def test_assembly_checkin_basic(assembly_checkin, create_item, create_test_assembly_plugin):
     # Create components that will be part of the assembly
     component1 = await create_item()
     component2 = await create_item()

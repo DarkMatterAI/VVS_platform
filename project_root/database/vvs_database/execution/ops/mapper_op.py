@@ -5,7 +5,7 @@ from vvs_database.schemas.execute_schemas import (
     Embedding,
     MapperRequest
 )
-from vvs_database.schemas.internal_schemas import ExecutePlugin
+from vvs_database.schemas.internal_schemas import ExecutePlugin, ExecutionLog
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.ops.execution_op import ExecutionOp
 
@@ -31,6 +31,7 @@ class MapperOp(ExecutionOp):
         self.embedding_order = {i.index:i.embedding_id 
                                 for i in mapper_config.plugin.output_order}
         self.embedding_dict = {i.plugin.id:i.plugin for i in embedding_configs}
+        self.execution_logs: dict[int, ExecutionLog] = {}
         
     async def __call__(self,
                        requests: List[Embedding]

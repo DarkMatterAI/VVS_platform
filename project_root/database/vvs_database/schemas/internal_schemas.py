@@ -17,11 +17,22 @@ class ExecuteStats(BaseModel):
     num_cache_hits: Optional[int]=None
     num_db_hits: Optional[int]=None
     num_executed: Optional[int]=None
+    def __add__(self, other: "ExecuteStats") -> "ExecuteStats":  # new
+        def _add(a, b):
+            return b if a is None else a + (b or 0)
+        cur = self.model_dump()
+        oth = other.model_dump()
+        for k in cur:
+            cur[k] = _add(cur[k], oth[k])
+        return ExecuteStats(**cur)
 
 class ExecutionLog(BaseModel):
-    plugin_id: int 
+    plugin_id: int
     execute_params: ExecuteParams
-    execute_stats: ExecuteStats=ExecuteStats()
+    execute_stats: ExecuteStats = ExecuteStats()
+
+    def merge_from(self, other: "ExecutionLog"):                # new
+        self.execute_stats = self.execute_stats + other.execute_stats
 
 class PluginRecord(BaseModel):
     plugin: Optional[PluginInDBUnion]=None 

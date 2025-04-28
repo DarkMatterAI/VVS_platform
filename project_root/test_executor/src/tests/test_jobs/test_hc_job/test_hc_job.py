@@ -3,6 +3,7 @@ from itertools import islice
 
 import pytest
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 
 from tests.utils.backend_utils import backend_get_plugins_by_filter
 
@@ -11,7 +12,10 @@ from vvs_database import crud
 from vvs_database.utils import object_as_dict
 from vvs_database.job_runner.hc_runner.hc_runner import HCRunner
 from vvs_database.crud.hc_crud import export_hc_job_hierarchy, create_hc_job, fetch_hc_job_results
-from vvs_database.models import HCResult, HCJob, HCInputJob
+from vvs_database.crud.hc_crud.hc_results_crud import (
+    sum_inference_for_hc_input_job,
+)
+from vvs_database.models import HCResult, HCJob, HCInputJob, HCIterationJob
 from vvs_database.schemas import (
     JobStatus,
     DistanceMetric,
@@ -238,6 +242,72 @@ async def _create_mapper_job(db, backend_client, plugin_cleanup):
     *_ , parent_job, inputs = await create_hc_job(db, create_obj)
     return parent_job, inputs
 
+# ─────────────────────────────────────────────────────────────────────────────
+# helper – verify execution_logs & inference counts
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def check_inference_stats(db, parent_job_id):
+    parent_job = await crud.get_job(db, parent_job_id)
+    
+    # 1) determine *score-plugin* id ----------------------------------------
+    try:
+        score_pid = parent_job.job_json["plugin_config"]["score_config"]["plugin_id"]
+    except (TypeError, KeyError):
+        # fallback: JobPlugin row with type == 'score'
+        score_pid = (
+            await db.execute(
+                select(HCJob.plugins).options(selectinload(HCJob.plugins))
+            )
+        ).scalars().first().plugin_id   # first score plugin
+
+    score_pid_str = str(score_pid)      # keys may be strings after JSON dump
+    
+    # inference counts (from inference field)
+    parent_to_input_inf = 0
+    parent_to_iter_inf = 0
+    
+    # record counts (from execution logs)
+    parent_to_input_rec = 0
+    parent_to_iter_rec = 0
+    
+    await db.refresh(parent_job, ['inputs'])
+    for input_job in parent_job.inputs:
+        await db.refresh(input_job, ['iterations'])
+        
+        # inference/record counts for input job
+        input_to_iter_inf = 0
+        input_to_iter_rec = 0
+        
+        # make sure input job record/inference checks out
+        input_log = input_job.job_json["execution_logs"][score_pid_str]["execute_stats"] 
+        assert input_job.inference == input_log["num_executed"]
+        
+        # update parent job counts 
+        parent_to_input_inf += input_job.inference
+        parent_to_input_rec += input_log["num_executed"]
+        
+        for iteration in input_job.iterations:
+            # make sure iteration job record/inference checks out
+            iteration_log = iteration.job_json["execution_logs"][score_pid_str]["execute_stats"] 
+            assert iteration.inference == iteration_log["num_executed"]
+            
+            # update input job counts
+            input_to_iter_inf += iteration.inference
+            input_to_iter_rec += iteration_log["num_executed"]
+            
+            # update parent job counts
+            parent_to_iter_inf += iteration.inference
+            parent_to_iter_rec += iteration_log["num_executed"]
+            
+        # compare iteration sum to input job
+        assert input_job.inference == input_to_iter_inf
+        assert input_log["num_executed"] == input_to_iter_rec
+        
+    # compare parent to input/iterations
+    assert parent_job.inference == parent_to_input_inf
+    assert parent_job.inference == parent_to_iter_inf
+    assert parent_job.inference == parent_to_input_rec
+    assert parent_job.inference == parent_to_iter_rec
 
 # ----------------------------------------------------------------------------
 # Generic runner‑driver used by both tests
@@ -271,10 +341,15 @@ async def _run_and_assert(db, parent_job, input_job):
 
     export_flat = await fetch_hc_job_results(db, parent_job.id, order_by="score", limit=nres+10)
     assert export_flat and export_flat[0]["score"] is not None
+    print(f"Export flat - {len(export_flat)} results")
 
     export_nested = await export_hc_job_hierarchy(db, parent_job.id)
     top = export_nested[0]["iterations"][0]["results"][0]
     assert top["score"] is not None
+    await db.commit()
+
+    await check_inference_stats(db, parent_job.id)
+    # await _assert_exec_stats(db, parent_job, input_job)
     await db.commit()
 
 

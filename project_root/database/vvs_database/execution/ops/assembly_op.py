@@ -11,7 +11,8 @@ from vvs_database.schemas.internal_schemas import (
     AssemblyItemInternal, 
     ExecutePlugin,
     InternalItem,
-    InternalAssemblyData
+    InternalAssemblyData,
+    ExecutionLog
 )
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.ops.execution_op import ExecutionOp
@@ -57,6 +58,7 @@ class AssemblyOp(ExecutionOp):
         self.assembly_config = assembly_config
         self.connections = connections
         self.log_id = log_id
+        self.execution_logs: dict[int, ExecutionLog] = {}
         
     async def __call__(self, 
                        request_dict: Dict[int, List[Embedding]],

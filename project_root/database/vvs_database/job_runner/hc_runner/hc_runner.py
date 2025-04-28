@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from itertools import product
 from typing import Dict, List, Optional, Tuple
+from copy import deepcopy 
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import attributes
 
 from vvs_database import logging
 from vvs_database.crud.hc_crud.hc_job_crud import latest_hc_iteration
@@ -99,6 +101,12 @@ class HCRunner(JobRunner):
     #   Helper methods   #
     ######################
 
+    def _reset_ops(self):
+        self.data_op.reset_execution_log()
+        self.score_op.reset_execution_log()
+        for op in self.filter_ops:
+            op.reset_execution_log()
+
     async def _fetch_latest_iteration(self, db: AsyncSession) -> Optional[HCIterationJob]:
         latest_iter: HCIterationJob = await latest_hc_iteration(db, self.job_id)
         if latest_iter.status in TERMINAL_STATUSES:
@@ -107,6 +115,7 @@ class HCRunner(JobRunner):
         return await update_helper(latest_iter, {"status": JobStatus.RUNNING})
 
     async def _run_iteration(self, iter_job: HCIterationJob, connections: Connections):
+        self._reset_ops()
         executor = IterationExecutor(self.data_op, self.filter_ops, self.score_op, self.log_id)
         search_iters = self._hc_iter_to_search_iters(iter_job)
         new_queries: List[List[GradientEmbedding]] | List = []
@@ -128,14 +137,44 @@ class HCRunner(JobRunner):
         )
         await self.ctx.db.commit()
 
+    # async def _update_inference_stats(self, iter_job: HCIterationJob):
+    #     db = self.ctx.db
+    #     update_dict = self._get_iteration_update_dict()
+    #     iter_job = await update_helper(iter_job, update_dict)
+    #     self.ctx.job = await update_helper(self.ctx.job, 
+    #                                        {"inference": await sum_inference_for_hc_input_job(db, self.ctx.job.id)})
+    #     self.ctx.parent = await update_helper(self.ctx.parent, 
+    #                                           {"inference": await sum_inference_for_hc_job(db, self.ctx.parent.id)})
+    #     await db.commit()
+
     async def _update_inference_stats(self, iter_job: HCIterationJob):
+        print("updte inference stats")
         db = self.ctx.db
+        # -- 1) iteration-level ------------------------------------------------
         update_dict = self._get_iteration_update_dict()
         iter_job = await update_helper(iter_job, update_dict)
-        self.ctx.job = await update_helper(self.ctx.job, 
-                                           {"inference": await sum_inference_for_hc_input_job(db, self.ctx.job.id)})
-        self.ctx.parent = await update_helper(self.ctx.parent, 
-                                              {"inference": await sum_inference_for_hc_job(db, self.ctx.parent.id)})
+        await db.flush()
+ 
+        # -- 2) parent HCInputJob aggregate -----------------------------------
+        input_job_json = self.ctx.job.job_json
+        agg_logs = input_job_json.get("execution_logs", {})
+        self._merge_log_dicts(agg_logs, update_dict["job_json"].get("execution_logs", {}))
+        input_job_json["execution_logs"] = agg_logs
+        self.ctx.job = await update_helper(
+            self.ctx.job,
+            {
+                "inference": await sum_inference_for_hc_input_job(db, self.ctx.job.id),
+                "job_json":  input_job_json,
+            },
+        )
+        attributes.flag_modified(self.ctx.job, "job_json")
+        await db.flush()
+
+        # -- 3) grand-parent counts only --------------------------------------
+        self.ctx.parent = await update_helper(
+            self.ctx.parent,
+            {"inference": await sum_inference_for_hc_job(db, self.ctx.parent.id)},
+        )
         await db.commit()
 
     async def _maybe_create_next_iteration(self, iter_job: HCIterationJob, new_queries):
@@ -207,13 +246,44 @@ class HCRunner(JobRunner):
         qs = [tuple(GradientEmbedding(**e) for e in tup) for tup in rec.query_embedding["query"]]
         return [HCSearchIteration(update_params=self.ctx.update_params, query_embeddings=q) for q in qs]
     
+    # def _get_iteration_update_dict(self):
+    #     score_log = self.score_op.execution_log
+    #     inference_count = self.score_op.last_executed_count
+    #     # inference_count = score_log.execute_stats.num_executed
+    #     return {
+    #         "status": JobStatus.COMPLETE,
+    #         "inference": inference_count,
+    #         "job_json": self.score_op.execution_log.model_dump()
+    #     }
+
+
+    @staticmethod
+    def _merge_log_dicts(dst: dict, src: dict):
+        from vvs_database.schemas.internal_schemas import ExecutionLog  # avoid circular
+        for pid, log_dict in src.items():
+            src_log = ExecutionLog(**log_dict)
+            if pid in dst:
+                dst_log = ExecutionLog(**dst[pid])
+                src_log.merge_from(dst_log)
+            dst[pid] = src_log.model_dump()
+
+    def _collect_execution_logs(self):
+        logs = {}
+        self._merge_log_dicts(logs, self.data_op.collect_execution_logs())
+        for f in self.filter_ops:
+            self._merge_log_dicts(logs, f.collect_execution_logs())
+        self._merge_log_dicts(logs, self.score_op.collect_execution_logs())
+        return logs
+
     def _get_iteration_update_dict(self):
-        score_log = self.score_op.execution_log
-        inference_count = score_log.execute_stats.num_executed
+        logs = self._collect_execution_logs()
+        # inference == sum num_executed of *score* plugin only (unchanged)
+        score_pid = self.score_op.plugin_config.plugin_id
+        inference_cnt = logs[score_pid]["execute_stats"]["num_executed"]
         return {
             "status": JobStatus.COMPLETE,
-            "inference": inference_count,
-            "job_json": self.score_op.execution_log.model_dump()
+            "inference": inference_cnt,
+            "job_json": {"execution_logs": logs},
         }
 
     @staticmethod

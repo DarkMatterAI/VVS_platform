@@ -500,7 +500,7 @@ async def test_wrong_plugin_type_raises(
         job_inputs=_mk_job_inputs(single=True),
     )
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(CrudValidationError):
         await create_hc_job(db_session, create_obj)
 
     await db_session.commit()

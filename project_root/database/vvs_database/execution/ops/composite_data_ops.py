@@ -9,7 +9,8 @@ from vvs_database.schemas.internal_schemas import (
     ExecutePlugin,
     InternalItem,
     Query,
-    ExecuteDataSource
+    ExecuteDataSource,
+    ExecutionLog
 )
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.ops.execution_op import ExecutionOp
@@ -52,6 +53,13 @@ class SingleDataOp(ExecutionOp):
         self.data_op = DataOp({0:data_config}, connections, log_id)
         self.connections = connections
         self.log_id = log_id
+        # self.execution_logs: dict[int, ExecutionLog] = {}
+
+    def collect_execution_logs(self):
+        return self.data_op.collect_execution_logs()
+    
+    def reset_execution_log(self):
+        self.data_op.reset_execution_log()
         
     async def __call__(self,
                        query: Query
@@ -73,6 +81,17 @@ class DecomposedDataOp(ExecutionOp):
         self.data_op = DataOp(data_config_dict, connections, log_id)
         self.assembly_op = AssemblyOp(assembly_config, connections, log_id)
         self.log_id = log_id
+        # self.execution_logs: dict[int, ExecutionLog] = {}
+
+    def collect_execution_logs(self):
+        out = {}
+        out |= self.data_op.collect_execution_logs()
+        out |= self.assembly_op.collect_execution_logs()
+        return out
+
+    def reset_execution_log(self):
+        self.data_op.reset_execution_log()
+        self.assembly_op.reset_execution_log()
         
     async def __call__(self,
                        query: Query
@@ -98,6 +117,21 @@ class MapperDataOp(ExecutionOp):
         self.assembly_op = AssemblyOp(assembly_config, connections, log_id)
         self.embedding_op = ItemOp(input_embedding_config, [], connections, log_id)
         self.update_embedding_id = input_embedding_config.plugin.id
+        # self.execution_logs: dict[int, ExecutionLog] = {}
+
+    def collect_execution_logs(self):
+        out = {}
+        out |= self.mapper_op.collect_execution_logs()
+        out |= self.data_op.collect_execution_logs()
+        out |= self.assembly_op.collect_execution_logs()
+        out |= self.embedding_op.collect_execution_logs()
+        return out
+    
+    def reset_execution_log(self):
+        self.mapper_op.reset_execution_log()
+        self.data_op.reset_execution_log()
+        self.assembly_op.reset_execution_log()
+        self.embedding_op.reset_execution_log()
         
     async def __call__(self,
                        query: Query

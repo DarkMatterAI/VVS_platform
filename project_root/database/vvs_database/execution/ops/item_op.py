@@ -12,6 +12,7 @@ from vvs_database.schemas import (
 )
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.ops.execution_op import ExecutionOp
+from vvs_database.schemas.internal_schemas import ExecutionLog
 
 
 def gather_valid_items(items: List[InternalItem]
@@ -86,6 +87,7 @@ class ItemOp(ExecutionOp):
         self.embedding_configs = embedding_configs
         self.connections = connections 
         self.log_id = log_id
+        self.execution_logs: dict[int, ExecutionLog] = {}
         
     async def gather_execute_scatter(self, 
                                      items: List[InternalItem],

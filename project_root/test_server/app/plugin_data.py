@@ -2,6 +2,7 @@ import os
 import numpy as np
 
 test_server_url = f"http://test_server:{os.environ['TEST_SERVER_PORT']}"
+# test_server_url = f"http://localhost:{os.environ['TEST_SERVER_PORT']}"
 EMBEDDING_SIZE = int(os.environ.get('TEST_EMBEDDING_SIZE', 32))
 NUM_PARENTS = int(os.environ.get('TEST_NUM_PARENTS', 2))
 MAX_BATCH_SIZE = int(os.environ.get('TEST_BATCH_SIZE', 5))

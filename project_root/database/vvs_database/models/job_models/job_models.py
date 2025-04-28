@@ -14,6 +14,7 @@ from sqlalchemy import (
     select,
     func
 )
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,9 +27,11 @@ class Job(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     job_type = Column(Enum(JobType), nullable=False)
-    job_json = Column(JSON, nullable=True)
+    job_json = Column(MutableDict.as_mutable(JSON), nullable=True)
+    # job_json = Column(JSON, nullable=True)
     status = Column(Enum(JobStatus), nullable=False, default=JobStatus.CREATED)
-    status_detail = Column(JSON, nullable=True)
+    status_detail = Column(MutableDict.as_mutable(JSON), nullable=True)
+    # status_detail = Column(JSON, nullable=True)
     auto_execute = Column(Boolean, nullable=False)
     dagster_run_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

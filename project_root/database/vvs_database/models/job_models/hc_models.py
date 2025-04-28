@@ -12,6 +12,7 @@ from sqlalchemy import (
     select,
     Index
 )
+from sqlalchemy.ext.mutable import MutableDict
 
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,7 +84,8 @@ class HCIterationJob(Job):
     parent_id = Column(Integer, ForeignKey("hc_iteration_jobs.id"), nullable=True)
     iteration = Column(Integer, nullable=False)
     inference = Column(Integer, nullable=True)
-    query_embedding = Column(JSON, nullable=True)
+    query_embedding = Column(MutableDict.as_mutable(JSON), nullable=True)
+    # query_embedding = Column(JSON, nullable=True)
 
     input_job = relationship("HCInputJob", 
                             back_populates="iterations", 
@@ -140,7 +142,6 @@ class HCResult(Base):
             postgresql_where=assembly_id.is_(None),
         ),
     )
-
 
 class HCIterationResult(Base):
     __tablename__ = "hc_iteration_results"

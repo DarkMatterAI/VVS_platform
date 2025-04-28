@@ -72,6 +72,8 @@ hc thoughts
         makes the schema busier
         user could just create another job 
 
+add "next gradient" to hciteration job - allows for starting up after stop 
+
 
 
 documentation notes

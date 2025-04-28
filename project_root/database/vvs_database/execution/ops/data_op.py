@@ -5,7 +5,7 @@ from vvs_database.schemas.execute_schemas import (
     DataSourceResponse,
     Embedding
 )
-from vvs_database.schemas.internal_schemas import ExecuteDataSource
+from vvs_database.schemas.internal_schemas import ExecuteDataSource, ExecutionLog
 from vvs_database.execution.connections import Connections
 from vvs_database.execution.ops.execution_op import ExecutionOp
 
@@ -27,6 +27,7 @@ class DataOp(ExecutionOp):
         self.data_config_dict = data_config_dict
         self.connections = connections
         self.log_id = log_id
+        self.execution_logs: dict[int, ExecutionLog] = {}
         
     async def __call__(self, 
                        request_dict: Dict[int, List[Embedding]]

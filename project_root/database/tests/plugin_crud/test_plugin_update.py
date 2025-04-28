@@ -170,3 +170,36 @@ async def test_update_assembly_plugin(db_session):
     assert updated_plugin.name == "Updated Assembly"
     assert updated_plugin.num_parents == 3
     await db_session.commit()
+
+@pytest.mark.asyncio
+async def test_update_mutable_fields(db_session, create_test_embedding):
+    """Test updating an embedding plugin"""
+    # Create a plugin to update
+    plugin = await create_test_embedding()
+    config1 = {"test1": "test1"}
+    config2 = {"test2": "test2"}
+    
+    # Update data
+    update_data = schemas.PluginUpdate(
+        config=config1
+    )
+    
+    # Update the plugin
+    from vvs_database.crud import update_plugin
+    updated_plugin = await update_plugin(db_session, plugin.id, update_data)
+    
+    # Assert the plugin was updated
+    assert updated_plugin.config == config1
+
+    # Update mutable field again
+    update_data = schemas.PluginUpdate(
+        config=config2
+    )
+    
+    # Update the plugin
+    updated_plugin = await update_plugin(db_session, plugin.id, update_data)
+    
+    # Assert the plugin was updated
+    assert updated_plugin.config == config2
+
+    await db_session.commit()

@@ -51,14 +51,15 @@ async def load_search_config_plugins(db: AsyncSession,
 
 def validate_search_config_plugin_types(search_config: HCSearchConfigs):
     plugin_type_iter = [
-        (search_config.mapper_config, PluginType.MAPPER),
-        (search_config.assembly_config, PluginType.ASSEMBLY),
-        (search_config.data_configs, PluginType.DATA_SOURCE),
-        (search_config.filter_configs, PluginType.FILTER),
-        (search_config.score_config, PluginType.SCORE)
+        (search_config.mapper_config, PluginType.MAPPER, "mapper_config"),
+        (search_config.assembly_config, PluginType.ASSEMBLY, "assembly_config"),
+        (search_config.data_configs, PluginType.DATA_SOURCE, "data_configs"),
+        (search_config.filter_configs, PluginType.FILTER, "filter_configs"),
+        (search_config.score_config, PluginType.SCORE, "score_config"),
+        (search_config.embedding_configs, PluginType.EMBEDDING, "embedding_configs")
     ]
 
-    for plugin_configs, plugin_type in plugin_type_iter:
+    for plugin_configs, plugin_type, field_name in plugin_type_iter:
         if plugin_configs is None:
             continue 
             
@@ -66,7 +67,10 @@ def validate_search_config_plugin_types(search_config: HCSearchConfigs):
             plugin_configs = [plugin_configs]
 
         for config in plugin_configs:
-            assert config.plugin.type == plugin_type 
+            if config.plugin.type != plugin_type:
+                raise ValidationError(f"HC Config field {field_name} expected plugin of type {plugin_type}, " \
+                                      f"found {config.plugin.type} - {config.plugin}")
+            # assert config.plugin.type == plugin_type 
 
 def validtate_hc_mapper_config(search_config: HCSearchConfigs):
     mapper_config = search_config.mapper_config
