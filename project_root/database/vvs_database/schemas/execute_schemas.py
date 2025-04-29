@@ -147,6 +147,7 @@ class AssemblyResponse(BaseModel):
     
 class ExecuteParams(BaseModel):
     cache: bool                   = False 
+    aggressive_cache: bool        = False
     db_lookup: bool               = False
     db_persist: bool              = False
     use_semaphore: bool           = True

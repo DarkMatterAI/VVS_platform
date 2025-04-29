@@ -20,6 +20,11 @@ class PluginExecutionType(str, Enum):
     QUEUE = "queue"
     API = "api"
 
+class ExecutionSources(str, Enum):
+    CACHE = "cache"
+    EXECUTION = "execution"
+    FAILURE = "failure"
+
 class DistanceMetric(str, Enum):
     Cosine = 'Cosine'
     Euclid = 'Euclid'

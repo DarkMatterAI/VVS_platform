@@ -18,6 +18,7 @@ class ExecuteStats(BaseModel):
     num_cache_hits: Optional[int]=None
     num_db_hits: Optional[int]=None
     num_executed: Optional[int]=None
+    num_failed: Optional[int]=None
     def __add__(self, other: "ExecuteStats") -> "ExecuteStats":  # new
         def _add(a, b):
             return b if a is None else a + (b or 0)
@@ -39,6 +40,7 @@ class ExecuteKeyStats(BaseModel):
     cache_hit_keys:      Optional[Dict[str, int]] = Field(default_factory=dict)
     db_hit_keys:         Optional[Dict[str, int]] = Field(default_factory=dict)
     executed_keys:       Optional[Dict[str, int]] = Field(default_factory=dict)
+    failed_keys:         Optional[Dict[str, int]] = Field(default_factory=dict)
 
     # ---------- helpers --------------------------------------------------
     @staticmethod
@@ -129,11 +131,25 @@ class ExecutionLog(BaseModel):
                                                   self.strip_keys(hits, strip_func))
 
     # 3. executions ------------------------------------------------------
-    def record_executed(self, executed: dict, strip_func=None):
-        self.execute_stats.num_executed = len(executed)
+    # def record_executed(self, executed: dict, strip_func=None):
+    #     self.execute_stats.num_executed = len(executed)
+    #     if self.execute_params.log_execute_keys:
+    #         self.execute_key_stats.bump_from_list("executed_keys",
+    #                                               self.strip_keys(executed, strip_func))
+    def record_executed(self, source_dict: dict, strip_func=None):
+        execute_stats = ExecuteStats(num_cache_hits=len(source_dict["cache"]),
+                                     num_executed=len(source_dict["execution"]),
+                                     num_failed=len(source_dict["failure"]))
+        self.execute_stats     = self.execute_stats + execute_stats
+        
         if self.execute_params.log_execute_keys:
-            self.execute_key_stats.bump_from_list("executed_keys",
-                                                  self.strip_keys(executed, strip_func))
+            execute_key_stats = ExecuteKeyStats(
+                cache_hit_keys={k:1 for k in self.strip_keys(source_dict["cache"], strip_func)},
+                executed_keys={k:1 for k in self.strip_keys(source_dict["execution"], strip_func)},
+                failed_keys={k:1 for k in self.strip_keys(source_dict["failure"], strip_func)})
+        
+            self.execute_key_stats = self.execute_key_stats + execute_key_stats
+
 
 class PluginRecord(BaseModel):
     plugin: Optional[PluginInDBUnion]=None 
