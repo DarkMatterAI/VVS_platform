@@ -3,7 +3,8 @@ from typing import List, Union, Optional, Dict
 import numpy as np 
 from collections import defaultdict
 
-from vvs_database.schemas.plugin_schemas import PluginInDBUnion
+from vvs_database.schemas.plugin_schemas import PluginInDBUnion, PluginInDB
+from vvs_database.schemas.enums import PluginType
 from vvs_database.schemas.execute_schemas import (
     ExecuteParams,
     ItemData,
@@ -56,8 +57,6 @@ class ExecuteKeyStats(BaseModel):
             merged[k] = merged.get(k, 0) + v
         return merged
 
-    # make the object additive so it drops straight into the existing
-    # `merge_from()` pattern used in ExecutionLog
     def __add__(self, other: "ExecuteKeyStats") -> "ExecuteKeyStats":
         cur = self.model_dump()
         oth = other.model_dump()
@@ -73,15 +72,68 @@ class ExecuteKeyStats(BaseModel):
         for k in input_dict.keys():
             self.bump(field, k)
 
+    def bump_from_list(self, field: str, input_list: dict):
+        for key in input_list:
+            self.bump(field, key)
+
 class ExecutionLog(BaseModel):
     plugin_id: int
+    plugin_name: str 
+    plugin_type: PluginType
     execute_params: ExecuteParams
-    execute_stats: ExecuteStats      = ExecuteStats()
+    execute_stats: ExecuteStats        = ExecuteStats()
     execute_key_stats: ExecuteKeyStats = ExecuteKeyStats()
+
+    @classmethod 
+    def from_plugin_record(cls, 
+                           plugin_record: PluginInDB, 
+                           execute_params: ExecuteParams):
+        return cls(plugin_id=plugin_record.id,
+                   plugin_name=plugin_record.name,
+                   plugin_type=plugin_record.type,
+                   execute_params=execute_params)
 
     def merge_from(self, other: "ExecutionLog"):
         self.execute_stats     = self.execute_stats + other.execute_stats
         self.execute_key_stats = self.execute_key_stats + other.execute_key_stats
+
+    @staticmethod
+    def strip_keys(keys, strip_func=None):
+        if type(keys) == dict:
+            keys = list(keys.keys())
+        if strip_func:
+            keys = [strip_func(i) for i in keys]
+        return keys 
+
+    # 1. inputs & uniques ------------------------------------------------
+    def record_inputs(self, keys: list[str], strip_func=None):
+        self.execute_stats.num_inputs = len(keys)
+        if self.execute_params.log_execute_keys:
+            self.execute_key_stats.bump_from_list("input_keys", 
+                                                  self.strip_keys(keys, strip_func))
+
+    def record_unique_inputs(self, n_unique: int):
+        self.execute_stats.num_unique_inputs = n_unique
+
+    # 2. cache + db hits -------------------------------------------------
+    def record_cache_hits(self, hits: dict, strip_func=None):
+        self.execute_stats.num_cache_hits = len(hits)
+        if self.execute_params.log_execute_keys:
+            self.execute_key_stats.bump_from_list("cache_hit_keys", 
+                                                  self.strip_keys(hits, strip_func))
+
+    def record_db_hits(self, hits: dict, strip_func=None):
+        self.execute_stats.num_db_hits = len(hits)
+        if self.execute_params.log_execute_keys:
+            self.execute_key_stats.bump_from_list("db_hit_keys",
+                                                  self.strip_keys(hits, strip_func))
+
+    # 3. executions ------------------------------------------------------
+    def record_executed(self, executed: dict, strip_func=None):
+        self.execute_stats.num_executed = len(executed)
+        if self.execute_params.log_execute_keys:
+            self.execute_key_stats.bump_from_list("executed_keys",
+                                                  self.strip_keys(executed, strip_func))
 
 class PluginRecord(BaseModel):
     plugin: Optional[PluginInDBUnion]=None 

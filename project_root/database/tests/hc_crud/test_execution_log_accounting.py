@@ -43,6 +43,8 @@ async def _make_two_iter_job(
         stats = ExecuteStats(num_executed=num)
         return ExecutionLog(
             plugin_id=score_plugin.id,
+            plugin_name=score_plugin.name,
+            plugin_type=score_plugin.type,
             execute_params=ExecuteParams(),
             execute_stats=stats,
         ).model_dump()

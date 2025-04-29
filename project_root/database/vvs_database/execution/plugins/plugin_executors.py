@@ -61,6 +61,11 @@ class DataSourcePluginExecutor(BasePluginExecutor):
     response_model = DataSourceResponse
 
     def update_params(self, execute_params: ExecuteParams):
+        """
+        We do not generate unique keys from embeddings, so data source 
+        requests are not elegible to be cached / saved, so we set `cache` 
+        and `db_lookup` to False
+        """
         execute_params.cache = False
         execute_params.db_lookup = False 
         return execute_params 
@@ -70,7 +75,10 @@ class DataSourcePluginExecutor(BasePluginExecutor):
                                results: List[DataSourceResponse],
                                valid_execution: List[bool],
                                ) -> Any:
-        """Check in data source results to database"""
+        """
+        We check in the items in the data query result. If `db_persist`, 
+        we also check in embeddings from the results
+        """
         return await self.connections.db_service.check_in_data_source_results(
             self.plugin, requests, results, valid_execution, self.execute_params.db_persist
         )
@@ -88,7 +96,12 @@ class ScorePluginExecutor(ItemPluginExecutor):
     response_model = ScoreResponse
 
     def update_params(self, execute_params: ExecuteParams):
+        """
+        Score persistence / logging is required for tracking scored 
+        results - set `db_persist` and `log_execute_keys` to True
+        """
         execute_params.db_persist = True 
+        execute_params.log_execute_keys = True 
         return execute_params 
 
 class MapperPluginExecutor(BasePluginExecutor):
@@ -98,6 +111,12 @@ class MapperPluginExecutor(BasePluginExecutor):
     response_model = MapperResponse
 
     def update_params(self, execute_params: ExecuteParams):
+        """
+        We do not generate unique keys from embeddings, so mapper 
+        requests are not elegible to be cached / saved, so we set `cache` 
+        and `db_lookup` to False. Similarly, mapper results (embeddings) 
+        are elegible to be saved (`db_persist` False)
+        """
         execute_params.cache = False
         execute_params.db_lookup = False 
         execute_params.db_persist = False  
@@ -114,8 +133,10 @@ class AssemblyPluginExecutor(BasePluginExecutor):
                                results: List[AssemblyResponse],
                                valid_execution: List[bool],
                                ) -> Any:
-        """Check in assembly results to database"""
-        # always check in assembly
+        """
+        Assembly results are required for related item records, so 
+        we always check in 
+        """
         return await self.connections.db_service.check_in_assembly_results(
             self.plugin, requests, results, valid_execution
         )

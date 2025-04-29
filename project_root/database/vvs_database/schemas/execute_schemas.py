@@ -29,6 +29,10 @@ class ItemRequest(BaseModel):
 
     def generate_key(self, plugin_id: int):
         return f"plugin:{plugin_id}:item:{self.item_data.item_id}"
+    
+    @staticmethod
+    def strip_key(key):
+        return key.split(':item:')[1]
 
 class EmbedResponse(BaseModel):
     valid: bool 
@@ -47,6 +51,10 @@ class DataSourceRequest(BaseModel):
     def generate_key(self, plugin_id: int):
         request_id = self.request_data.request_id.split('.')[-1]
         return f"plugin:{plugin_id}:datasource:{request_id}"
+    
+    @staticmethod
+    def strip_key(key):
+        return key.split(':datasource:')[1]
         
 class DataSourceResponseItem(BaseModel):
     model_config = ConfigDict(extra='allow')
@@ -87,6 +95,10 @@ class MapperRequest(BaseModel):
     def generate_key(self, plugin_id: int):
         request_id = self.request_data.request_id.split('.')[-1]
         return f"plugin:{plugin_id}:mapper:{request_id}"
+    
+    @staticmethod
+    def strip_key(key):
+        return key.split(':mapper:')[1]
         
 class MapperResponse(BaseModel):
     valid: bool
@@ -109,6 +121,10 @@ class AssemblyRequest(BaseModel):
         parent_ids = [str(i.item_id) for i in sorted_parents]
         key = f"plugin:{plugin_id}:assembly:{'_'.join(parent_ids)}"
         return key 
+
+    @staticmethod
+    def strip_key(key):
+        return key.split(':assembly:')[1]
     
     def generate_component_key(self, plugin_id: int):
         sorted_parents = sorted(self.parents, key=lambda x: x.assembly_index)
@@ -130,13 +146,14 @@ class AssemblyResponse(BaseModel):
         return cls(valid=False, result=None)
     
 class ExecuteParams(BaseModel):
-    cache: bool=False 
-    db_lookup: bool=False
-    db_persist: bool=False
-    use_semaphore: bool=True
-    max_semaphore_attempts: int=20
-    queue_polling_interval: float=0.2
-    backoff_factor: float=2.0
+    cache: bool                   = False 
+    db_lookup: bool               = False
+    db_persist: bool              = False
+    use_semaphore: bool           = True
+    max_semaphore_attempts: int   = 20
+    queue_polling_interval: float = 0.2
+    backoff_factor: float         = 2.0
+    log_execute_keys: bool        = False
 
 
 ExecuteRequestUnion = Union[

@@ -57,8 +57,9 @@ class BasePluginExecutor:
     def init_execution_log(self):
         if self.execution_log is not None:
             self.execution_logs.append(self.execution_log)
-        self.execution_log = ExecutionLog(plugin_id=self.plugin.id,
-                                          execute_params=self.execute_params)
+        self.execution_log = ExecutionLog.from_plugin_record(
+                                            plugin_record=self.plugin,
+                                            execute_params=self.execute_params)
     
     def init_log_id(self, log_id: Optional[str]=None):
         """Initialize the logging ID for this execution"""
@@ -90,10 +91,9 @@ class BasePluginExecutor:
                     ) -> Tuple[Dict[str, ExecuteRequestUnion], Dict[str, List[int]]]:
         """Deduplicate requests based on their keys"""
         # logging.info(f"{self.log_id}: Deduplicating {len(requests)} requests")
-        self.execution_log.execute_stats.num_inputs = len(requests)
         keys = [r.generate_key(plugin_id=self.plugin.id) for r in requests]
-        for key in keys:
-            self.execution_log.execute_key_stats.bump("input_keys", key)
+        self.execution_log.record_inputs(keys, self.request_model.strip_key)
+
         key_to_request = {}
         key_to_index = {}  # Maps keys to their original indices
         
@@ -103,7 +103,7 @@ class BasePluginExecutor:
             key_to_index.setdefault(key, []).append(i)
 
         # logging.info(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
-        self.execution_log.execute_stats.num_unique_inputs = len(key_to_request.keys())
+        self.execution_log.record_unique_inputs(len(key_to_request))
         return key_to_request, key_to_index
 
 
@@ -131,8 +131,7 @@ class BasePluginExecutor:
         cached_results = await self.get_cache_results(unique_keys)
         cached_results = {k: self.response_model.model_validate(v) 
                           for k, v in cached_results.items()}
-        self.execution_log.execute_stats.num_cache_hits = len(cached_results.keys())
-        self.execution_log.execute_key_stats.bump_from_dict("cache_hit_keys", cached_results)
+        self.execution_log.record_cache_hits(cached_results, self.request_model.strip_key)
 
         uncached_keys = [k for k in unique_keys if k not in cached_results]
         uncached_requests = {k: key_to_request[k] for k in uncached_keys}
@@ -141,8 +140,7 @@ class BasePluginExecutor:
 
         # Check database for records
         db_results = await self.query_database(self.plugin, uncached_requests)
-        self.execution_log.execute_stats.num_db_hits = len(db_results.keys())
-        self.execution_log.execute_key_stats.bump_from_dict("db_hit_keys", db_results)
+        self.execution_log.record_db_hits(db_results, self.request_model.strip_key)
         
         # Determine remaining requests to execute
         remaining_keys = [k for k in uncached_keys if k not in db_results]
@@ -156,8 +154,7 @@ class BasePluginExecutor:
                              ) -> Dict[str, ExecuteResponseUnion]:
         """Execute plugin request. Optionally cache/persist results"""
         logging.info(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
-        self.execution_log.execute_stats.num_executed = len(remaining_requests.keys())
-        self.execution_log.execute_key_stats.bump_from_dict("executed_keys", remaining_requests)
+        self.execution_log.record_executed(remaining_requests, self.request_model.strip_key)
 
         executed_results = {}
         if not remaining_requests:

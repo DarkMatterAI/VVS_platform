@@ -146,7 +146,7 @@ async def create_hc_parent_job(db: AsyncSession,
     job = await create_job(db,
                            job_type=JobType.HILL_CLIMB_JOB,
                            job_json=create_config.model_dump(),
-                           auto_execute=job_params.auto_execute,
+                           auto_execute=auto_execute,
                            extra_args=extra_args)
     plugin_ids = []
     for plugin_config in search_config.iter_plugins():
@@ -212,6 +212,7 @@ async def create_hc_job(db: AsyncSession,
     # load config records
     plugin_config = create_config.plugin_config
     search_config = HCSearchConfigs.from_create_config(plugin_config)
+    search_config.score_config.execute_params.log_execute_keys = True
     job_json = {'search_config' : search_config.model_dump(),
                 'update_params' : update_params.model_dump()}
     search_config = await load_search_config_plugins(db, search_config)
