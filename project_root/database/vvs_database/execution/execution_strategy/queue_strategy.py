@@ -51,6 +51,8 @@ class QueueExecutionStrategy(ExecutionStrategy):
         tracker  = self._init_tracker(requests, const)
 
         while self._unfinished(tracker):
+            await self._consume_cache(tracker, const)
+
             pending_batches = self._waiting_batches(tracker, const.bs)
 
             tokens = await self._acquire_tokens(pending_batches, const)
@@ -71,7 +73,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         return {k: st.response for k, st in tracker.items()}
 
     # ───────────────────────────────────────────────────────────────── #
-    # helper sections (typed)                                          #
+    # helper sections                                                   #
     # ───────────────────────────────────────────────────────────────── #
 
     # ----- tracker construction ------------------------------------- #
@@ -176,6 +178,30 @@ class QueueExecutionStrategy(ExecutionStrategy):
                 st.status     = "processing"
                 st.identifier = tok
 
+    # ---------- aggressive cache ------------------------------------ #
+    async def _consume_cache(
+        self,
+        tracker: Dict[str, QueueRequestState],
+        const: QueueConst,
+    ) -> None:
+        if not (self.params.cache and self.params.aggressive_cache):
+            return
+        keys = [
+            k for k, st in tracker.items()
+            if st.status in ("waiting", "processing")
+        ]
+        if not keys:
+            return
+        hits = await self.redis.get_results(keys)
+        for k, payload in hits.items():
+            st = tracker[k]
+            st.status   = "done"
+            st.response = StrategyResponse(
+                valid=True,
+                response_data=payload,
+                source=ExecutionSources.CACHE,
+            )
+
     # ----- rabbit/redis ops ----------------------------------------- #
     async def _publish_batch(
         self,
@@ -215,8 +241,6 @@ class QueueExecutionStrategy(ExecutionStrategy):
             st.status   = "done"
             st.response = StrategyResponse(
                 **payload,
-                # valid=True,
-                # response_data=payload,
                 source=ExecutionSources.EXECUTION,
             )
 

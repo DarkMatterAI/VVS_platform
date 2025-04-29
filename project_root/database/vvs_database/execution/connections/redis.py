@@ -66,9 +66,7 @@ class RedisService:
         """Set multiple results in Redis cache"""
         if not results:
             return
-        
-        # logging.info(f"{self.log_id}: Setting {len(results.keys())} keys in cache")
-            
+                    
         self.init_redis_connection()
         pipeline = self.redis.pipeline()
         

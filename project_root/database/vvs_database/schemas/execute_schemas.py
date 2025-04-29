@@ -59,7 +59,6 @@ class DataSourceRequest(BaseModel):
 class DataSourceResponseItem(BaseModel):
     model_config = ConfigDict(extra='allow')
     item: str
-    # external_id: Optional[Union[int, str]]
     external_id: Optional[str]
     embedding: List[float]
     distance: Optional[float]

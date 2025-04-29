@@ -54,6 +54,8 @@ class APIExecutionStrategy(ExecutionStrategy):
         state  = self._init_state(requests)
 
         while state.pending:
+            await self._consume_cache(state)
+            
             tokens = await self._acquire_tokens(const, state)
             if not await self._prepare_wave(tokens, state, const):
                 continue
@@ -143,6 +145,35 @@ class APIExecutionStrategy(ExecutionStrategy):
         # async sleep for back-off
         sleep_time = const.backoff_sleep()
         return sleep_time 
+    
+    # ---------- hit Redis while requests still pending -------------- #
+    async def _consume_cache(
+        self,
+        state: "_ExecState",
+    ) -> None:
+        if not self.params.aggressive_cache:
+            return
+        keys = [r.key for r in state.pending]
+        if not keys:
+            return
+        hits = await self.redis.get_results(keys)
+        if not hits:
+            return
+
+        hit_set = set(hits)
+        new_done = []
+        for req in state.pending:
+            if req.key in hit_set:
+                req.response = StrategyResponse(
+                    valid=True,
+                    response_data=hits[req.key],
+                    source=ExecutionSources.CACHE,
+                )
+                new_done.append(req)
+
+        # prune & stash
+        state.pending = [r for r in state.pending if r.key not in hit_set]
+        state.done.extend(new_done)
 
     # ----- network round-trip --------------------------------------- #
     async def _fire_wave(

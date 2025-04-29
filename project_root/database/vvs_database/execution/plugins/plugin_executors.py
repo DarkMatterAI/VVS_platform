@@ -67,6 +67,7 @@ class DataSourcePluginExecutor(BasePluginExecutor):
         and `db_lookup` to False
         """
         execute_params.cache = False
+        execute_params.aggressive_cache = False
         execute_params.db_lookup = False 
         return execute_params 
     
@@ -118,6 +119,7 @@ class MapperPluginExecutor(BasePluginExecutor):
         are elegible to be saved (`db_persist` False)
         """
         execute_params.cache = False
+        execute_params.aggressive_cache = False
         execute_params.db_lookup = False 
         execute_params.db_persist = False  
         return execute_params 
