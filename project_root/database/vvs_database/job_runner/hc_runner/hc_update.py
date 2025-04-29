@@ -3,7 +3,7 @@ from typing import List, Tuple, Dict
 from collections import defaultdict 
 
 from vvs_database.gradients import distance_to_update
-from vvs_database.schemas.hc_schemas import HCSearchIteration
+from vvs_database.schemas.hc_schemas import HCSearchIteration, UpdateType
 from vvs_database.schemas.internal_schemas import GradientEmbedding, InternalItem
 
 def get_update_results(search_iteration: HCSearchIteration
@@ -24,7 +24,7 @@ def get_update_results(search_iteration: HCSearchIteration
     return results, top_result
 
 def get_update_dict(results: List[InternalItem],
-                    top_result: InternalItem
+                    top_result: InternalItem,
                    ) -> Tuple[Dict[int, List[float]], 
                               Dict[int, List[List[float]]]]:
     

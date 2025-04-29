@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, Field
 from typing import List, Union, Optional, Dict
 import numpy as np 
 from collections import defaultdict
@@ -25,14 +25,63 @@ class ExecuteStats(BaseModel):
         for k in cur:
             cur[k] = _add(cur[k], oth[k])
         return ExecuteStats(**cur)
+    
+class ExecuteKeyStats(BaseModel):
+    """
+    Per-request execution bookkeeping.
+
+    Each field mirrors ExecuteStats, but instead of an int it is a
+    `Dict[str, int]` that maps the *request-key* produced by
+    `request.generate_key()` ➜ how many times that key landed in the bucket.
+    """
+    input_keys:          Optional[Dict[str, int]] = Field(default_factory=dict)
+    cache_hit_keys:      Optional[Dict[str, int]] = Field(default_factory=dict)
+    db_hit_keys:         Optional[Dict[str, int]] = Field(default_factory=dict)
+    executed_keys:       Optional[Dict[str, int]] = Field(default_factory=dict)
+
+    # ---------- helpers --------------------------------------------------
+    @staticmethod
+    def _merge(a: Optional[Dict[str, int]],
+               b: Optional[Dict[str, int]]) -> Dict[str, int]:
+        """
+        Merge two count-dicts (either may be None) by summing counts
+        for matching keys.
+        """
+        if a is None:
+            return b or {}
+        if b is None:
+            return a
+        merged = a.copy()
+        for k, v in b.items():
+            merged[k] = merged.get(k, 0) + v
+        return merged
+
+    # make the object additive so it drops straight into the existing
+    # `merge_from()` pattern used in ExecutionLog
+    def __add__(self, other: "ExecuteKeyStats") -> "ExecuteKeyStats":
+        cur = self.model_dump()
+        oth = other.model_dump()
+        for field in cur:
+            cur[field] = self._merge(cur[field], oth[field])
+        return ExecuteKeyStats(**cur)
+
+    def bump(self, field: str, key: str, n: int = 1):
+        bucket = getattr(self, field)
+        bucket[key] = bucket.get(key, 0) + n
+
+    def bump_from_dict(self, field: str, input_dict: dict):
+        for k in input_dict.keys():
+            self.bump(field, k)
 
 class ExecutionLog(BaseModel):
     plugin_id: int
     execute_params: ExecuteParams
-    execute_stats: ExecuteStats = ExecuteStats()
+    execute_stats: ExecuteStats      = ExecuteStats()
+    execute_key_stats: ExecuteKeyStats = ExecuteKeyStats()
 
-    def merge_from(self, other: "ExecutionLog"):                # new
-        self.execute_stats = self.execute_stats + other.execute_stats
+    def merge_from(self, other: "ExecutionLog"):
+        self.execute_stats     = self.execute_stats + other.execute_stats
+        self.execute_key_stats = self.execute_key_stats + other.execute_key_stats
 
 class PluginRecord(BaseModel):
     plugin: Optional[PluginInDBUnion]=None 

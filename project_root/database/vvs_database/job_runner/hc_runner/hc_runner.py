@@ -52,8 +52,7 @@ class HCRunner(JobRunner):
     def load_ops(self, connections: Connections):
         cfg = self.ctx.search_cfg
         self.data_op = OpFactory.build_data_op(cfg, connections, self.log_id)
-        self.filter_ops, self.score_op = OpFactory.build_item_ops(cfg, connections, self.log_id)
-        # self.score_op.last_executed_count = 0
+        self.filter_ops, self.score_op, self.source_embed_ops = OpFactory.build_item_ops(cfg, connections, self.log_id)
 
     async def init_job(self, connections: Connections):
         logging.info(f"{self.log_id}: Embedding inputs & creating initial queries")
@@ -121,7 +120,8 @@ class HCRunner(JobRunner):
         new_queries: List[List[GradientEmbedding]] | List = []
         dup_counter = {}
         unique_items: Dict[str, object] = {}
-        for s_iter in search_iters:
+        for i, s_iter in enumerate(search_iters):
+            logging.info(f"{self.log_id}: Iteration - {iter_job.iteration}, query {i}")
             items, nq = await executor(s_iter)
             if nq:
                 new_queries.append(nq)
@@ -136,16 +136,6 @@ class HCRunner(JobRunner):
             dup_counts=dup_counts,
         )
         await self.ctx.db.commit()
-
-    # async def _update_inference_stats(self, iter_job: HCIterationJob):
-    #     db = self.ctx.db
-    #     update_dict = self._get_iteration_update_dict()
-    #     iter_job = await update_helper(iter_job, update_dict)
-    #     self.ctx.job = await update_helper(self.ctx.job, 
-    #                                        {"inference": await sum_inference_for_hc_input_job(db, self.ctx.job.id)})
-    #     self.ctx.parent = await update_helper(self.ctx.parent, 
-    #                                           {"inference": await sum_inference_for_hc_job(db, self.ctx.parent.id)})
-    #     await db.commit()
 
     async def _update_inference_stats(self, iter_job: HCIterationJob):
         print("updte inference stats")
@@ -201,9 +191,13 @@ class HCRunner(JobRunner):
     ###############
 
     async def _embed_inputs(self, connections: Connections):
+        print(self.source_embed_ops)
         for asm_idx, item in self.ctx.input_items.items():
-            for emb_cfg in self.ctx.search_cfg.source_embeddings[asm_idx]:
-                await ItemOp(emb_cfg, [], connections, self.log_id)([item])
+            
+            print(self.source_embed_ops[asm_idx])
+            for emb_op in self.source_embed_ops[asm_idx]:
+                print(emb_op)
+                await emb_op([item])
 
     def _build_initial_queries(self):
         lr = {lr_cfg.assembly_index: lr_cfg.learning_rate for lr_cfg in self.ctx.update_params.learning_rate}
@@ -245,17 +239,6 @@ class HCRunner(JobRunner):
     def _hc_iter_to_search_iters(self, rec: HCIterationJob) -> List[HCSearchIteration]:
         qs = [tuple(GradientEmbedding(**e) for e in tup) for tup in rec.query_embedding["query"]]
         return [HCSearchIteration(update_params=self.ctx.update_params, query_embeddings=q) for q in qs]
-    
-    # def _get_iteration_update_dict(self):
-    #     score_log = self.score_op.execution_log
-    #     inference_count = self.score_op.last_executed_count
-    #     # inference_count = score_log.execute_stats.num_executed
-    #     return {
-    #         "status": JobStatus.COMPLETE,
-    #         "inference": inference_count,
-    #         "job_json": self.score_op.execution_log.model_dump()
-    #     }
-
 
     @staticmethod
     def _merge_log_dicts(dst: dict, src: dict):
@@ -272,6 +255,9 @@ class HCRunner(JobRunner):
         self._merge_log_dicts(logs, self.data_op.collect_execution_logs())
         for f in self.filter_ops:
             self._merge_log_dicts(logs, f.collect_execution_logs())
+        for _, emb_ops in self.source_embed_ops.items():
+            for emb_op in emb_ops:
+                self._merge_log_dicts(logs, emb_op.collect_execution_logs())
         self._merge_log_dicts(logs, self.score_op.collect_execution_logs())
         return logs
 
@@ -279,11 +265,14 @@ class HCRunner(JobRunner):
         logs = self._collect_execution_logs()
         # inference == sum num_executed of *score* plugin only (unchanged)
         score_pid = self.score_op.plugin_config.plugin_id
-        inference_cnt = logs[score_pid]["execute_stats"]["num_executed"]
+        if score_pid in logs:
+            inference_cnt = logs[score_pid]["execute_stats"]["num_executed"]
+        else:
+            inference_cnt = 0
         return {
             "status": JobStatus.COMPLETE,
             "inference": inference_cnt,
-            "job_json": {"execution_logs": logs},
+            "job_json": {"execution_logs": logs}
         }
 
     @staticmethod

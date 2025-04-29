@@ -48,7 +48,6 @@ class ItemPluginExecutor(BasePluginExecutor):
             result = {k: self.response_model.model_validate(v) for k, v in result.items()}
         return result 
 
-
 class EmbeddingPluginExecutor(ItemPluginExecutor):
     """Executor for embedding plugins"""
     

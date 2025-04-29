@@ -135,11 +135,13 @@ class OpFactory:
     @classmethod
     def build_item_ops(
         cls, cfg: HCSearchConfigs, connections: Connections, log_id: str
-    ) -> Tuple[List[ItemOp], ItemOp]:
+    ) -> Tuple[List[ItemOp], ItemOp, Dict[int, List[ItemOp]]]:
         filter_ops = [cls._build_item_op(c, cfg, connections, log_id) for c in cfg.filter_configs]
         score_op = cls._build_item_op(cfg.score_config, cfg, connections, log_id)
-        return filter_ops, score_op
-
+        source_embed_ops = {}
+        for asm_idx, src_embs in cfg.source_embeddings.items():
+            source_embed_ops[asm_idx] = [cls._build_item_op(c, cfg, connections, log_id) for c in src_embs]
+        return filter_ops, score_op, source_embed_ops
 
 class IterationExecutor:
     """Wrapper that runs the data-filter-score pipeline for one query tuple."""

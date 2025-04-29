@@ -1,19 +1,19 @@
-# plugins:
-#   qdrant_plugin:
-#     enabled: False
-#   tei_plugin:
-#     enabled: False
-#   rdkit_plugin:
-#     enabled: False
-#   triton_plugin:
-#     enabled: False
-
 plugins:
   qdrant_plugin:
-    enabled: True
+    enabled: False
   tei_plugin:
     enabled: False
   rdkit_plugin:
-    enabled: True
+    enabled: False
   triton_plugin:
-    enabled: True
+    enabled: False
+
+# plugins:
+#   qdrant_plugin:
+#     enabled: True
+#   tei_plugin:
+#     enabled: False
+#   rdkit_plugin:
+#     enabled: True
+#   triton_plugin:
+#     enabled: True

@@ -53,7 +53,6 @@ class SingleDataOp(ExecutionOp):
         self.data_op = DataOp({0:data_config}, connections, log_id)
         self.connections = connections
         self.log_id = log_id
-        # self.execution_logs: dict[int, ExecutionLog] = {}
 
     def collect_execution_logs(self):
         return self.data_op.collect_execution_logs()
@@ -81,7 +80,6 @@ class DecomposedDataOp(ExecutionOp):
         self.data_op = DataOp(data_config_dict, connections, log_id)
         self.assembly_op = AssemblyOp(assembly_config, connections, log_id)
         self.log_id = log_id
-        # self.execution_logs: dict[int, ExecutionLog] = {}
 
     def collect_execution_logs(self):
         out = {}
@@ -117,7 +115,6 @@ class MapperDataOp(ExecutionOp):
         self.assembly_op = AssemblyOp(assembly_config, connections, log_id)
         self.embedding_op = ItemOp(input_embedding_config, [], connections, log_id)
         self.update_embedding_id = input_embedding_config.plugin.id
-        # self.execution_logs: dict[int, ExecutionLog] = {}
 
     def collect_execution_logs(self):
         out = {}

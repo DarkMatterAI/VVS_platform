@@ -1,46 +1,41 @@
 # VVS_V2
 
 todos
-    misc
-        "clear plugin records" api to delete associated item records without affecting things
-            HC job with assembly results in item records with assembly. these records persist after 
-                job deletion due to the assembly
-        verbosity flag to executor
-            generally reduce log spam 
-        update plugin endpoint
-            allow custom update for HC job
-            need plugin type, plugin crud, api schema
-        qdrant
-            check postgres persist actually fixes handing collection issue
-        version pin requirements, install before db lib for editing speed
-        check exeuction failures during jobs are being accurately tracked
-    qdrant job
-        think more about running concurrent jobs. maybe restrict to one?
-        could use existing semaphore for qdrant, would need way of releasing on job failure 
-        idea
-            do embed and upload in same step? worse for reproduciblity (lose checkpoint between embed and upload)
-            allows for trading off embed concurrency and upload concurrency (less embed semaphore pressure)
-            embed seems to be the big time sink anyway 
-            food for thought 
+    performance
+        "aggressive cache" option
+            current: batch cache before inference. results in duplicates for concurrent processes
+            cache get/set each item before/after execution has more redis hits but would help
+    backend
+        HC jobs endpoints
+        export HC results endpoint
+        BBKNN endpoints 
+        move rdkit/qdrant code to db lib 
     HC job
         dagster sensor
             needs to handle job hierarchy
-            needs to release semaphores from all sub-jobs 
-        add "n_results" column in addition to inference
-        k expansion on first iteration 
-        way of tracking inference vs db/cache lookup for scores 
-            add to iteration results table?
-        export results api 
-    backend
-        endpoints for creating HC jobs
-        bbknn endpoint 
-    refactor
-        replace message consumer with direct reply (correlation id)
-        "semaphore group" on plugin 
-            could also use plugin type (internal flags, etc)
-        deduplicate rdkit reactions
-        move qdrant/rdkit crud into db lib and out of backend
-        move tests into single folder
+        dagster failure sensor
+            needs to handle job hierarchy, remove all semaphores
+        better tracking of interation results, db/cache vs inference
+        results export code
+        optional args
+            k expansion on first query?
+    qdrant job
+        need to control concurrent jobs
+            semaphore or dagster limit 
+    rdkit plugin
+        deduplicate reaction list
+    misc 
+        version pin on all requirements.txt
+        better logs/less spam on executor
+        qdrant collections after proper postgres persist 
+        "clear plugin records" function to remove items/etc
+            items with assembly won't auto-clear even after job/plugin deletion 
+    update execution
+        new plugin type for custom update
+    message refactor
+        replace message consumer with direct reply via correlation id 
+    file organize
+        move test modules into single folder
         move plugins into single folder 
     test gaps
         anything on dagster
@@ -50,6 +45,8 @@ todos
             does it work for HC/qdrant upload?
         HC update
             does it work to return multiple update outputs? ie fan out
+        crud
+            check plugin exeuction failures during jobs are being accurately tracked
 
 
 thinking about bbknn job
@@ -73,6 +70,10 @@ hc thoughts
         user could just create another job 
 
 add "next gradient" to hciteration job - allows for starting up after stop 
+    create HCIteration job with status complete just to store
+
+optional flag "compute query gradient"
+    save each post-grad expasion query with gradient calculated from query results (ie in query group)
 
 
 

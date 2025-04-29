@@ -357,7 +357,7 @@ async def test_hc_runner_smoke(
         embeddings={},           # not used after we patch init_job
         query_group=None,
     )
-    dummy_score = types.SimpleNamespace(last_executed_count=1)
+    dummy_score = types.SimpleNamespace()
     dummy_connections = types.SimpleNamespace(
         db_service=types.SimpleNamespace(job_id=None),
         redis_service=types.SimpleNamespace(job_id=None)

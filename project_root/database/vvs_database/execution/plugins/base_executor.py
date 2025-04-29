@@ -92,6 +92,8 @@ class BasePluginExecutor:
         # logging.info(f"{self.log_id}: Deduplicating {len(requests)} requests")
         self.execution_log.execute_stats.num_inputs = len(requests)
         keys = [r.generate_key(plugin_id=self.plugin.id) for r in requests]
+        for key in keys:
+            self.execution_log.execute_key_stats.bump("input_keys", key)
         key_to_request = {}
         key_to_index = {}  # Maps keys to their original indices
         
@@ -103,7 +105,8 @@ class BasePluginExecutor:
         # logging.info(f"{self.log_id}: {len(key_to_request.keys())} requests after deduplication")
         self.execution_log.execute_stats.num_unique_inputs = len(key_to_request.keys())
         return key_to_request, key_to_index
-    
+
+
     async def get_cache_results(self, keys: List[str]) -> Dict[str, Any]:
         if (not self.execute_params.cache) or (not keys):
             return {}
@@ -129,7 +132,8 @@ class BasePluginExecutor:
         cached_results = {k: self.response_model.model_validate(v) 
                           for k, v in cached_results.items()}
         self.execution_log.execute_stats.num_cache_hits = len(cached_results.keys())
-        
+        self.execution_log.execute_key_stats.bump_from_dict("cache_hit_keys", cached_results)
+
         uncached_keys = [k for k in unique_keys if k not in cached_results]
         uncached_requests = {k: key_to_request[k] for k in uncached_keys}
 
@@ -138,6 +142,7 @@ class BasePluginExecutor:
         # Check database for records
         db_results = await self.query_database(self.plugin, uncached_requests)
         self.execution_log.execute_stats.num_db_hits = len(db_results.keys())
+        self.execution_log.execute_key_stats.bump_from_dict("db_hit_keys", db_results)
         
         # Determine remaining requests to execute
         remaining_keys = [k for k in uncached_keys if k not in db_results]
@@ -152,6 +157,8 @@ class BasePluginExecutor:
         """Execute plugin request. Optionally cache/persist results"""
         logging.info(f"{self.log_id}: Executing plugin with {len(remaining_requests.keys())} requests")
         self.execution_log.execute_stats.num_executed = len(remaining_requests.keys())
+        self.execution_log.execute_key_stats.bump_from_dict("executed_keys", remaining_requests)
+
         executed_results = {}
         if not remaining_requests:
             return executed_results
