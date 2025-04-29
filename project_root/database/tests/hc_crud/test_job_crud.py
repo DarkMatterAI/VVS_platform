@@ -72,7 +72,7 @@ async def _assert_assembled_input_rows(db_session, parent_job, input_jobs):
     ]
 
 # -----------------------------------------------------------------------------
-# 1. STANDARD variant (no mapper, no assembly) – happy path
+# 1. STANDARD variant (no mapper, no assembly) - happy path
 # -----------------------------------------------------------------------------
 
 @pytest.mark.asyncio
@@ -123,7 +123,7 @@ async def test_create_hc_job_standard(
     await db_session.commit()
 
 # -----------------------------------------------------------------------------
-# 2. MAPPER variant – happy path (no embedding_configs provided)
+# 2. MAPPER variant - happy path (no embedding_configs provided)
 # -----------------------------------------------------------------------------
 
 @pytest.mark.asyncio
@@ -187,7 +187,7 @@ async def test_create_hc_job_mapper(
     await db_session.commit()
 
 # -----------------------------------------------------------------------------
-# 3. ASSEMBLED variant – happy path (assembly with 2 parents)
+# 3. ASSEMBLED variant - happy path (assembly with 2 parents)
 # -----------------------------------------------------------------------------
 
 @pytest.mark.asyncio
@@ -249,7 +249,7 @@ async def test_create_hc_job_assembled(
     await db_session.commit()
 
 # -----------------------------------------------------------------------------
-# 4. Embedding override behaviour – custom override wins
+# 4. Embedding override behaviour - custom override wins
 # -----------------------------------------------------------------------------
 
 @pytest.mark.asyncio
@@ -272,7 +272,7 @@ async def test_embedding_override_params(
     )
 
     create_args = _hc_base_parts(
-            embeddings=[],  # placeholder – will be replaced below
+            embeddings=[],  # placeholder - will be replaced below
             datasource_plugins=[datasource],
             filter_plugins=[filter_p],
             score_plugin=score_p,
@@ -469,7 +469,7 @@ async def test_wrong_plugin_type_raises(
     if wrong_role == 'filter':
         wrong_plugin = await create_test_score_plugin()
     else:
-        wrong_plugin = await create_test_filter_plugin()   # a FILTER plugin – wrong for every other slot
+        wrong_plugin = await create_test_filter_plugin()   # a FILTER plugin - wrong for every other slot
 
     # Helper to pick correct / wrong plugin per slot --------------------------
     def pick(role, correct):

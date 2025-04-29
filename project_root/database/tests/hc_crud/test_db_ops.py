@@ -212,7 +212,7 @@ async def test_should_finalize_parent(db_session):
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# 6. fetch_hc_job_results – ordering & pagination
+# 6. fetch_hc_job_results - ordering & pagination
 # ════════════════════════════════════════════════════════════════════════════
 @pytest.mark.asyncio
 async def test_fetch_hc_job_results_ordering(
@@ -269,7 +269,7 @@ async def test_fetch_hc_job_results_ordering(
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# 7. export_hc_job_hierarchy – nested structure
+# 7. export_hc_job_hierarchy - nested structure
 # ════════════════════════════════════════════════════════════════════════════
 @pytest.mark.asyncio
 async def test_export_hc_job_hierarchy_structure(
@@ -413,7 +413,7 @@ async def test_hc_runner_smoke(
     await db_session.commit()
 
 # ===========================================================================
-# 9. should_stop_input – parent/child time & inference limits
+# 9. should_stop_input - parent/child time & inference limits
 # ===========================================================================
 @pytest.mark.parametrize(
     "child_inf,parent_inf,child_secs,parent_secs,expect_stop",

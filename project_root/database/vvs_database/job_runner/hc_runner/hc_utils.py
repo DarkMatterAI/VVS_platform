@@ -33,7 +33,7 @@ from vvs_database.schemas.internal_schemas import ExecutePlugin
 from vvs_database import logging
 
 ################################################################################
-# 1.  Pure helpers & utilities – no side‑effects                                #
+# 1.  Pure helpers & utilities - no side‑effects                                #
 ################################################################################
 
 

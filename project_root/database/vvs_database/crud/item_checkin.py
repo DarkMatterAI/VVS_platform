@@ -51,10 +51,10 @@ async def upsert_items(
     if not new_items:
         return []
 
-    # step 1 – build list[string] in original order (allow duplicates)
+    # step 1 - build list[string] in original order (allow duplicates)
     ordered_items = [d["item"] for d in new_items]
 
-    # step 2 – unique values per batch
+    # step 2 - unique values per batch
     batches = chunked(ordered_items, batch_size)
     results: list[Item] = []
 
@@ -193,7 +193,7 @@ async def result_checkin(
 
     # iterate by *input* batches (duplicates stay together)
     for batch_idx, batch in enumerate(chunked(list(enumerate(new_results)), batch_size)):
-        # 1) build payload –  one value per *unique* item_id in this batch
+        # 1) build payload -  one value per *unique* item_id in this batch
         uniq: dict[int, schemas.NewResult] = {}
         for pos, rec in batch:      # preserve last‑seen => mirrors old logic
             uniq[rec.item_id] = rec

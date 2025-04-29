@@ -131,11 +131,6 @@ class ExecutionLog(BaseModel):
                                                   self.strip_keys(hits, strip_func))
 
     # 3. executions ------------------------------------------------------
-    # def record_executed(self, executed: dict, strip_func=None):
-    #     self.execute_stats.num_executed = len(executed)
-    #     if self.execute_params.log_execute_keys:
-    #         self.execute_key_stats.bump_from_list("executed_keys",
-    #                                               self.strip_keys(executed, strip_func))
     def record_executed(self, source_dict: dict, strip_func=None):
         execute_stats = ExecuteStats(num_cache_hits=len(source_dict["cache"]),
                                      num_executed=len(source_dict["execution"]),

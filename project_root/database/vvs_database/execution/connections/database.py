@@ -28,6 +28,7 @@ from vvs_database.schemas import (
 )
 from vvs_database.models import Plugin
 from vvs_database import logging 
+# from vvs_database.execution.execution_strategy import StrategyResponse
 
 class DatabaseService:
     """Service for database operations related to plugin execution"""
@@ -224,14 +225,14 @@ class DatabaseService:
 
     async def log_failed_requests(self,
                                   plugin: PluginInDB,
-                                  failed_requests: List[Tuple[ExecuteRequestUnion, Dict]]
+                                  failed_requests: List[Tuple[ExecuteRequestUnion, "StrategyResponse"]]
                                   ):
         await asyncio.sleep(0)
         inputs = [{
             "plugin_id": plugin.id,
             "job_id": self.job_id,
-            "failure_reason": response_dict["failure_reason"],
-            "failure_detail": response_dict["failure_detail"],
+            "failure_reason": response_dict.failure_reason,
+            "failure_detail": response_dict.failure_detail,
             "request": request.model_dump()
 
         } for (request, response_dict) in failed_requests]

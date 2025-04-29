@@ -55,7 +55,7 @@ def _hc_base_parts(*, embeddings, datasource_plugins, filter_plugins, score_plug
 def _mk_job_inputs(single=True, max_iterations=5):
     if single:
         return [HCInputItem(item={"external_id": "ZINC1", "item": "C1=CC=CC=C1"}, max_iterations=max_iterations)]
-    # assembled – two sub‑items, indices 0 and 1
+    # assembled - two sub‑items, indices 0 and 1
     sub_items = [
         {"external_id": "EN1", "item": "NCC", "assembly_index": 0},
         {"external_id": "EN2", "item": "CCC", "assembly_index": 1},

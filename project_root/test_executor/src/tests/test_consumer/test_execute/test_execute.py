@@ -52,8 +52,9 @@ async def test_db_semaphore_failure(db_session, backend_client, monkeypatch):
     # -------- 5. All responses must be marked invalid ----------------------
     assert response, "executor returned empty response"
     for key, val in response.items():
-        assert val["valid"] is False, f"key {key} unexpectedly succeeded"
-        assert val["failure_reason"] == "Semaphore failure"
+        assert val.valid is False, f"key {key} unexpectedly succeeded"
+        assert val.failure_reason == "Semaphore failure"
+
 
     await connections.close()
 

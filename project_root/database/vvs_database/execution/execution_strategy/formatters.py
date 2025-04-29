@@ -27,14 +27,13 @@ class BaseFormatter(ABC):
         ...
 
 # ---------------------------------------------------------------------------
-# 1. generic – already matches VVS schema
+# 1. generic - already matches VVS schema
 # ---------------------------------------------------------------------------
 class GenericFormatter(BaseFormatter):
     def build_payload(self, 
                       batch: List[Dict],
                       batch_size: int 
                       ) -> Union[Dict, List[Dict]]:
-        # payloads = [r["request"].model_dump() for r in batch]
         payloads = [r.request.model_dump() for r in batch]
         if batch_size == 1:
             payloads = payloads[0]
@@ -56,7 +55,6 @@ class TEIFormatter(BaseFormatter):
                       batch: List[Dict],
                       batch_size: int 
                       ) -> Union[Dict, List[Dict]]:
-        # payload = {"inputs": [i["request"].item_data.item for i in batch]}
         payload = {"inputs": [i.request.item_data.item for i in batch]}
         payload.update(self.plugin.config)
         print(payload)
@@ -77,7 +75,6 @@ class TritonMapperFormatter(BaseFormatter):
                       batch: List[Dict],
                       batch_size: int 
                       ) -> Union[Dict, List[Dict]]:
-        # emb = [r["request"].embedding.embedding for r in batch]
         emb = [r.request.embedding.embedding for r in batch]
         payload = {
             "inputs": [
@@ -150,7 +147,6 @@ class QdrantFormatter(BaseFormatter):
         search_queries = []
         embedding_names = []
         
-        # requests = [r["request"] for r in batch]
         requests = [r.request for r in batch]
         for r in requests:
             embedding_name = f"embedding_{r.embedding.plugin_id}"

@@ -62,7 +62,7 @@ async def _mk_hc_job_chain(db):
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# 1. upsert_hc_results – insert + update, plain vs assembly
+# 1. upsert_hc_results - insert + update, plain vs assembly
 # ────────────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_upsert_hc_results_insert_then_update(
@@ -131,7 +131,7 @@ async def test_upsert_hc_results_insert_then_update(
     await db_session.commit()
 
 # ────────────────────────────────────────────────────────────────────────────
-# 2. upsert_hc_iteration_results – counts accumulate
+# 2. upsert_hc_iteration_results - counts accumulate
 # ────────────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_upsert_hc_iteration_results_accumulates(
@@ -184,7 +184,7 @@ async def test_upsert_hc_iteration_results_accumulates(
     await db_session.commit()
 
 # ===========================================================================
-# 3. upsert_hc_results – exact‑same payload twice is a no‑op
+# 3. upsert_hc_results - exact‑same payload twice is a no‑op
 # ===========================================================================
 @pytest.mark.asyncio
 async def test_upsert_hc_results_idempotent(db_session, create_item):
@@ -216,7 +216,7 @@ async def test_upsert_hc_results_idempotent(db_session, create_item):
 
 
 # ===========================================================================
-# 4. upsert_hc_iteration_results – zero‑delta truly no‑op
+# 4. upsert_hc_iteration_results - zero‑delta truly no‑op
 # ===========================================================================
 @pytest.mark.asyncio
 async def test_upsert_hc_iteration_results_zero_idempotent(db_session, create_item):
@@ -233,7 +233,7 @@ async def test_upsert_hc_iteration_results_zero_idempotent(db_session, create_it
     # insert initial count 4
     await upsert_hc_iteration_results(db_session, iter_job.id, {res_id: 4})
 
-    # call again with 0 – should leave count at 4
+    # call again with 0 - should leave count at 4
     await upsert_hc_iteration_results(db_session, iter_job.id, {res_id: 0})
 
     cnt = (

@@ -19,7 +19,7 @@ from vvs_database.models.job_models.hc_models import HCIterationJob
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# helpers – build a 2-iteration HC job and run the patched runner
+# helpers - build a 2-iteration HC job and run the patched runner
 # ════════════════════════════════════════════════════════════════════════════
 async def _make_two_iter_job(
     db,

@@ -52,7 +52,7 @@ async def upsert_hc_results(
     if not items:
         return {}
 
-    # ── deduplicate on (item_id, assembly_id) – last valid flag wins ──────
+    # ── deduplicate on (item_id, assembly_id) - last valid flag wins ──────
     latest: dict[tuple[int, int | None], bool] = {}
     for itm in items:
         key = (itm.item_data.item_id,
