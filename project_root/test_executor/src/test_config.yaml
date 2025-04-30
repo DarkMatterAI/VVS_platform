@@ -20,7 +20,7 @@
 #     enabled: True
 #     run_tests: True
 #   test_server:
-#     enabled: True
+#     enabled: False
 #     run_tests: True
 
 services:

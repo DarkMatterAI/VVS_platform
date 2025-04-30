@@ -1,6 +1,6 @@
 from __future__ import annotations
 import asyncio, math, random
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Type, Any
 
 from vvs_database import logging
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
@@ -31,11 +31,15 @@ class APIExecutionStrategy(ExecutionStrategy):
     # ───────────────────────────────────────────────────────────────── #
     # life-cycle                                                      #
     # ───────────────────────────────────────────────────────────────── #
-    def __init__(self, connections: Connections, params: ExecuteParams):
+    def __init__(self, 
+                 connections: Connections, 
+                 params: ExecuteParams,
+                 response_model: Type):
         super().__init__(connections, params)
         self.redis   = connections.redis_service
         self.params  = params
         self.log_id  = "APIExecute"
+        self._resp_model = response_model
 
     # ───────────────────────────────────────────────────────────────── #
     # public API                                                      #
@@ -175,6 +179,22 @@ class APIExecutionStrategy(ExecutionStrategy):
         state.pending = [r for r in state.pending if r.key not in hit_set]
         state.done.extend(new_done)
 
+    # ---------- cache writer --------------------------------------- #
+    async def _write_cache(self, reqs: List[APIRequestState]) -> None:
+        if not ((self.params.cache or self.params.aggressive_cache) and reqs):
+            return
+        to_cache: Dict[str, Any] = {}
+        for r in reqs:
+            if r.response and r.response.valid:
+                try:
+                    model = self._resp_model.model_validate(r.response.response_data)
+                    to_cache[r.key] = model
+                except:
+                    # validation failures are handled by BaseExecutor
+                    pass 
+        if to_cache:
+            await self.redis.set_results(to_cache)
+
     # ----- network round-trip --------------------------------------- #
     async def _fire_wave(
         self,
@@ -214,5 +234,6 @@ class APIExecutionStrategy(ExecutionStrategy):
                 await _send(batch)
 
         await asyncio.gather(*[_bounded(b) for b in batches])
+        await self._write_cache(st.wave)
         st.done.extend(st.wave)
         st.wave = []

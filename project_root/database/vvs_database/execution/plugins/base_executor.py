@@ -73,9 +73,9 @@ class BasePluginExecutor:
         self.execute_params = self.update_params(execute_params)
 
         self.execution_strategy = (
-            APIExecutionStrategy(connections, self.execute_params)
+            APIExecutionStrategy(connections, self.execute_params, self.response_model)
             if plugin.execution_type == "api"
-            else QueueExecutionStrategy(connections, self.execute_params)
+            else QueueExecutionStrategy(connections, self.execute_params, self.response_model)
         )
 
         # log chain
@@ -276,10 +276,10 @@ class BasePluginExecutor:
 
         await self.connections.db_service.log_failed_requests(self.plugin, failed)
 
-        if self.execute_params.cache and executed:
-            await self.connections.redis_service.set_results(executed)
+        # if self.execute_params.cache and executed:
+            # await self.connections.redis_service.set_results(executed)
 
-        self.execution_log.record_executed(sources)
+        self.execution_log.record_executed(sources, self.request_model.strip_key)
         return executed
 
     # ---------------------------------------------------------------- #

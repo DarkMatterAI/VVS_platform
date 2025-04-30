@@ -68,6 +68,7 @@ class ItemSource(Base):
 
     __table_args__ = (
         UniqueConstraint('item_id', 'plugin_id', name='uix_item_source'),
+        Index("idx_item_sources_item", "item_id")
     )
 
 class ItemResult(Base):
@@ -85,6 +86,7 @@ class ItemResult(Base):
 
     __table_args__ = (
         UniqueConstraint('item_id', 'plugin_id', name='uix_item_result'),
+        Index("idx_item_results_item", "item_id")
     )
 
 class Assembly(Base):
@@ -107,6 +109,7 @@ class Assembly(Base):
     __table_args__ = (
         Index('idx_assembly_product_plugin', 'product_id', 'plugin_id'),
         UniqueConstraint('assembly_key', name='uix_assembly_key'),
+        Index("idx_assemblies_product", "product_id"),
     )
 
     @property
@@ -167,6 +170,7 @@ class AssemblyComponent(Base):
 
     __table_args__ = (
         UniqueConstraint('assembly_id', 'assembly_index', name='uix_assembly_component'),
+        Index('idx_assembly_component_component', 'component_id'),
     )
 
 

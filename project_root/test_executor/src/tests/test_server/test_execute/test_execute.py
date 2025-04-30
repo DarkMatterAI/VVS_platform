@@ -34,7 +34,7 @@ async def test_db_semaphore_failure(db_session, backend_client, monkeypatch):
         use_semaphore=True,
         max_semaphore_attempts=1,      # fail after first empty acquisition
     )
-    executor = APIExecutionStrategy(connections, execute_params)
+    executor = APIExecutionStrategy(connections, execute_params, EmbedResponse)
     redis_service = connections.redis_service
 
     # -------- 3. Monkey‑patch semaphore acquisition to *always* fail -------
@@ -87,7 +87,7 @@ async def test_db_aggressive_cache(db_session, backend_client):
         use_semaphore=True,
         max_semaphore_attempts=10,
     )
-    executor = APIExecutionStrategy(connections, execute_params)
+    executor = APIExecutionStrategy(connections, execute_params, EmbedResponse)
     redis_service = connections.redis_service
 
     # -------- 3. Set key in cache ------------------------------------------

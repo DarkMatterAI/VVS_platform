@@ -65,6 +65,10 @@ class HCInputJob(Job):
         'polymorphic_identity': 'hill_climb_job_input',
     }
 
+    __table_args__ = (
+        Index('idx_hc_input_jobs_parent', 'parent_id'),
+    )
+
 class HCInputItems(Base):
     __tablename__ = "hc_input_items"
     
@@ -75,6 +79,11 @@ class HCInputItems(Base):
     
     input_job = relationship("HCInputJob", back_populates="input_items")
     item = relationship("Item")
+
+    __table_args__ = (
+        Index('idx_hc_input_items_job', 'job_id'),
+        Index('idx_hc_input_items_item', 'item_id'),
+    )
 
 class HCIterationJob(Job):
     __tablename__ = "hc_iteration_jobs"
@@ -107,6 +116,8 @@ class HCIterationJob(Job):
 
     __table_args__ = (
         UniqueConstraint('input_id', 'iteration', name='uix_input_id_iteration'),
+        Index('idx_hc_iteration_jobs_input',  'input_id'),
+        Index('idx_hc_iteration_jobs_parent', 'parent_id'),
     )
 
 class HCResult(Base):
@@ -141,6 +152,8 @@ class HCResult(Base):
             unique=True,
             postgresql_where=assembly_id.is_(None),
         ),
+        Index('idx_hc_results_job', 'job_id'),
+        Index('idx_hc_results_item', 'item_id'),
     )
 
 class HCIterationResult(Base):

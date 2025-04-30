@@ -2,9 +2,8 @@
 
 todos
     performance
-        "aggressive cache" option
-            current: batch cache before inference. results in duplicates for concurrent processes
-            cache get/set each item before/after execution has more redis hits but would help
+        refactor HCJob to batch gather/scatter all HCIterationJobs 
+        speed up delete job speed for large record counts
     backend
         HC jobs endpoints
         export HC results endpoint
@@ -15,10 +14,20 @@ todos
             needs to handle job hierarchy
         dagster failure sensor
             needs to handle job hierarchy, remove all semaphores
-        better tracking of interation results, db/cache vs inference
-        results export code
+        results tracking
+            ability to dump iteration state into json and save to postgres
+            remove HCIterationResult
+            final iteration should create a "next iteration" to save next query/grad
+            add execution time tracking for different steps 
+        data export
+            backend api for data export
+            be able to export data by HCJob or HCInputJob 
+        input format
+            input pre-computed embeddings in addition to items 
         optional args
             k expansion on first query?
+        misc
+            check what happens when one input job gets 0 results (ie filter failure )
     qdrant job
         need to control concurrent jobs
             semaphore or dagster limit 

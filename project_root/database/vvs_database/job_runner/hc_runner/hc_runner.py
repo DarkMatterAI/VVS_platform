@@ -265,9 +265,12 @@ class HCRunner(JobRunner):
         logs = self._collect_execution_logs()
         # inference == sum num_executed of *score* plugin only (unchanged)
         score_pid = self.score_op.plugin_config.plugin_id
+        inference_cnt = None 
         if score_pid in logs:
+            # can return None if no inference was performed 
             inference_cnt = logs[score_pid]["execute_stats"]["num_executed"]
-        else:
+
+        if inference_cnt is None:
             inference_cnt = 0
         return {
             "status": JobStatus.COMPLETE,

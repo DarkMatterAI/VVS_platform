@@ -1,6 +1,6 @@
 from __future__ import annotations
 import asyncio, time, random
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Type, Any 
 
 from vvs_database import logging
 from vvs_database.execution.execution_strategy.base_strategy import ExecutionStrategy
@@ -28,12 +28,16 @@ class QueueExecutionStrategy(ExecutionStrategy):
     # ───────────────────────────────────────────────────────────────── #
     # life-cycle                                                      #
     # ───────────────────────────────────────────────────────────────── #
-    def __init__(self, connections: Connections, params: ExecuteParams):
+    def __init__(self, 
+                 connections: Connections, 
+                 params: ExecuteParams,
+                 response_model: Type):
         super().__init__(connections, params)
         self.redis   = connections.redis_service
         self.rabbit  = connections.rabbitmq_service
         self.params  = params
         self.log_id  = "QueueExecute"
+        self._resp_model = response_model
 
     # ───────────────────────────────────────────────────────────────── #
     # public API                                                      #
@@ -184,7 +188,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         tracker: Dict[str, QueueRequestState],
         const: QueueConst,
     ) -> None:
-        if not (self.params.cache and self.params.aggressive_cache):
+        if not (self.params.cache or self.params.aggressive_cache):
             return
         keys = [
             k for k, st in tracker.items()
@@ -196,11 +200,28 @@ class QueueExecutionStrategy(ExecutionStrategy):
         for k, payload in hits.items():
             st = tracker[k]
             st.status   = "done"
+                # note - here we _dont_ unpack payload because cache
+                # returns nested just resposne data
             st.response = StrategyResponse(
                 valid=True,
                 response_data=payload,
                 source=ExecutionSources.CACHE,
             )
+
+    async def _write_cache(self, updates: Dict[str, QueueRequestState]) -> None:
+        if not (self.params.cache or self.params.aggressive_cache):
+            return
+        to_cache: Dict[str, Any] = {}
+        for k, st in updates.items():
+            if st.response and st.response.valid:
+                try:
+                    model = self._resp_model.model_validate(st.response.response_data)
+                    to_cache[k] = model
+                except:
+                    # validation failures are handled by BaseExecutor
+                    pass 
+        if to_cache:
+            await self.redis.set_results(to_cache)
 
     # ----- rabbit/redis ops ----------------------------------------- #
     async def _publish_batch(
@@ -226,6 +247,24 @@ class QueueExecutionStrategy(ExecutionStrategy):
             else:
                 st.queue_errors += 1
 
+    # async def _poll_results(
+    #     self,
+    #     tracker: Dict[str, QueueRequestState],
+    #     const: QueueConst,
+    # ) -> None:
+    #     ids = [st.resp_id for st in tracker.values() if st.status == "queued"]
+    #     if not ids:
+    #         return
+    #     hits = await self.redis.get_results(ids, delete=True)
+    #     id_map = {st.resp_id: st for st in tracker.values()}
+    #     for rid, payload in hits.items():
+    #         st = id_map[rid]
+    #         st.status   = "done"
+    #         st.response = StrategyResponse(
+    #             **payload,
+    #             source=ExecutionSources.EXECUTION,
+    #         )
+
     async def _poll_results(
         self,
         tracker: Dict[str, QueueRequestState],
@@ -236,13 +275,20 @@ class QueueExecutionStrategy(ExecutionStrategy):
             return
         hits = await self.redis.get_results(ids, delete=True)
         id_map = {st.resp_id: st for st in tracker.values()}
+        freshly_done: Dict[str, QueueRequestState] = {}
+
         for rid, payload in hits.items():
             st = id_map[rid]
             st.status   = "done"
             st.response = StrategyResponse(
+                # note - here we unpack payload because message consumer 
+                # returns nested {"valid": True, "response_data": {}}
                 **payload,
                 source=ExecutionSources.EXECUTION,
             )
+            freshly_done[st.key] = st
+
+        await self._write_cache(freshly_done)
 
     # ----- time-out handling ---------------------------------------- #
     def _apply_timeouts(
