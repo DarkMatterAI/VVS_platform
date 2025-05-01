@@ -1,9 +1,20 @@
 # VVS_V2
 
 todos
+    triton server rework
+        update auto-records
+        update formatter
+        update .env args 
     performance
         refactor HCJob to batch gather/scatter all HCIterationJobs 
         speed up delete job speed for large record counts
+    data sources
+        "in memory" datasource for user uploaded embeddings
+            add new PluginExecutionType
+            update plugin crud logic to only allow for data source to use that
+            config points to embedding file that has already been uploaded 
+            use safetensors format
+        makes more sense after we refactor HCJob to run in batch 
     backend
         HC jobs endpoints
         export HC results endpoint
@@ -28,6 +39,7 @@ todos
             k expansion on first query?
         misc
             check what happens when one input job gets 0 results (ie filter failure )
+            possibly change mapper response schema to explicitly state assembly index
     qdrant job
         need to control concurrent jobs
             semaphore or dagster limit 

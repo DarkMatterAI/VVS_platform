@@ -14,7 +14,7 @@ blob_store/
 
 design_doc.md
 
-dagster_old/
+triton_plugin_old/
 
 .vscode/*
 

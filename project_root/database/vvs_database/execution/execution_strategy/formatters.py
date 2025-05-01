@@ -75,17 +75,27 @@ class TritonMapperFormatter(BaseFormatter):
                       batch: List[Dict],
                       batch_size: int 
                       ) -> Union[Dict, List[Dict]]:
+        request_keys = self.plugin.config["request_keys"]
+        bool_list = [True for i in batch]
         emb = [r.request.embedding.embedding for r in batch]
-        payload = {
-            "inputs": [
-                {
-                    "name":     "embedding",
-                    "shape":    [len(batch), len(emb[0])],
-                    "datatype": "FP32",
-                    "data":     emb,
-                }
-            ]
-        }
+        payload_keys = [
+            {
+                "name": key,
+                "shape": [len(batch), 1],
+                "datatype": "BOOL",
+                "data": bool_list
+            }
+            for key in request_keys 
+        ]
+        payload_data = [
+            {
+                "name" :     "embedding",
+                "shape" :    [len(batch), len(emb[0])],
+                "datatype" : "FP32",
+                "data" :     emb
+            }
+        ] + payload_keys
+        payload = {"inputs" : payload_data}
         return payload 
 
     def parse_response(self, 
@@ -105,23 +115,32 @@ class TritonMapperFormatter(BaseFormatter):
                 r["embedding"].append(embedding)
             result.append(r)
         return result 
-    
+
 class TritonEmbeddingFormatter(BaseFormatter):
     def build_payload(self, 
                       batch: List[Dict],
                       batch_size: int 
                       ) -> Union[Dict, List[Dict]]:
-        payload = {
-            "inputs" : [
-                {
-                    "name" :     "sequence",
-                    "shape" :    [len(batch), 1],
-                    "datatype" : "BYTES",
-                    # "data" :     [i["request"].item_data.item for i in batch]
-                    "data" :     [i.request.item_data.item for i in batch]
-                }
-            ]
-        }
+        request_keys = self.plugin.config.get("request_keys", [])
+        bool_list = [True for i in batch]
+        payload_keys = [
+            {
+                "name": key,
+                "shape": [len(batch), 1],
+                "datatype": "BOOL",
+                "data": bool_list
+            }
+            for key in request_keys 
+        ]
+        payload_data = [
+            {
+                "name" :     "sequence",
+                "shape" :    [len(batch), 1],
+                "datatype" : "BYTES",
+                "data" :     [i.request.item_data.item for i in batch]
+            }
+        ] + payload_keys
+        payload = {"inputs" : payload_data}
         return payload 
 
     
@@ -132,7 +151,7 @@ class TritonEmbeddingFormatter(BaseFormatter):
         response_data = http_resp["outputs"][0]
         data = response_data["data"]
         n_out, d_out = response_data["shape"]
-        result = output = [{"embedding": data[i*d_out:(i+1)*d_out], "valid": True} for i in range(n_out)]
+        result = [{"embedding": data[i*d_out:(i+1)*d_out], "valid": True} for i in range(n_out)]
         return result 
     
 # ---------------------------------------------------------------------------

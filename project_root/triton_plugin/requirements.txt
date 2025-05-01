@@ -1,2 +1,5 @@
-transformers==4.37.2
+transformers==4.51.3
+sentence_transformers==4.1.0
 httpx
+pytest
+pytest-asyncio

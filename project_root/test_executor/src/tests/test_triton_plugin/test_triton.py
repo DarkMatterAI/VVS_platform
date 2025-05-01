@@ -14,7 +14,7 @@ def test_triton_embedding_plugins_created(backend_client):
 
 def test_triton_mapper_plugins_created(backend_client):
     plugins = backend_get_plugins_by_filter(backend_client, group_key='triton_plugin_mapper')
-    assert len(plugins) == 1, "Incorrect number of triton embedding plugins"
+    assert len(plugins) == 36, "Incorrect number of triton embedding plugins"
 
 @pytest.mark.asyncio
 async def test_backend_triton_embed_execute(db_session, backend_client):
