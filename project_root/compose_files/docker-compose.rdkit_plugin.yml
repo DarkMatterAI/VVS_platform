@@ -10,6 +10,5 @@ services:
       - vvs_v2_network
     depends_on:
       - rabbitmq
-      # - message_consumer
     deploy:
       replicas: ${RDKIT_PLUGIN_REPLICAS:-${DEFAULT_REPLICAS}}

@@ -66,22 +66,6 @@ async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, 
     validate_response(plugin, responses)
     await db_session.commit()
 
-
-# @pytest.mark.asyncio
-# @pytest.mark.parametrize("reaction_id", [r['id'] for r in reaction_data])
-# async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, redis_connection, 
-#                                                backend_client, reaction_id):
-#     plugin = get_reaction_plugin(backend_client, reaction_id)
-#     reactants = reaction_dict[reaction_id]
-#     parents = [[reactants['r1'], reactants['r2']]]
-#     request_data = await generate_rdkit_assembly_request(db_session, parents, plugin, to_model=True)
-#     published = rabbitmq_publish(rabbitmq_connection, request_data)
-#     response_keys = [i.replace('request', 'response').replace('.', ':') for i in published]
-#     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
-#     response = [i['response_data'] for i in response]
-#     response = validate_response(plugin, response)
-#     await db_session.commit()
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reaction_id", [r['id'] for r in reaction_data])
 async def test_rdkit_assembly_backend(db_session, backend_client, reaction_id):

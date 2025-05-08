@@ -27,20 +27,6 @@ async def test_rdkit_score_consumer(db_session, rabbitmq_connection, redis_conne
     validate_response(plugin, responses)
     await db_session.commit()
 
-
-# @pytest.mark.asyncio
-# async def test_rdkit_score_consumer(db_session, rabbitmq_connection, redis_connection, 
-#                                      backend_client, rdkit_test_score):
-#     plugin = rdkit_test_score()
-#     request_data = await generate_rdkit_item_request(db_session, TEST_SMILES, plugin, to_model=True)
-#     published = rabbitmq_publish(rabbitmq_connection, request_data)
-#     response_keys = [i.replace('request', 'response').replace('.', ':') for i in published]
-#     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
-#     response = [i['response_data'] for i in response]
-#     validate_response(plugin, response)
-#     assert response[0]['score']>0
-#     await db_session.commit()
-
 @pytest.mark.asyncio
 async def test_rdkit_score_backend(db_session, backend_client, rdkit_test_score):
     plugin = rdkit_test_score()

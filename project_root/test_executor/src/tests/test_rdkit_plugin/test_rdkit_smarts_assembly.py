@@ -25,18 +25,6 @@ async def test_rdkit_smarts_assembly_consumer(db_session, rabbitmq_connection, r
     validate_response(plugin, responses)
     await db_session.commit()
 
-# @pytest.mark.asyncio
-# async def test_rdkit_smarts_assembly_consumer(db_session, rabbitmq_connection, redis_connection, 
-#                                      backend_client, rdkit_test_assembly):
-#     plugin = rdkit_test_assembly()
-#     request_data = await generate_rdkit_assembly_request(db_session, TEST_PARENTS, plugin, to_model=True)
-#     published = rabbitmq_publish(rabbitmq_connection, request_data)
-#     response_keys = [i.replace('request', 'response').replace('.', ':') for i in published]
-#     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
-#     response = [i['response_data'] for i in response]
-#     response = validate_response(plugin, response)
-#     await db_session.commit()
-
 @pytest.mark.asyncio
 async def test_rdkit_assembly_backend(db_session, backend_client, rdkit_test_assembly):
     plugin = rdkit_test_assembly()

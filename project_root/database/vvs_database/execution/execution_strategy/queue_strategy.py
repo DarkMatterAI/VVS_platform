@@ -80,21 +80,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
 
             # 3. figure out which tokens are now free --------------------------
             await self._release_tokens(tracker, const)
-
             await asyncio.sleep(const.poll_interval)
-
-            # wave_batches, token_list = self._pick_wave(pending_batches, tokens, const)
-            # self._mark_processing(wave_batches, token_list, tracker)
-            # if len(wave_batches)>0:
-            #     logging.info(f"Publishing {len(wave_batches)} batches")
-            # await asyncio.gather(
-            #     *[self._publish_batch(b, tracker, plugin) for b in wave_batches]
-            # )
-            # await self._release_tokens(tokens, const)
-
-            # await self._poll_results(tracker, const)
-            # self._apply_timeouts(tracker, const)
-            # await asyncio.sleep(const.poll_interval)
 
         return {k: st.response for k, st in tracker.items()}
 
@@ -162,26 +148,6 @@ class QueueExecutionStrategy(ExecutionStrategy):
             await self.redis.release_semaphore(const.sem_name, tokens)
             for st in done:
                 st.identifier = None
-    
-    # async def _release_tokens(self, tracker: Dict[str, QueueRequestState], const: QueueConst) -> None:
-    #     done_tokens = []
-    #     done_requests = []
-    #     for st in tracker.values():
-    #         if st.status in ("done", "error") and st.identifier:
-    #             done_tokens.append(st.identifier)
-    #             done_requests.append(st)
-
-    #     if done_tokens and const.use_sema:
-    #         done_tokens = list(set(done_tokens))
-    #         logging.info(f"Releasing {len(done_tokens)} semaphores")
-    #         await self.redis.release_semaphore(const.sem_name, done_tokens)
-
-    #     for st in done_requests:
-    #         st.identifier = None 
-
-    # async def _release_tokens(self, tokens: List[str], const: QueueConst) -> None:
-    #     if tokens and const.use_sema:
-    #         await self.redis.release_semaphore(const.sem_name, tokens)
 
     # ----- back-off check ------------------------------------------- #
     async def _maybe_backoff(
@@ -322,41 +288,10 @@ class QueueExecutionStrategy(ExecutionStrategy):
             st.response = StrategyResponse(
                 **payload, source=ExecutionSources.EXECUTION
             )
-            # st.response = StrategyResponse(
-            #     valid=True,
-            #     response_data=payload,
-            #     source=ExecutionSources.EXECUTION,
-            # )
-
             freshly_done[st.key] = st
 
         # optional cache write – re-use existing helper
         await self._write_cache(freshly_done)
-
-    # async def _poll_results(
-    #     self,
-    #     tracker: Dict[str, QueueRequestState],
-    #     const: QueueConst,
-    # ) -> None:
-    #     ids = [st.resp_id for st in tracker.values() if st.status == "queued"]
-    #     if not ids:
-    #         return
-    #     hits = await self.redis.get_results(ids, delete=True)
-    #     id_map = {st.resp_id: st for st in tracker.values()}
-    #     freshly_done: Dict[str, QueueRequestState] = {}
-
-    #     for rid, payload in hits.items():
-    #         st = id_map[rid]
-    #         st.status   = "done"
-    #         st.response = StrategyResponse(
-    #             # note - here we unpack payload because message consumer 
-    #             # returns nested {"valid": True, "response_data": {}}
-    #             **payload,
-    #             source=ExecutionSources.EXECUTION,
-    #         )
-    #         freshly_done[st.key] = st
-
-    #     await self._write_cache(freshly_done)
 
     # ----- time-out handling ---------------------------------------- #
     def _apply_timeouts(

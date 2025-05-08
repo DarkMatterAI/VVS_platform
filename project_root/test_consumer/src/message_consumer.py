@@ -45,23 +45,6 @@ def callback(ch, method, properties, body):
 
     ch.basic_ack(delivery_tag=method.delivery_tag)  # always ACK last
 
-    # ch.basic_ack(delivery_tag=method.delivery_tag)
-
-    # runtime_args = response_data.get('runtime_args')
-    # if runtime_args is not None:
-    #     if runtime_args.get('no_response', False):
-    #         print(f"Skipping response for testing")
-    #         return 
-
-    # ch.basic_publish(
-    #     exchange=EXCHANGE_NAME,
-    #     routing_key=return_key,
-    #     body=json.dumps(response),
-    #     properties=pika.BasicProperties(delivery_mode=2)  # Make message persistent
-    # )
-
-    # print(f"Response published with routing key: {return_key}")
-
 def start_consumer(worker_id, records):
     connection = pika.BlockingConnection(rabbitmq_params)
     channel = connection.channel()
@@ -92,4 +75,3 @@ def start_consumer(worker_id, records):
 
     print(f"Worker {worker_id}: Test consumer started. Waiting for messages...")
     return channel, connection
-    # channel.start_consuming()

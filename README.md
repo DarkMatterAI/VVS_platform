@@ -4,6 +4,8 @@ todos
     message refactor
         replace message consumer with direct reply via correlation id 
         correctly process batches 
+        remove is_dlx from worker
+        rdkit test dlx works 
     performance
         refactor HCJob to batch gather/scatter all HCIterationJobs 
         speed up delete job speed for large record counts

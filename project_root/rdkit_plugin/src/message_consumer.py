@@ -51,41 +51,6 @@ def callback(ch, method, properties, body, engine):
     date_print(f"Rejected request: {reason}")
     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-
-# def callback(ch, method, properties, body, engine):
-
-#     if properties.headers and ('x-rejection-reason' in properties.headers):
-#         date_print('Message previously rejected - sending to dlx')
-#         ch.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
-#         return 
-
-#     date_print(f"Received message with routing key {method.routing_key}")
-
-#     message_data = json.loads(body)
-#     ch.basic_ack(delivery_tag=method.delivery_tag)
-
-#     response, valid, reason = execute_plugin(engine, message_data, method.routing_key)
-#     date_print(f"{method.routing_key} {response} {valid}")
-
-#     if valid:
-#         return_key = method.routing_key.replace('request', 'response')
-#         ch.basic_publish(
-#             exchange=EXCHANGE_NAME,
-#             routing_key=return_key,
-#             body=json.dumps(response),
-#             properties=pika.BasicProperties(delivery_mode=2)
-#         )
-#         date_print(f"Response published with routing key: {return_key}")
-#     else:
-#         ch.basic_publish(
-#             exchange=EXCHANGE_NAME,
-#             routing_key=method.routing_key,
-#             body=body,
-#             properties=pika.BasicProperties(delivery_mode=2, 
-#                                             headers={'x-rejection-reason': reason})
-#         )
-#         date_print(f"Response rejected for reason: {reason}")
-
 def start_consumer():
     engine = create_engine(DB_URL)
     connection = pika.BlockingConnection(rabbitmq_params)

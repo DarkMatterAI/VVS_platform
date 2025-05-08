@@ -60,23 +60,6 @@ async def redis_service():
     yield redis_service
     await redis_service.close()
 
-# @pytest.fixture(scope="session")
-# def rabbitmq_connection():
-#     rabbitmq_params = pika.ConnectionParameters(
-#         host='rabbitmq',
-#         port=int(os.environ.get('RABBITMQ_PORT', 5672)),
-#         credentials=pika.PlainCredentials(
-#             os.environ['RABBITMQ_DEFAULT_USER'],
-#             os.environ['RABBITMQ_DEFAULT_PASS']
-#         )
-#     )
-
-#     connection = pika.BlockingConnection(rabbitmq_params)
-#     channel = connection.channel()
-#     yield channel 
-#     channel.close()
-#     connection.close()
-
 @pytest.fixture(scope="session")
 def rabbitmq_connection():
     rabbitmq_params = pika.ConnectionParameters(

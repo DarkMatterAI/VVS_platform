@@ -6,16 +6,6 @@ from typing import List, Iterable, Any
 from vvs_database.schemas import ExecuteRequestUnion, RabbitMQConnection
 from vvs_database import logging
 
-
-# def _grouper(iterable: Iterable, n: int) -> Iterable[List]:
-#     """Yield successive *n*-sized chunks from *iterable*."""
-#     it = iter(iterable)
-#     while True:
-#         chunk = list(islice(it, n))
-#         if not chunk:
-#             break
-#         yield chunk
-
 class RabbitMQService():
     def __init__(self, 
                  rabbitmq_connection: RabbitMQConnection,
@@ -147,78 +137,3 @@ class RabbitMQService():
         except pika.exceptions.AMQPError as e:
             logging.error(f"{self.log_id}: Error publishing message: {e}")
             return successful_ids
-
-
-    # def publish_messages(
-    #     self,
-    #     messages: List[ExecuteRequestUnion],
-    #     batch_size: int = 1,              # 1 → “old” behaviour
-    # ) -> List[str]:
-    #     """
-    #     Publish *messages* to RabbitMQ.
-
-    #     When *batch_size* > 1 the `body` of each AMQP message is a JSON list
-    #     with up to *batch_size* request-payloads.  
-    #     The routing-key of the **first** request in the batch is used for
-    #     the AMQP message.  All request-ids contained in the batch are pushed
-    #     onto the *successful_ids* list so the caller can keep per-request
-    #     bookkeeping unchanged.
-
-    #     Returns
-    #     -------
-    #     List[str] – request-ids that were (apparently) published.
-    #     """
-    #     successful_ids: List[str] = []
-
-    #     if not messages:
-    #         return successful_ids
-
-    #     if not self.connection or not self.connection.is_open:
-    #         self.init_rabbitmq_connection()
-
-    #     try:
-    #         # ── case 1: original behaviour (one AMQP msg per request) ─────
-    #         if batch_size <= 1:
-    #             for msg in messages:
-    #                 rid  = msg.request_data.request_id
-    #                 body = json.dumps(msg.model_dump())
-
-    #                 self.channel.basic_publish(
-    #                     exchange     = self.rabbitmq_connection.exchange,
-    #                     routing_key  = rid,
-    #                     body         = body,
-    #                     properties   = pika.BasicProperties(delivery_mode=2),
-    #                 )
-    #                 successful_ids.append(rid)
-    #                 if self.verbose:
-    #                     logging.info("%s: published %s", self.log_id, rid)
-
-    #         # ── case 2: batched – one AMQP msg per *batch_size* requests ──
-    #         else:
-    #             for batch in _grouper(messages, batch_size):
-    #                 # serialise the whole chunk
-    #                 body = json.dumps([m.model_dump() for m in batch])
-
-    #                 # routing-key = first request in this chunk
-    #                 rk   = batch[0].request_data.request_id
-
-    #                 self.channel.basic_publish(
-    #                     exchange     = self.rabbitmq_connection.exchange,
-    #                     routing_key  = rk,
-    #                     body         = body,
-    #                     properties   = pika.BasicProperties(delivery_mode=2),
-    #                 )
-
-    #                 ids = [m.request_data.request_id for m in batch]
-    #                 successful_ids.extend(ids)
-    #                 if self.verbose:
-    #                     logging.info(
-    #                         "%s: published batch of %d -> %s …",
-    #                         self.log_id, len(batch), rk
-    #                     )
-
-    #     except pika.exceptions.AMQPError as exc:
-    #         logging.error("%s: AMQP publish failed – %s", self.log_id, exc)
-
-    #     return successful_ids
-
