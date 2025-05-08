@@ -73,7 +73,9 @@ class QueueExecutionStrategy(ExecutionStrategy):
             )
 
             # 2. wait / collect results ----------------------------------------
-            await self._poll_results(tracker, const)
+            # await self._poll_results(tracker, const)
+            self.rabbit.poll_events()
+            await self._collect_replies(tracker)
             self._apply_timeouts(tracker, const)
 
             # 3. figure out which tokens are now free --------------------------
@@ -109,7 +111,8 @@ class QueueExecutionStrategy(ExecutionStrategy):
         tracker: Dict[str, QueueRequestState] = {}
         for k, r in requests.items():
             rid  = r.request_data.request_id
-            resp = rid.replace("request", "response").replace(".", ":")
+            resp = rid 
+            # resp = rid.replace("request", "response").replace(".", ":")
             tracker[k] = QueueRequestState(
                 key=k,
                 request=r,
@@ -300,30 +303,60 @@ class QueueExecutionStrategy(ExecutionStrategy):
             else:
                 st.queue_errors += 1
 
-    async def _poll_results(
-        self,
-        tracker: Dict[str, QueueRequestState],
-        const: QueueConst,
-    ) -> None:
+    # ----- reply collection ---------------------------------------- #
+    async def _collect_replies(self, tracker: Dict[str, QueueRequestState]) -> None:
+        """Move finished RPC replies from RabbitMQService into the tracker."""
         ids = [st.resp_id for st in tracker.values() if st.status == "queued"]
         if not ids:
             return
-        hits = await self.redis.get_results(ids, delete=True)
-        id_map = {st.resp_id: st for st in tracker.values()}
+
+        hits = self.rabbit.pop_replies(ids) 
         freshly_done: Dict[str, QueueRequestState] = {}
 
-        for rid, payload in hits.items():
-            st = id_map[rid]
+        for corr_id, payload in hits.items():
+            # find matching request state
+            st = next(st for st in tracker.values() if st.resp_id == corr_id)
             st.status   = "done"
+            print(payload)
+            # payload has valid, response_data, failure_response, failure_detail keys
             st.response = StrategyResponse(
-                # note - here we unpack payload because message consumer 
-                # returns nested {"valid": True, "response_data": {}}
-                **payload,
-                source=ExecutionSources.EXECUTION,
+                **payload, source=ExecutionSources.EXECUTION
             )
+            # st.response = StrategyResponse(
+            #     valid=True,
+            #     response_data=payload,
+            #     source=ExecutionSources.EXECUTION,
+            # )
+
             freshly_done[st.key] = st
 
+        # optional cache write – re-use existing helper
         await self._write_cache(freshly_done)
+
+    # async def _poll_results(
+    #     self,
+    #     tracker: Dict[str, QueueRequestState],
+    #     const: QueueConst,
+    # ) -> None:
+    #     ids = [st.resp_id for st in tracker.values() if st.status == "queued"]
+    #     if not ids:
+    #         return
+    #     hits = await self.redis.get_results(ids, delete=True)
+    #     id_map = {st.resp_id: st for st in tracker.values()}
+    #     freshly_done: Dict[str, QueueRequestState] = {}
+
+    #     for rid, payload in hits.items():
+    #         st = id_map[rid]
+    #         st.status   = "done"
+    #         st.response = StrategyResponse(
+    #             # note - here we unpack payload because message consumer 
+    #             # returns nested {"valid": True, "response_data": {}}
+    #             **payload,
+    #             source=ExecutionSources.EXECUTION,
+    #         )
+    #         freshly_done[st.key] = st
+
+    #     await self._write_cache(freshly_done)
 
     # ----- time-out handling ---------------------------------------- #
     def _apply_timeouts(
@@ -348,6 +381,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
             elif st.status == "queued" and st.queued_at and (now - st.queued_at) > const.timeout:
                 st.status   = "error"
                 st.response = StrategyResponse.failure(
-                    "Queue timeout", "No response within timeout"
+                    "RPC timeout", "No response within timeout"
+                    # "Queue timeout", "No response within timeout"
                 )
 

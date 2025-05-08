@@ -1,4 +1,5 @@
 import pytest 
+from copy import deepcopy 
 
 from tests.utils.request_data import get_plugin_and_request
 
@@ -109,6 +110,87 @@ async def test_db_aggressive_cache(db_session, backend_client):
         assert val.valid, f"key {key} unexpectedly failed"
         assert val.source == ExecutionSources.CACHE
         assert val.response_data == response_dict[key].model_dump()
+
+    await connections.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "failure_mode, expected_reason",
+    [
+        ("dlx", "Dead Letter"),   # plugin rejects → DLX → forwarder
+        ("alt", "Alt Ex"),        # unroutable → ALT exchange → forwarder
+    ],
+)
+async def test_queue_failure_forwarded(
+    db_session,
+    backend_client,
+    failure_mode,
+    expected_reason,
+):
+    """
+    • "dlx": publish to  request.*.dlx_test.*.*.*   → plugin rejects
+    • "alt": publish with an unroutable first token → ALT exchange
+
+    In both cases the DLX/ALT forwarder should send a negative reply directly
+    to the client's reply queue, and QueueExecutionStrategy must surface it.
+    """
+    # --- 1. get *some* plugin + sample requests ----------------------------
+    plugin_type = "filter"                   # any existing plugin will do
+    plugin_rec, req_data = await get_plugin_and_request(
+        db_session,
+        backend_client,
+        plugin_type,
+        f"mock_{plugin_type}_queue_%",
+        3,                                   # batch size
+        to_model=True,
+    )
+    plugin = PluginInDB(**plugin_rec)
+
+    # --- 2. Tweak routing-keys to trigger failure path ---------------------
+    mutated_reqs = []
+    for r in deepcopy(req_data):             # don't mutate fixture objects
+        rk = r.request_data.request_id
+
+        if failure_mode == "dlx":
+            # replace ".filter." with ".dlx_test."
+            r.request_data.request_id = rk.replace(f".{plugin_type}.",
+                                                    ".dlx_test.")
+        else:  # "alt"
+            # make it unroutable for the topic exchange
+            #   request.foo.bar  ->  blah.foo.bar  (no binding)
+            r.request_data.request_id = rk.replace("request", "blah", 1)
+
+        mutated_reqs.append(r)
+
+    # --- 3. Strategy under test -------------------------------------------
+    connections    = get_connections(db_session)
+    execute_params = ExecuteParams(
+        cache=False,
+        aggressive_cache=False,
+        db_lookup=False,
+        db_persist=False,
+        use_semaphore=True,
+        max_semaphore_attempts=10,
+        queue_polling_interval=0.05,
+        backoff_factor=2.0,
+    )
+    executor = QueueExecutionStrategy(connections, execute_params, EmbedResponse)
+
+    # --- 4. Run executor ---------------------------------------------------
+    request_dict = {r.generate_key(plugin_id=plugin.id): r for r in mutated_reqs}
+    results      = await executor.execute(plugin, request_dict)
+
+    # --- 5. Assertions -----------------------------------------------------
+    assert results, "executor returned empty response"
+
+    for key, resp in results.items():
+        assert resp.valid is False, f"{key} unexpectedly succeeded"
+        assert resp.failure_reason == expected_reason
+        # Meta data is forwarded; actual response_data is None
+        assert resp.response_data is None
+        # Failure replies come from EXECUTION source, not CACHE
+        assert resp.source == ExecutionSources.EXECUTION
 
     await connections.close()
 

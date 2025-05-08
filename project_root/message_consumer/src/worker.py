@@ -38,5 +38,6 @@ def worker(is_dlx=False):
             channel, connection = start_consumer(is_dlx)
             channel.start_consuming()
         except Exception as e:
+            # raise e 
             date_print(f"Worker: Error in consumer: {e}")
             time.sleep(3)  # Wait before attempting to reconnect

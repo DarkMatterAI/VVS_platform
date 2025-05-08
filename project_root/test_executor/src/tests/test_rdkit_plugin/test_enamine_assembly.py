@@ -2,7 +2,7 @@ import pytest
 
 from tests.utils.backend_utils import backend_get_plugins_by_filter
 from tests.utils.request_data import generate_rdkit_assembly_request, validate_response, validate_api_response
-from tests.utils.rabbitmq_utils import rabbitmq_publish, poll_redis
+from tests.utils.rabbitmq_utils import rabbitmq_publish, collect_replies # poll_redis
 from tests.utils.backend_utils import backend_execute_plugin
 from tests.utils.db_utils import validate_assembly_checkin
 
@@ -55,12 +55,32 @@ async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, 
     reactants = reaction_dict[reaction_id]
     parents = [[reactants['r1'], reactants['r2']]]
     request_data = await generate_rdkit_assembly_request(db_session, parents, plugin, to_model=True)
-    published = rabbitmq_publish(rabbitmq_connection, request_data)
-    response_keys = [i.replace('request', 'response').replace('.', ':') for i in published]
-    response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
-    response = [i['response_data'] for i in response]
-    response = validate_response(plugin, response)
+
+    conn, ch = rabbitmq_connection
+    result       = ch.queue_declare(queue="", exclusive=True)
+    reply_queue  = result.method.queue
+
+    corr_ids  = rabbitmq_publish(ch, request_data, reply_queue)
+    responses = collect_replies(conn, ch, reply_queue, corr_ids,
+                                interval=0.05, timeout=10.0)
+    validate_response(plugin, responses)
     await db_session.commit()
+
+
+# @pytest.mark.asyncio
+# @pytest.mark.parametrize("reaction_id", [r['id'] for r in reaction_data])
+# async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, redis_connection, 
+#                                                backend_client, reaction_id):
+#     plugin = get_reaction_plugin(backend_client, reaction_id)
+#     reactants = reaction_dict[reaction_id]
+#     parents = [[reactants['r1'], reactants['r2']]]
+#     request_data = await generate_rdkit_assembly_request(db_session, parents, plugin, to_model=True)
+#     published = rabbitmq_publish(rabbitmq_connection, request_data)
+#     response_keys = [i.replace('request', 'response').replace('.', ':') for i in published]
+#     response = poll_redis(redis_connection, response_keys, interval=0.05, timeout=10)
+#     response = [i['response_data'] for i in response]
+#     response = validate_response(plugin, response)
+#     await db_session.commit()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reaction_id", [r['id'] for r in reaction_data])

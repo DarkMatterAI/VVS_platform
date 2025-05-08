@@ -8,38 +8,83 @@ from .chem import execute_plugin
 from .utils import date_print
 
 def callback(ch, method, properties, body, engine):
-
-    if properties.headers and ('x-rejection-reason' in properties.headers):
-        date_print('Message previously rejected - sending to dlx')
+    # ── 1. short‑circuit previously rejected messages ────────────────
+    if properties.headers and "x-rejection-reason" in properties.headers:
+        date_print("Message previously rejected - sending to DLX")
         ch.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
-        return 
+        return
 
-    date_print(f"Received message with routing key {method.routing_key}")
+    date_print(f"Received message {method.routing_key}")
 
-    message_data = json.loads(body)
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    # ── 2. run the plugin code ───────────────────────────────────────
+    payload      = json.loads(body)
+    response, valid, reason = execute_plugin(engine, payload, method.routing_key)
+    date_print(f"{method.routing_key} valid={valid}")
 
-    response, valid, reason = execute_plugin(engine, message_data, method.routing_key)
-    date_print(f"{method.routing_key} {response} {valid}")
-
-    if valid:
-        return_key = method.routing_key.replace('request', 'response')
+    # ── 3. on success → RPC reply  ───────────────────────────────────
+    if valid and properties.reply_to:
         ch.basic_publish(
-            exchange=EXCHANGE_NAME,
-            routing_key=return_key,
+            exchange="",                         # default direct exchange
+            routing_key=properties.reply_to,     # client’s private queue
             body=json.dumps(response),
-            properties=pika.BasicProperties(delivery_mode=2)
+            properties=pika.BasicProperties(
+                delivery_mode=2,                 # persist
+                correlation_id=properties.correlation_id,
+            ),
         )
-        date_print(f"Response published with routing key: {return_key}")
-    else:
-        ch.basic_publish(
-            exchange=EXCHANGE_NAME,
-            routing_key=method.routing_key,
-            body=body,
-            properties=pika.BasicProperties(delivery_mode=2, 
-                                            headers={'x-rejection-reason': reason})
+        date_print(
+            f"Sent reply corr_id={properties.correlation_id} → {properties.reply_to}"
         )
-        date_print(f"Response rejected for reason: {reason}")
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
+    # ── 4. on failure (or missing reply_to) → dead‑letter ────────────
+    ch.basic_publish(
+        exchange=EXCHANGE_NAME,                  # same topic exchange
+        routing_key=method.routing_key,          # so DLX rules apply
+        body=body,
+        properties=pika.BasicProperties(
+            delivery_mode=2,
+            headers={"x-rejection-reason": reason},
+        ),
+    )
+    date_print(f"Rejected request: {reason}")
+    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+
+# def callback(ch, method, properties, body, engine):
+
+#     if properties.headers and ('x-rejection-reason' in properties.headers):
+#         date_print('Message previously rejected - sending to dlx')
+#         ch.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
+#         return 
+
+#     date_print(f"Received message with routing key {method.routing_key}")
+
+#     message_data = json.loads(body)
+#     ch.basic_ack(delivery_tag=method.delivery_tag)
+
+#     response, valid, reason = execute_plugin(engine, message_data, method.routing_key)
+#     date_print(f"{method.routing_key} {response} {valid}")
+
+#     if valid:
+#         return_key = method.routing_key.replace('request', 'response')
+#         ch.basic_publish(
+#             exchange=EXCHANGE_NAME,
+#             routing_key=return_key,
+#             body=json.dumps(response),
+#             properties=pika.BasicProperties(delivery_mode=2)
+#         )
+#         date_print(f"Response published with routing key: {return_key}")
+#     else:
+#         ch.basic_publish(
+#             exchange=EXCHANGE_NAME,
+#             routing_key=method.routing_key,
+#             body=body,
+#             properties=pika.BasicProperties(delivery_mode=2, 
+#                                             headers={'x-rejection-reason': reason})
+#         )
+#         date_print(f"Response rejected for reason: {reason}")
 
 def start_consumer():
     engine = create_engine(DB_URL)
