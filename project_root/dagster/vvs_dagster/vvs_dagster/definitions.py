@@ -18,6 +18,7 @@ defs = Definitions(
           qdrant_upload_job.qdrant_upload_job,
           hc_job.hc_job],
     sensors=[qdrant_upload_job.qdrant_upload_sensor,
+             hc_job.hc_sensor,
              failure_sensor.job_canceled_sensor,
              failure_sensor.job_failure_sensor]
 )

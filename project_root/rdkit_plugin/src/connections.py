@@ -16,7 +16,8 @@ rabbitmq_params = pika.ConnectionParameters(
     credentials=pika.PlainCredentials(
         settings.RABBITMQ_DEFAULT_USER,
         settings.RABBITMQ_DEFAULT_PASS
-    )
+    ),
+    heartbeat=30
 )
 
 @cached(cache={}, key=lambda engine, plugin_id: hashkey(plugin_id))

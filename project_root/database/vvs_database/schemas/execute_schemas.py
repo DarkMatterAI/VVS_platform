@@ -1,5 +1,12 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import List, Union, Optional, Dict
+import numpy as np 
+
+def _check_nan(embedding: Optional[list[float]]=None):    
+    if embedding is not None:
+        embdding = np.array(embedding)
+        if np.isnan(embedding).any():
+            raise ValueError(f"Embedding values must not be NaN")
 
 class RequestData(BaseModel):
     """Data for plugin making a request"""
@@ -41,6 +48,11 @@ class EmbedResponse(BaseModel):
     @classmethod
     def failure_response(cls):
         return cls(valid=False, embedding=None)
+    
+    @field_validator("embedding")
+    def check_nan(cls, v, info):
+        _check_nan(v)
+        return v
 
 class DataSourceRequest(BaseModel):
     request_data: RequestData
@@ -62,6 +74,11 @@ class DataSourceResponseItem(BaseModel):
     external_id: Optional[str]
     embedding: List[float]
     distance: Optional[float]
+
+    @field_validator("embedding")
+    def check_nan(cls, v, info):
+        _check_nan(v)
+        return v
         
 class DataSourceResponse(BaseModel):
     valid: bool
@@ -106,6 +123,11 @@ class MapperResponse(BaseModel):
     @classmethod
     def failure_response(cls):
         return cls(valid=False, embedding=None)
+    
+    @field_validator("embedding")
+    def check_nan(cls, v, info):
+        _check_nan(v)
+        return v
 
 class AssemblyItem(ItemData):
     assembly_index: int 

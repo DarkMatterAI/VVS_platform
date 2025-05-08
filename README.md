@@ -1,10 +1,9 @@
 # VVS_V2
 
 todos
-    triton server rework
-        update auto-records
-        update formatter
-        update .env args 
+    message refactor
+        replace message consumer with direct reply via correlation id 
+        correctly process batches 
     performance
         refactor HCJob to batch gather/scatter all HCIterationJobs 
         speed up delete job speed for large record counts
@@ -21,6 +20,9 @@ todos
         BBKNN endpoints 
         move rdkit/qdrant code to db lib 
     HC job
+        refactor
+            do job level, not input level
+            maybe have local cache to lower redis hits?
         dagster sensor
             needs to handle job hierarchy
         dagster failure sensor
@@ -43,6 +45,8 @@ todos
     qdrant job
         need to control concurrent jobs
             semaphore or dagster limit 
+        toggle indexing with `m` instead of indexing threshold (https://qdrant.tech/articles/indexing-optimization/)
+        update qdrant formatter to use extra args
     rdkit plugin
         deduplicate reaction list
     misc 
@@ -51,10 +55,10 @@ todos
         qdrant collections after proper postgres persist 
         "clear plugin records" function to remove items/etc
             items with assembly won't auto-clear even after job/plugin deletion 
-    update execution
+        fix job cleanup
+            currently pulling any HC-related job with no plugin reference
+    update plugin type
         new plugin type for custom update
-    message refactor
-        replace message consumer with direct reply via correlation id 
     file organize
         move test modules into single folder
         move plugins into single folder 

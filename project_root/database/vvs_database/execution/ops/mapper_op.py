@@ -1,5 +1,6 @@
 from typing import List, Dict, Optional 
 from collections import defaultdict
+import numpy as np 
 
 from vvs_database.schemas.execute_schemas import (
     Embedding,

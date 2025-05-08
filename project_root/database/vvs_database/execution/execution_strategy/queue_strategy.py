@@ -40,7 +40,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         self._resp_model = response_model
 
     # ───────────────────────────────────────────────────────────────── #
-    # public API                                                      #
+    # public API                                                        #
     # ───────────────────────────────────────────────────────────────── #
     async def execute(
         self,
@@ -63,16 +63,36 @@ class QueueExecutionStrategy(ExecutionStrategy):
             if await self._maybe_backoff(tokens, pending_batches, const, tracker):
                 continue
 
+            # 1. pick & publish -------------------------------------------------
             wave_batches, token_list = self._pick_wave(pending_batches, tokens, const)
             self._mark_processing(wave_batches, token_list, tracker)
+            if wave_batches:
+                logging.info("Publishing %s batches", len(wave_batches))
             await asyncio.gather(
-                *[self._publish_batch(b, tracker, plugin) for b in wave_batches]
+                *[self._publish_batch(b, tracker, const.bs) for b in wave_batches]
             )
-            await self._release_tokens(tokens, const)
 
+            # 2. wait / collect results ----------------------------------------
             await self._poll_results(tracker, const)
             self._apply_timeouts(tracker, const)
+
+            # 3. figure out which tokens are now free --------------------------
+            await self._release_tokens(tracker, const)
+
             await asyncio.sleep(const.poll_interval)
+
+            # wave_batches, token_list = self._pick_wave(pending_batches, tokens, const)
+            # self._mark_processing(wave_batches, token_list, tracker)
+            # if len(wave_batches)>0:
+            #     logging.info(f"Publishing {len(wave_batches)} batches")
+            # await asyncio.gather(
+            #     *[self._publish_batch(b, tracker, plugin) for b in wave_batches]
+            # )
+            # await self._release_tokens(tokens, const)
+
+            # await self._poll_results(tracker, const)
+            # self._apply_timeouts(tracker, const)
+            # await asyncio.sleep(const.poll_interval)
 
         return {k: st.response for k, st in tracker.items()}
 
@@ -124,10 +144,41 @@ class QueueExecutionStrategy(ExecutionStrategy):
         return await self.redis.acquire_semaphores_batch(
             const.sem_name, need, const.max_conc, lock_timeout=const.lock_t
         )
+    
+    async def _release_tokens(self, tracker: dict[str, QueueRequestState],
+                            const: QueueConst) -> None:
+        if not const.use_sema:
+            return
 
-    async def _release_tokens(self, tokens: List[str], const: QueueConst) -> None:
-        if tokens and const.use_sema:
+        done   = [st for st in tracker.values()
+                if st.status in ("done", "error") and st.identifier]
+        tokens = list({st.identifier for st in done})     # unique
+
+        if tokens:
+            logging.info("Releasing %d semaphore tokens", len(tokens))
             await self.redis.release_semaphore(const.sem_name, tokens)
+            for st in done:
+                st.identifier = None
+    
+    # async def _release_tokens(self, tracker: Dict[str, QueueRequestState], const: QueueConst) -> None:
+    #     done_tokens = []
+    #     done_requests = []
+    #     for st in tracker.values():
+    #         if st.status in ("done", "error") and st.identifier:
+    #             done_tokens.append(st.identifier)
+    #             done_requests.append(st)
+
+    #     if done_tokens and const.use_sema:
+    #         done_tokens = list(set(done_tokens))
+    #         logging.info(f"Releasing {len(done_tokens)} semaphores")
+    #         await self.redis.release_semaphore(const.sem_name, done_tokens)
+
+    #     for st in done_requests:
+    #         st.identifier = None 
+
+    # async def _release_tokens(self, tokens: List[str], const: QueueConst) -> None:
+    #     if tokens and const.use_sema:
+    #         await self.redis.release_semaphore(const.sem_name, tokens)
 
     # ----- back-off check ------------------------------------------- #
     async def _maybe_backoff(
@@ -142,6 +193,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
         False if normal processing should continue.
         """
         if const.use_sema and not tokens and pending_batches:
+            logging.info("Semaphore backoff")
             for k in self._waiting_batches(tracker, const.bs)[0]:
                 st = tracker[k]
                 st.attempts_left -= 1
@@ -228,7 +280,8 @@ class QueueExecutionStrategy(ExecutionStrategy):
         self,
         keys: List[str],
         tracker: Dict[str, QueueRequestState],
-        plugin: PluginInDB,
+        batch_size: int
+        # plugin: PluginInDB,
     ) -> None:
         msgs = [tracker[k].request for k in keys]
         try:
@@ -246,24 +299,6 @@ class QueueExecutionStrategy(ExecutionStrategy):
                 st.queued_at = now
             else:
                 st.queue_errors += 1
-
-    # async def _poll_results(
-    #     self,
-    #     tracker: Dict[str, QueueRequestState],
-    #     const: QueueConst,
-    # ) -> None:
-    #     ids = [st.resp_id for st in tracker.values() if st.status == "queued"]
-    #     if not ids:
-    #         return
-    #     hits = await self.redis.get_results(ids, delete=True)
-    #     id_map = {st.resp_id: st for st in tracker.values()}
-    #     for rid, payload in hits.items():
-    #         st = id_map[rid]
-    #         st.status   = "done"
-    #         st.response = StrategyResponse(
-    #             **payload,
-    #             source=ExecutionSources.EXECUTION,
-    #         )
 
     async def _poll_results(
         self,

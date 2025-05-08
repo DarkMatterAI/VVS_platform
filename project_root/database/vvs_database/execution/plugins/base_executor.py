@@ -276,9 +276,6 @@ class BasePluginExecutor:
 
         await self.connections.db_service.log_failed_requests(self.plugin, failed)
 
-        # if self.execute_params.cache and executed:
-            # await self.connections.redis_service.set_results(executed)
-
         self.execution_log.record_executed(sources, self.request_model.strip_key)
         return executed
 

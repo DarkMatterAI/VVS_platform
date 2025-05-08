@@ -1,5 +1,6 @@
 import dagster as dg 
 from sqlalchemy import select 
+import asyncio 
 
 from vvs_dagster.resources import (
     PostgresResource, 
@@ -120,4 +121,43 @@ def hc_job():
     input_jobs = spawn_input_jobs(job_id=job_id)
     input_job_results = input_jobs.map(lambda input_job_id: input_job(input_job_id=input_job_id))
     collate = collate_results(input_job_results=input_job_results.collect())
+    
+
+@dg.sensor(job=hc_job,
+           minimum_interval_seconds=5,
+        #    default_status=dg.DefaultSensorStatus.RUNNING,
+           )
+def hc_sensor(context: dg.SensorEvaluationContext,
+              postgres_resource: PostgresResource):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    last_job = int(context.cursor) if context.cursor else 0
+    new_last_job = last_job
+
+    session = postgres_resource.get_db()
+    filter_params = {
+        'job_type' : schemas.JobType.HILL_CLIMB_JOB,
+        'status' : schemas.JobStatus.CREATED,
+        'auto_execute' : True
+    }
+
+    records = loop.run_until_complete(crud.get_jobs(session, filter_params))
+
+    context.log.info(f'Hill climb sensor: found {len(records)} jobs')
+
+    for record in records:
+        job_id = record.id
+        if job_id > last_job:
+            new_last_job = max(new_last_job, job_id)
+            run_config = {"ops": {"init_hc_job": {"config": {"job_id": job_id}}}}
+            context.log.info(f'Yielding run request for job {job_id}')
+            yield dg.RunRequest(run_key=str(record.id), run_config=run_config)
+
+            context.log.info(f'Updating status for job {job_id}')
+            loop.run_until_complete(crud.update_job(session, job_id, status=schemas.JobStatus.QUEUED))
+
+    context.update_cursor(str(new_last_job))
+    loop.run_until_complete(session.close())
+    loop.close()
     

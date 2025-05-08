@@ -43,7 +43,8 @@ class InferenceWrapper():
         inputs = parse_sequence_batch(sequence)
         logger.info(f"Embedding {len(inputs)} items to size {output_size}, device {self.device}")
         
-        with torch.inference_mode(), torch.autocast(device_type=self.device):
+        # with torch.inference_mode(), torch.autocast(device_type=self.device):
+        with torch.inference_mode():
             embeddings = self.embedding_model.encode(inputs, 
                                                      batch_size=self.embed_config.batch_size,
                                                      show_progress_bar=False,
@@ -60,7 +61,8 @@ class InferenceWrapper():
         input_size, output_size = DECOMPOSER_CONFIG.parse_decomposer_sizes(size_kwargs)
         logger.info(f"Decomposing {embedding.shape[0]} items {input_size}->{output_size}, device {self.device}")
 
-        with torch.inference_mode(), torch.autocast(device_type=self.device):
+        # with torch.inference_mode(), torch.autocast(device_type=self.device):
+        with torch.inference_mode():
             e_dict = {input_size: torch.from_numpy(embedding).float().to(self.device)}
             d_dict = self.decomposer.decompose(e_dict, [output_size]) # {output_size: [1, B, 2, output_size]}
             decomposed = d_dict[output_size][0]

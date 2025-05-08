@@ -176,6 +176,8 @@ class QdrantFormatter(BaseFormatter):
                 "with_vector": True,
                 "with_payload": True
             }
+            if r.runtime_args:
+                query.update(r.runtime_args)
             search_queries.append(query)
             embedding_names.append(embedding_name)
             

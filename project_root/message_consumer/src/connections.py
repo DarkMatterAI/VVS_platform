@@ -17,7 +17,8 @@ rabbitmq_params = pika.ConnectionParameters(
     credentials=pika.PlainCredentials(
         os.getenv('RABBITMQ_DEFAULT_USER'),
         os.getenv('RABBITMQ_DEFAULT_PASS')
-    )
+    ),
+    heartbeat=20
 )
 
 redis_client = redis.Redis(

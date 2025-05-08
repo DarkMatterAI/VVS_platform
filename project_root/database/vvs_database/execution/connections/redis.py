@@ -58,7 +58,8 @@ class RedisService:
 
         n_found = len(parsed_results.keys())
         pct_found = n_found / len(keys)
-        logging.info(f"{self.log_id}: Found {n_found}/{len(keys)} keys, {pct_found:.3f} hit percent")
+        if n_found>0:
+            logging.info(f"{self.log_id}: Found {n_found}/{len(keys)} keys, {pct_found:.3f} hit percent")
         
         return parsed_results
     
