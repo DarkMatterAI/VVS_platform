@@ -42,13 +42,12 @@ def forward_callback(ch, method, props, body):
     # --- always ACK the DLX copy -----------------------------------------
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
-def start_forwarder():
+def start_consumer():
     conn    = pika.BlockingConnection(rabbitmq_params)
     channel = conn.channel()
 
     channel.basic_qos(prefetch_count=10)
 
-    # only DLX_QUEUE if you drop ALT; add ALT_QUEUE if you keep it
     for q in (DLX_QUEUE, ALT_QUEUE):
         try:
             channel.basic_consume(queue=q, on_message_callback=forward_callback)
@@ -60,8 +59,3 @@ def start_forwarder():
     date_print("DLX/ALT forwarder running…")
     return channel, conn
 
-
-def start_consumer(is_dlx=True):
-    assert is_dlx 
-    channel, connection = start_forwarder()
-    return channel, connection

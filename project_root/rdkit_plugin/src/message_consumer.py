@@ -3,7 +3,7 @@ import json
 from sqlalchemy import create_engine
 from functools import partial 
 
-from .connections import EXCHANGE_NAME, DB_URL, rabbitmq_params, get_plugin_from_routing_key
+from .connections import EXCHANGE_NAME, DB_URL, rabbitmq_params
 from .chem import execute_plugin
 from .utils import date_print
 

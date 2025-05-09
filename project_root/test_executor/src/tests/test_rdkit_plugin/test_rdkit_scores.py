@@ -13,8 +13,7 @@ from tests.utils.db_utils import validate_item_checkin
 TEST_SMILES = ['CC(C)c1cc(C(=O)NC[C@@H](O)c2ccccn2)n(C)n1']
 
 @pytest.mark.asyncio
-async def test_rdkit_score_consumer(db_session, rabbitmq_connection, redis_connection, 
-                                     backend_client, rdkit_test_score):
+async def test_rdkit_score_consumer(db_session, rabbitmq_connection, rdkit_test_score):
     plugin = rdkit_test_score()
     request_data = await generate_rdkit_item_request(db_session, TEST_SMILES, plugin, to_model=True)
     conn, ch = rabbitmq_connection

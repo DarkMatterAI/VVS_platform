@@ -11,8 +11,7 @@ TEST_PARENTS = [
 ]
 
 @pytest.mark.asyncio
-async def test_rdkit_smarts_assembly_consumer(db_session, rabbitmq_connection, redis_connection, 
-                                     backend_client, rdkit_test_assembly):
+async def test_rdkit_smarts_assembly_consumer(db_session, rabbitmq_connection, rdkit_test_assembly):
     plugin = rdkit_test_assembly()
     request_data = await generate_rdkit_assembly_request(db_session, TEST_PARENTS, plugin, to_model=True)
     conn, ch = rabbitmq_connection

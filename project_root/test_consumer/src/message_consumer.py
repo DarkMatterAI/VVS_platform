@@ -56,8 +56,10 @@ def start_consumer(worker_id, records):
 
     binding_keys = []
     for plugin_type, plugin_records in records.items():
-        binding_keys += [f"request.mock_queue.{plugin_type}.{i['id']}.*.*" for i in plugin_records]
+        binding_keys += [f"request.mock_queue.{plugin_type}.*.*.*" for i in plugin_records]
+        # binding_keys += [f"request.mock_queue.{plugin_type}.{i['id']}.*.*" for i in plugin_records]
 
+    binding_key = list(set(binding_keys))
     print(binding_keys)
 
     for binding_key in binding_keys:

@@ -49,8 +49,7 @@ def test_enamine_assembly_created(backend_client):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reaction_id", [r['id'] for r in reaction_data])
-async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, redis_connection, 
-                                               backend_client, reaction_id):
+async def test_rdkit_enamine_assembly_consumer(db_session, rabbitmq_connection, backend_client, reaction_id):
     plugin = get_reaction_plugin(backend_client, reaction_id)
     reactants = reaction_dict[reaction_id]
     parents = [[reactants['r1'], reactants['r2']]]
