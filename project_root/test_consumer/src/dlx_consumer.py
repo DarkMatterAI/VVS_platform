@@ -30,5 +30,4 @@ def start_consumer(worker_id):
 
     print(f"Worker {worker_id}: DLX Test consumer started for plugins. Waiting for messages...")
     return channel, connection
-    # channel.start_consuming()
 

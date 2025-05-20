@@ -6,7 +6,7 @@ import signal
 from .consumer import start_consumer 
 from .utils import date_print
 
-def worker(is_dlx=False):
+def worker():
     connection = None 
     channel = None 
 
@@ -35,8 +35,9 @@ def worker(is_dlx=False):
     
     while True:
         try:
-            channel, connection = start_consumer(is_dlx)
+            channel, connection = start_consumer()
             channel.start_consuming()
         except Exception as e:
+            # raise e 
             date_print(f"Worker: Error in consumer: {e}")
             time.sleep(3)  # Wait before attempting to reconnect

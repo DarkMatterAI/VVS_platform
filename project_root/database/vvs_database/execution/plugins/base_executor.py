@@ -270,7 +270,6 @@ class BasePluginExecutor:
 
             if not payload.valid:
                 logging.error("%s: Exec failure - %s", self.log_id, payload.failure_reason)
-                # failed.append((remaining[key], payload.model_dump()))
                 failed.append((remaining[key], payload))
                 sources[ExecutionSources.FAILURE].append(key)
 

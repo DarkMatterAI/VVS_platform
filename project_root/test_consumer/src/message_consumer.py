@@ -23,22 +23,27 @@ def callback(ch, method, properties, body):
 
     response = execute_plugin(response_data, plugin_type)
 
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    # ──────────────────────────────────────────────────────────────
+    #  ┌─►  send *directly* back to the client-side reply queue
+    #  │     obtained from   BasicProperties.reply_to
+    #  └─►  echo the correlation-id so the client can match the RPC
+    #
+    runtime_args = response_data.get("runtime_args") or {}
+    if not runtime_args.get("no_response", False) and properties.reply_to:
+        ch.basic_publish(
+            exchange="",                         # default direct-to-queue exchange
+            routing_key=properties.reply_to,     # the client’s private queue
+            body=json.dumps(response),
+            properties=pika.BasicProperties(
+                delivery_mode=2,                 # persistent
+                correlation_id=properties.correlation_id,
+            ),
+        )
+        print(
+            f"Sent reply corr_id={properties.correlation_id} -> {properties.reply_to}"
+        )
 
-    runtime_args = response_data.get('runtime_args')
-    if runtime_args is not None:
-        if runtime_args.get('no_response', False):
-            print(f"Skipping response for testing")
-            return 
-
-    ch.basic_publish(
-        exchange=EXCHANGE_NAME,
-        routing_key=return_key,
-        body=json.dumps(response),
-        properties=pika.BasicProperties(delivery_mode=2)  # Make message persistent
-    )
-
-    print(f"Response published with routing key: {return_key}")
+    ch.basic_ack(delivery_tag=method.delivery_tag)  # always ACK last
 
 def start_consumer(worker_id, records):
     connection = pika.BlockingConnection(rabbitmq_params)
@@ -51,8 +56,10 @@ def start_consumer(worker_id, records):
 
     binding_keys = []
     for plugin_type, plugin_records in records.items():
-        binding_keys += [f"request.mock_queue.{plugin_type}.{i['id']}.*.*" for i in plugin_records]
+        binding_keys += [f"request.mock_queue.{plugin_type}.*.*.*" for i in plugin_records]
+        # binding_keys += [f"request.mock_queue.{plugin_type}.{i['id']}.*.*" for i in plugin_records]
 
+    binding_key = list(set(binding_keys))
     print(binding_keys)
 
     for binding_key in binding_keys:
@@ -70,4 +77,3 @@ def start_consumer(worker_id, records):
 
     print(f"Worker {worker_id}: Test consumer started. Waiting for messages...")
     return channel, connection
-    # channel.start_consuming()

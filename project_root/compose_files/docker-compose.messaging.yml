@@ -23,19 +23,6 @@ services:
     networks:
       - vvs_v2_network
 
-  message_consumer:
-    build:
-      context: ../message_consumer 
-      dockerfile: message_consumer.Dockerfile 
-    env_file:
-      - ../.env
-    networks:
-      - vvs_v2_network
-    depends_on:
-      - rabbitmq
-    deploy:
-      replicas: ${MESSAGE_CONSUMER_REPLICAS:-${DEFAULT_REPLICAS}}
-
   dlx_consumer:
     build:
       context: ../message_consumer 

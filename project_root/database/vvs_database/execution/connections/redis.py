@@ -183,7 +183,7 @@ class RedisService:
         Atomically try to grab up to *n* semaphore slots.
         Returns the list of identifiers actually acquired.
         """
-        logging.info(f"{self.log_id}: New batch confirmed")
+        # logging.info(f"{self.log_id}: New batch confirmed")
         if n <= 0:
             return []
 
@@ -200,10 +200,11 @@ class RedisService:
             current = (await pipe.execute())[-1]
 
         free = max(0, max_locks - current)
+        grab = min(free, n)
+        logging.info(f"{self.log_id}: Received {grab}/{n} locks, {current}/{max_locks} in use")
         if free == 0:
             return []                                   # nothing available
 
-        grab = min(free, n)
         identifiers = [str(uuid.uuid4()) for _ in range(grab)]
 
         # ----- phase 2: claim the slots we just discovered -----

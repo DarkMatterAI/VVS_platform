@@ -73,7 +73,7 @@ def rabbitmq_connection():
 
     connection = pika.BlockingConnection(rabbitmq_params)
     channel = connection.channel()
-    yield channel 
+    yield connection, channel
     channel.close()
     connection.close()
 

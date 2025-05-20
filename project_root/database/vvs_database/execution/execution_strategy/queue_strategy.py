@@ -55,44 +55,35 @@ class QueueExecutionStrategy(ExecutionStrategy):
         tracker  = self._init_tracker(requests, const)
 
         while self._unfinished(tracker):
+
+            # ── 0. always harvest anything that finished last tick ─────────
+            self.rabbit.poll_events()
+            await self._collect_replies(tracker)      # may mark st.status="done"
+            await self._release_tokens(tracker, const)  # frees the locks
+            self._apply_timeouts(tracker, const)
+
+            # ── 1. aggressive cache check (unchanged) ──────────────────────
             await self._consume_cache(tracker, const)
 
+            # ── 2. plan next wave  -----------------------------------------
             pending_batches = self._waiting_batches(tracker, const.bs)
 
             tokens = await self._acquire_tokens(pending_batches, const)
             if await self._maybe_backoff(tokens, pending_batches, const, tracker):
+                await asyncio.sleep(const.poll_interval)
                 continue
 
-            # 1. pick & publish -------------------------------------------------
+            # ── 3. pick & publish ------------------------------------------
             wave_batches, token_list = self._pick_wave(pending_batches, tokens, const)
             self._mark_processing(wave_batches, token_list, tracker)
             if wave_batches:
                 logging.info("Publishing %s batches", len(wave_batches))
+
             await asyncio.gather(
                 *[self._publish_batch(b, tracker, const.bs) for b in wave_batches]
             )
 
-            # 2. wait / collect results ----------------------------------------
-            await self._poll_results(tracker, const)
-            self._apply_timeouts(tracker, const)
-
-            # 3. figure out which tokens are now free --------------------------
-            await self._release_tokens(tracker, const)
-
             await asyncio.sleep(const.poll_interval)
-
-            # wave_batches, token_list = self._pick_wave(pending_batches, tokens, const)
-            # self._mark_processing(wave_batches, token_list, tracker)
-            # if len(wave_batches)>0:
-            #     logging.info(f"Publishing {len(wave_batches)} batches")
-            # await asyncio.gather(
-            #     *[self._publish_batch(b, tracker, plugin) for b in wave_batches]
-            # )
-            # await self._release_tokens(tokens, const)
-
-            # await self._poll_results(tracker, const)
-            # self._apply_timeouts(tracker, const)
-            # await asyncio.sleep(const.poll_interval)
 
         return {k: st.response for k, st in tracker.items()}
 
@@ -109,12 +100,11 @@ class QueueExecutionStrategy(ExecutionStrategy):
         tracker: Dict[str, QueueRequestState] = {}
         for k, r in requests.items():
             rid  = r.request_data.request_id
-            resp = rid.replace("request", "response").replace(".", ":")
             tracker[k] = QueueRequestState(
                 key=k,
                 request=r,
                 req_id=rid,
-                resp_id=resp,
+                resp_id=rid,
                 attempts_left=const.max_attempts,
             )
         return tracker
@@ -159,26 +149,6 @@ class QueueExecutionStrategy(ExecutionStrategy):
             await self.redis.release_semaphore(const.sem_name, tokens)
             for st in done:
                 st.identifier = None
-    
-    # async def _release_tokens(self, tracker: Dict[str, QueueRequestState], const: QueueConst) -> None:
-    #     done_tokens = []
-    #     done_requests = []
-    #     for st in tracker.values():
-    #         if st.status in ("done", "error") and st.identifier:
-    #             done_tokens.append(st.identifier)
-    #             done_requests.append(st)
-
-    #     if done_tokens and const.use_sema:
-    #         done_tokens = list(set(done_tokens))
-    #         logging.info(f"Releasing {len(done_tokens)} semaphores")
-    #         await self.redis.release_semaphore(const.sem_name, done_tokens)
-
-    #     for st in done_requests:
-    #         st.identifier = None 
-
-    # async def _release_tokens(self, tokens: List[str], const: QueueConst) -> None:
-    #     if tokens and const.use_sema:
-    #         await self.redis.release_semaphore(const.sem_name, tokens)
 
     # ----- back-off check ------------------------------------------- #
     async def _maybe_backoff(
@@ -281,11 +251,10 @@ class QueueExecutionStrategy(ExecutionStrategy):
         keys: List[str],
         tracker: Dict[str, QueueRequestState],
         batch_size: int
-        # plugin: PluginInDB,
     ) -> None:
         msgs = [tracker[k].request for k in keys]
         try:
-            sent = self.rabbit.publish_messages(msgs)
+            sent = self.rabbit.publish_messages(msgs, batch_size)
         except Exception as exc:
             logging.error("%s: RabbitMQ publish failed - %s", self.log_id, exc)
             sent = []
@@ -300,29 +269,27 @@ class QueueExecutionStrategy(ExecutionStrategy):
             else:
                 st.queue_errors += 1
 
-    async def _poll_results(
-        self,
-        tracker: Dict[str, QueueRequestState],
-        const: QueueConst,
-    ) -> None:
+    # ----- reply collection ---------------------------------------- #
+    async def _collect_replies(self, tracker: Dict[str, QueueRequestState]) -> None:
+        """Move finished RPC replies from RabbitMQService into the tracker."""
         ids = [st.resp_id for st in tracker.values() if st.status == "queued"]
         if not ids:
             return
-        hits = await self.redis.get_results(ids, delete=True)
-        id_map = {st.resp_id: st for st in tracker.values()}
+
+        hits = self.rabbit.pop_replies(ids) 
         freshly_done: Dict[str, QueueRequestState] = {}
 
-        for rid, payload in hits.items():
-            st = id_map[rid]
+        for corr_id, payload in hits.items():
+            # find matching request state
+            st = next(st for st in tracker.values() if st.resp_id == corr_id)
             st.status   = "done"
+            # payload has valid, response_data, failure_response, failure_detail keys
             st.response = StrategyResponse(
-                # note - here we unpack payload because message consumer 
-                # returns nested {"valid": True, "response_data": {}}
-                **payload,
-                source=ExecutionSources.EXECUTION,
+                **payload, source=ExecutionSources.EXECUTION
             )
             freshly_done[st.key] = st
 
+        # optional cache write – re-use existing helper
         await self._write_cache(freshly_done)
 
     # ----- time-out handling ---------------------------------------- #
@@ -348,6 +315,7 @@ class QueueExecutionStrategy(ExecutionStrategy):
             elif st.status == "queued" and st.queued_at and (now - st.queued_at) > const.timeout:
                 st.status   = "error"
                 st.response = StrategyResponse.failure(
-                    "Queue timeout", "No response within timeout"
+                    "RPC timeout", "No response within timeout"
+                    # "Queue timeout", "No response within timeout"
                 )
 

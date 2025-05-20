@@ -14,7 +14,7 @@
 #     integration_test: False 
 # jobs: # note job tests require one of tmp_services to have enabled=True
 #   hc_job:
-#     run_tests: False 
+#     run_tests: True 
 # temp_services:
 #   test_consumer:
 #     enabled: True

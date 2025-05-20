@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./src /code/src
 
-CMD ["python", "-u", "-m", "src.main", "--is_dlx"]
+CMD ["python", "-u", "-m", "src.main"]
