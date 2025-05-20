@@ -1,8 +1,8 @@
 # VVS_V2
 
 todos
-    message refactor
-        do batch thing 
+    known bugs
+        job cleanup removes HC iteration jobs because they have no plugin references
     performance
         refactor HCJob to batch gather/scatter all HCIterationJobs 
         speed up delete job speed for large record counts
@@ -71,34 +71,6 @@ todos
             does it work to return multiple update outputs? ie fan out
         crud
             check plugin exeuction failures during jobs are being accurately tracked
-
-
-thinking about bbknn job
-    ideally would work for bbknn + lr sweep
-    would re-use HCSearchConfigs and whatnot (subclass to make score/update optional)
-        if score/update provided, compute scores and gradient 
-    do we want to add update params to individual items for HC?
-    do we want to add query group tracking to HC results?
-    line of thinking:
-        for bbknn, want to be able to do lr sweep as well
-            requires doing query, scoring results, computing gradient, doing grad query
-            analysis requires knowing query groups and embeddings
-
-hc thoughts
-    would be nice to have different update params on different inputs
-    would be nice to have embedding/gradient inputs
-        make `HCInputEmbedding` similar to `HCInputItems`
-            job_id, plugin_id (for embedding), assembly_index, embedding (jsonb, optionally with gradient)
-    okay lets think about the param thing though
-        makes the schema busier
-        user could just create another job 
-
-add "next gradient" to hciteration job - allows for starting up after stop 
-    create HCIteration job with status complete just to store
-
-optional flag "compute query gradient"
-    save each post-grad expasion query with gradient calculated from query results (ie in query group)
-
 
 
 documentation notes
