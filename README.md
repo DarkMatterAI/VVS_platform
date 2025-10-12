@@ -1,22 +1,18 @@
 # VVS_V2
 
 todos
+    for benchmarks
+        "file exists" endpoint for uploads
+        clear plugin semaphores endpoint 
     known bugs
         job cleanup removes HC iteration jobs because they have no plugin references
+        rdkit plugins break with batch size override 
     performance
-        refactor HCJob to batch gather/scatter all HCIterationJobs 
         speed up delete job speed for large record counts
-    data sources
-        "in memory" datasource for user uploaded embeddings
-            add new PluginExecutionType
-            update plugin crud logic to only allow for data source to use that
-            config points to embedding file that has already been uploaded 
-            use safetensors format
-        makes more sense after we refactor HCJob to run in batch 
     backend
         HC jobs endpoints
         export HC results endpoint
-        BBKNN endpoints 
+        BBKNN endpoints (or just api)
         move rdkit/qdrant code to db lib 
     HC job
         refactor

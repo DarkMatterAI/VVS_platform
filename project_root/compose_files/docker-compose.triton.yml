@@ -17,7 +17,8 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${TRITON_DEVICE_ID}']
+              device_ids: ["0", "1"]
+              # device_ids: ['${TRITON_DEVICE_ID}']
               capabilities: [gpu]
     ports:
       - ${TRITON_HTTP_PORT}:${TRITON_HTTP_PORT}

@@ -125,4 +125,5 @@ class QdrantUploadRunner(JobRunner):
         update_dict = {k:v for k,v in update_dict.items() if (v is not None)}
 
         self.job = await update_job(db_session, self.job_id, update_dict)
+        await db_session.commit()
 

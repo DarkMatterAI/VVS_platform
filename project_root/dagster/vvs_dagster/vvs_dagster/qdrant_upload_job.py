@@ -43,21 +43,26 @@ async def load_job_data(context: dg.OpExecutionContext,
     await runner.update_job(db_session, 
                             status=schemas.JobStatus.RUNNING,
                             dagster_run_id=context.run.run_id)
+    
+    update_dict, return_dict = await qdrant_resource.get_m_params(logging, qdrant_client, runner.collection_name)
 
     # setup qdrant indexing threshold to 0 prior to upload 
-    await qdrant_resource.set_indexing_threshold(logging, qdrant_client, runner.collection_name, 0)
+    # await qdrant_resource.set_indexing_threshold(logging, qdrant_client, runner.collection_name, 0)
+    await qdrant_resource.set_hnsw_m(logging, qdrant_client, update_dict)
 
     await db_session.close()
     await qdrant_client.close()
 
     user_data = {
-        'filename' : runner.job.job_json['filename'],
-        'items' : runner.job.job_json['items']
+        "filename": runner.job.job_json["filename"],
+        "items"   : runner.job.job_json["items"]
     }
 
     job_params = {
-        'collection_name' : runner.collection_name,
-        'save_snapshot' : runner.job.job_json['save_snapshot']
+        "collection_name" : runner.collection_name,
+        "save_snapshot"   : runner.job.job_json["save_snapshot"],
+        "build_index"     : runner.job.job_json["build_index"],
+        "return_dict"     : return_dict
     }
 
     return runner, user_data, job_params
@@ -165,13 +170,18 @@ async def build_qdrant_index(context: dg.OpExecutionContext,
     # setup
     logging = get_logger(context)
     qdrant_client = qdrant_resource.get_service()
-    collection_name = job_params['collection_name']
-    save_snapshot = job_params['save_snapshot']
+    collection_name = job_params["collection_name"]
+    save_snapshot = job_params["save_snapshot"]
+    return_dict = job_params["return_dict"]
 
-    # build index
-    index_log = await qdrant_resource.index_sleep(logging, 
-                                                  qdrant_client,
-                                                  collection_name)
+    if job_params["build_index"]:
+        # build index
+        index_log = await qdrant_resource.index_sleep(logging, 
+                                                      qdrant_client,
+                                                      collection_name,
+                                                      return_dict)
+    else:
+        index_log = {} 
 
     index_log.update(upload_summary)
 
@@ -213,7 +223,6 @@ async def update_job_complete(context: dg.OpExecutionContext,
     config['collection_info'] = collection_info
     setattr(plugin, 'config', config)
     await db_session.commit()
-    
     await db_session.close()
 
 

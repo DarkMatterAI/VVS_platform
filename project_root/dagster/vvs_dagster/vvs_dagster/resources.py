@@ -89,16 +89,72 @@ class QdrantResource(dg.ConfigurableResource):
         await qdrant_client.update_collection(collection_name,
                                             optimizers_config=models.OptimizersConfigDiff(
                                                 indexing_threshold=threshold))
+        
+    async def get_m_params(self,
+                           logging,
+                           qdrant_client: AsyncQdrantClient,
+                           collection_name: str):
+        collection_info = await self.get_collection_info(logging, qdrant_client, collection_name)
+        config = collection_info["config"]
+
+        m_dict = {
+            "hnsw_m": config.get("hnsw_config", {}).get("m", None),
+            "vector_m": {}
+        }
+
+        vector_config = config.get("params", {}).get("vectors", {})
+        for k,v in vector_config.items():
+            m_dict["vector_m"][k] = v.get("hnsw_config", {}).get("m", None)
+
+        update_dict = {"collection_name": collection_name}
+        return_dict = {"collection_name": collection_name}
+
+        if m_dict["hnsw_m"] is not None:
+            update_dict["hnsw_config"] = models.HnswConfigDiff(m=0)
+            return_dict["hnsw_config"] = models.HnswConfigDiff(m=m_dict["hnsw_m"])
+            
+
+        update_dict["vectors_config"] = {}
+        return_dict["vectors_config"] = {}
+        for k,m in m_dict["vector_m"].items():
+            if m is None:
+                continue 
+                
+            
+            update_dict["vectors_config"][k] = models.VectorParamsDiff(hnsw_config=models.HnswConfigDiff(m=0))
+            return_dict["vectors_config"][k] = models.VectorParamsDiff(hnsw_config=models.HnswConfigDiff(m=m))
+        
+        return update_dict, return_dict 
+
+        
+    # async def set_hnsw_m(self,
+    #                      logging,
+    #                      qdrant_client: AsyncQdrantClient,
+    #                      collection_name: str,
+    #                      m: int):
+    #     logging.info(f'Qdrant collection {collection_name}: Setting HNSW m param to {m}')
+
+    #     await qdrant_client.update_collection(collection_name=collection_name,
+    #                                           hnsw_config=models.HnswConfigDiff(m=m))
+
+    async def set_hnsw_m(self,
+                         logging,
+                         qdrant_client: AsyncQdrantClient,
+                         update_dict: dict):
+        logging.info(f"Qdrant collection {update_dict['collection_name']}: Setting HNSW m params: {update_dict}")
+        await qdrant_client.update_collection(**update_dict)
     
     async def index_sleep(self, 
                           logging, 
                           qdrant_client: AsyncQdrantClient,
-                          collection_name: str
+                          collection_name: str,
+                          update_dict: dict,
                           ) -> dict:
         logging.info(f'Qdrant collection {collection_name}: building index')
         index_start = time.time()
         # set threshold to 1 to start indexing
-        await self.set_indexing_threshold(logging, qdrant_client, collection_name, 1)
+        # await self.set_indexing_threshold(logging, qdrant_client, collection_name, 20000)
+        await self.set_hnsw_m(logging, qdrant_client, update_dict)
 
         # wait for qdrant internals to change collection status
         await asyncio.sleep(2.0)

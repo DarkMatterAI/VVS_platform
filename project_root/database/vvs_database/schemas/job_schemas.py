@@ -37,6 +37,7 @@ class QdrantUploadJobParams(BaseModel):
     filename: Optional[str]=None
     items: Optional[List[UserItem]]=None
     save_snapshot: bool=False 
+    build_index: bool=True 
         
     @model_validator(mode='after')
     def check_consistency(self):
