@@ -57,6 +57,7 @@ def redis_connection():
 async def redis_service():
     from vvs_database.execution.connections.redis import RedisService, RedisConnection
     redis_service = RedisService(RedisConnection(), verbose=True)
+    redis_service.init_redis_connection()
     yield redis_service
     await redis_service.close()
 

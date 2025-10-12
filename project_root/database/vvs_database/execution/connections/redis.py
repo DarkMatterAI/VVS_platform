@@ -299,3 +299,169 @@ class RedisService:
             await pipe.execute()
 
         return removed
+
+    async def clear_plugin_semaphores(
+        self,
+        plugin_id: int,
+        *,
+        job_ids: Optional[List[int]] = None,   # if None, SCAN all job sets
+        scan_count: int = 1000,                # SCAN/SSCAN COUNT hint
+    ) -> Dict[str, int]:
+        """
+        Remove all active semaphore identifiers for plugin:{plugin_id},
+        and prune matching members from job:*:semaphores sets.
+
+        Returns counters:
+          {
+            "owners_removed": <int>,            # ZREM from :owner
+            "semaphores_removed": <int>,        # ZREM from base zset
+            "job_members_removed": <int>,       # SREM from job sets
+            "job_sets_touched": <int>,
+          }
+        """
+        self.init_redis_connection()
+
+        name = f"plugin:{plugin_id}"
+        sem_key   = f"semaphore:{name}"
+        owner_key = f"{sem_key}:owner"
+
+        owners_removed = 0
+        sem_removed    = 0
+        job_srem_total = 0
+        job_sets_touched = 0
+
+        # 1) Collect all identifiers currently recorded in the owner set.
+        idents = await self.redis.zrange(owner_key, 0, -1)
+        # If owner set is empty, also consider any stragglers in the base zset.
+        if not idents:
+            idents = [m for (m, _) in await self.redis.zrange(sem_key, 0, -1, withscores=True)]
+
+        if idents:
+            async with self.redis.pipeline(transaction=True) as pipe:
+                for ident in idents:
+                    pipe.zrem(owner_key, ident)
+                    pipe.zrem(sem_key, ident)
+                res = await pipe.execute()
+            # res = [zrem_owner1, zrem_sem1, zrem_owner2, zrem_sem2, ...]
+            owners_removed = sum(res[0::2])     # owner zrem results at even positions
+            sem_removed    = sum(res[1::2])     # base zset zrem at odd positions
+
+        # 2) Prune job tracking sets: remove "plugin:{id}:{ident}" members
+        prefix = f"{name}:"
+
+        async def _prune_job_key(job_key: str) -> int:
+            """SREM all members with prefix from one job set via SSCAN."""
+            cursor = 0
+            removed_here = 0
+            while True:
+                cursor, members = await self.redis.sscan(job_key, cursor=cursor, match=f"{prefix}*", count=scan_count)
+                if members:
+                    removed_here += await self.redis.srem(job_key, *members)
+                if cursor == 0:
+                    break
+            return removed_here
+
+        if job_ids is not None:
+            for jid in job_ids:
+                job_key = f"job:{jid}:semaphores"
+                if await self.redis.exists(job_key):
+                    removed = await _prune_job_key(job_key)
+                    if removed:
+                        job_sets_touched += 1
+                        job_srem_total += removed
+        else:
+            # SCAN all job sets
+            cursor = 0
+            while True:
+                cursor, keys = await self.redis.scan(cursor=cursor, match="job:*:semaphores", count=scan_count)
+                for job_key in keys:
+                    removed = await _prune_job_key(job_key)
+                    if removed:
+                        job_sets_touched += 1
+                        job_srem_total += removed
+                if cursor == 0:
+                    break
+
+        return {
+            "owners_removed": owners_removed,
+            "semaphores_removed": sem_removed,
+            "job_members_removed": job_srem_total,
+            "job_sets_touched": job_sets_touched,
+        }
+
+    async def list_active_semaphores(
+        self,
+        *,
+        cursor: int = 0,
+        page_size: int = 100,
+        include_identifiers: bool = False,
+        include_activity: bool = False,
+        name_filter: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Paginate over all active semaphore families.
+
+        Returns:
+            {
+              "cursor": <next-cursor-int>,
+              "semaphores": [
+                 {
+                   "name": "<plugin:42>"               # everything after "semaphore:"
+                   "holders": <int>,                   # ZCARD of :owner
+                   "identifiers": [ "<uuid>", ... ],   # optional
+                   "activity": {                       # optional last/first touch (epoch seconds)
+                      "oldest": <float|None>,
+                      "newest": <float|None>
+                   }
+                 }, ...
+              ]
+            }
+
+        Notes:
+          * Uses SCAN with MATCH = "semaphore:<filter>*" (default all).
+          * Skips the companion keys ":owner" and ":counter".
+          * "Activity" is derived from scores in the main ZSET
+            (oldest/newest member timestamps); may be None if empty.
+        """
+        self.init_redis_connection()
+
+        pattern = f"semaphore:{name_filter}*" if name_filter else "semaphore:*"
+        next_cursor, keys = await self.redis.scan(cursor=cursor, match=pattern, count=page_size)
+
+        # Keep only the base semaphore zsets, not the companion keys
+        base_keys = [k for k in keys if not (k.endswith(":owner") or k.endswith(":counter"))]
+
+        sem_list: List[Dict[str, Any]] = []
+
+        for sem_key in base_keys:
+            name = sem_key[len("semaphore:"):] if sem_key.startswith("semaphore:") else sem_key
+            owner_key = f"{sem_key}:owner"
+
+            # number of holders
+            holders = await self.redis.zcard(owner_key)
+
+            entry: Dict[str, Any] = {"name": name, "holders": holders}
+
+            if include_identifiers:
+                ids = await self.redis.zrange(owner_key, 0, -1)
+                entry["identifiers"] = ids
+
+            if include_activity:
+                oldest, newest = None, None
+                # Scores in main semaphore ZSET are timestamps
+                try:
+                    oldest_pair = await self.redis.zrange(sem_key, 0, 0, withscores=True)
+                    newest_pair = await self.redis.zrange(sem_key, -1, -1, withscores=True)
+                    if oldest_pair:
+                        # redis-py returns list of tuples [(member, score)]
+                        oldest = float(oldest_pair[0][1])
+                    if newest_pair:
+                        newest = float(newest_pair[0][1])
+                except Exception:
+                    # best-effort: leave as None on any anomaly
+                    pass
+                entry["activity"] = {"oldest": oldest, "newest": newest}
+
+            sem_list.append(entry)
+
+        return {"cursor": int(next_cursor), "semaphores": sem_list}

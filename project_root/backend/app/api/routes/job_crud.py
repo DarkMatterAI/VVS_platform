@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
+from redis.asyncio import Redis
 
 from app import schemas
 from app import crud 
-from app.core.database import get_db 
+from app.core.database import get_db, get_redis_client
 
 router = APIRouter()
 
@@ -45,3 +46,11 @@ async def scroll_jobs(job_type: Optional[schemas.JobType]=None,
 async def delete_job(job_id: int, db: AsyncSession = Depends(get_db)):
     response = await crud.delete_job(db=db, job_id=job_id)
     return response
+
+@router.delete("/clear_semaphores/job/{job_id:int}")
+async def clear_job_semaphores_endpoint(
+    job_id: int,
+    redis_client: Redis = Depends(get_redis_client),
+):
+    removed = await crud.clear_job_semaphores(job_id=job_id, redis_client=redis_client)
+    return {"success": True, "job_id": job_id, "identifiers_removed": removed}

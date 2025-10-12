@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List, Optional
+from redis.asyncio import Redis
 
 from app import schemas
 from app import crud 
@@ -58,3 +59,18 @@ async def clear_plugin_cache(plugin_id: int, redis_client = Depends(get_redis_cl
     n_deleted = await crud.clear_plugin_cache(plugin_id, redis_client)
     response = {'success' : True, 'removed' : n_deleted}
     return response 
+
+@router.delete("/clear_semaphores/{plugin_id:int}")
+async def clear_plugin_semaphores_endpoint(
+    plugin_id: int,
+    redis_client: Redis = Depends(get_redis_client),
+    job_ids: Optional[List[int]] = Query(None, description="Optional list of job IDs to limit pruning"),
+    scan_count: int = Query(1000, ge=10, le=10000),
+):
+    stats = await crud.clear_plugin_semaphores(
+        plugin_id=plugin_id,
+        redis_client=redis_client,
+        job_ids=job_ids,
+        scan_count=scan_count,
+    )
+    return {"success": True, "plugin_id": plugin_id, **stats}

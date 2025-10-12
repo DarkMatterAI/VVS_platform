@@ -157,31 +157,31 @@ async def make_post_request(data: dict, url: str, timeout: int, retries: int,
                 logging.info(f"{log_id}Post request failed, sleeping for {retry_sleep} seconds")
                 await asyncio.sleep(retry_sleep) 
 
-async def delete_redis_keys_batch(keys, redis_client):
-    if keys:
-        if hasattr(redis_client, 'unlink'):
-            deleted = await redis_client.unlink(*keys)
-        else:
-            deleted = await redis_client.delete(*keys)
+# async def delete_redis_keys_batch(keys, redis_client):
+#     if keys:
+#         if hasattr(redis_client, 'unlink'):
+#             deleted = await redis_client.unlink(*keys)
+#         else:
+#             deleted = await redis_client.delete(*keys)
     
-async def clear_plugin_cache(plugin_id, redis_client, batch_size=500):
-    pattern = f"plugin:{plugin_id}:*"
+# async def clear_plugin_cache(plugin_id, redis_client, batch_size=500):
+#     pattern = f"plugin:{plugin_id}:*"
 
-    total_deleted = 0
-    keys_batch = []
+#     total_deleted = 0
+#     keys_batch = []
 
-    async for key in redis_client.scan_iter(match=pattern):
-        keys_batch.append(key)
+#     async for key in redis_client.scan_iter(match=pattern):
+#         keys_batch.append(key)
 
-        if len(keys_batch) >= batch_size:
-            await delete_redis_keys_batch(keys_batch, redis_client)
-            total_deleted += len(keys_batch)
-            keys_batch = []
+#         if len(keys_batch) >= batch_size:
+#             await delete_redis_keys_batch(keys_batch, redis_client)
+#             total_deleted += len(keys_batch)
+#             keys_batch = []
             
-    await delete_redis_keys_batch(keys_batch, redis_client)
-    total_deleted += len(keys_batch)
+#     await delete_redis_keys_batch(keys_batch, redis_client)
+#     total_deleted += len(keys_batch)
 
-    return total_deleted
+#     return total_deleted
 
 def chunked(seq: Iterable[Any], size: int) -> list[list[Any]]:
     """[[seq[0..size-1]], [seq[size..2*size-1]], …]."""
