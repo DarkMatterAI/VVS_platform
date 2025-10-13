@@ -20,6 +20,7 @@ from sqlalchemy.orm import relationship
 
 from vvs_database.core import Base
 from vvs_database.models.job_models.hc_models import HCInputItems, HCResult
+from vvs_database.models.plugin_models import AssemblyPlugin
 
 class Item(Base):
     __tablename__ = "items"
@@ -156,6 +157,59 @@ class Assembly(Base):
         await session.flush()  # Flush to get the assembly_id
         
         return temp_assembly
+    
+    @classmethod
+    async def cleanup_unreferenced(cls, session: AsyncSession) -> int:
+        """
+        Delete assemblies that are either:
+          (a) not referenced by hc_results, OR
+          (b) have an invalid component set (missing/extra components) relative
+              to their assembly plugin's required parent count.
+
+        AssemblyComponent rows are removed automatically via ON DELETE CASCADE.
+        Returns the number of assemblies deleted.
+        """
+
+        # Subquery: component counts per assembly (0 if none)
+        comp_counts_sq = (
+            select(AssemblyComponent.assembly_id, func.count(AssemblyComponent.component_id).label("ncomp"))
+            .group_by(AssemblyComponent.assembly_id)
+            .subquery()
+        )
+
+        # Expected number of parents per assembly from its plugin
+        # (AssemblyPlugin.id == Assembly.plugin_id and has column num_parents)
+        expected_sq = (
+            select(cls.assembly_id.label("aid"), AssemblyPlugin.num_parents.label("required"))
+            .join(AssemblyPlugin, AssemblyPlugin.id == cls.plugin_id)
+            .subquery()
+        )
+
+        # Build a selectable of "invalid" assemblies by component count:
+        # coalesce(ncomp, 0) != required  (handles zero-component case too)
+        invalid_by_components_sq = (
+            select(cls.assembly_id)
+            .outerjoin(comp_counts_sq, comp_counts_sq.c.assembly_id == cls.assembly_id)
+            .join(expected_sq, expected_sq.c.aid == cls.assembly_id)
+            .where(func.coalesce(comp_counts_sq.c.ncomp, 0) != expected_sq.c.required)
+        )
+
+        # Delete if:
+        #  1) not referenced by hc_results, OR
+        #  2) invalid by components (missing/extra components)
+        delete_stmt = (
+            delete(cls)
+            .where(
+                ~exists().where(HCResult.assembly_id == cls.assembly_id)
+                | cls.assembly_id.in_(invalid_by_components_sq)
+            )
+            .returning(cls.assembly_id)
+        )
+
+        result = await session.execute(delete_stmt)
+        deleted_ids = result.scalars().all()
+        await session.commit()
+        return len(deleted_ids)
 
 
 class AssemblyComponent(Base):

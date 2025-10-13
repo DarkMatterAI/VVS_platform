@@ -1,8 +1,11 @@
 # VVS_V2
 
 todos
-    for benchmarks
-        "file exists" endpoint for uploads
+    finalize record cleanup 
+    fix HC iteration job deletion 
+    create HC job api endpoint
+    export hc job results endpoint 
+
     known bugs
         job cleanup removes HC iteration jobs because they have no plugin references
         rdkit plugins break with batch size override 
@@ -39,8 +42,6 @@ todos
     qdrant job
         need to control concurrent jobs
             semaphore or dagster limit 
-        toggle indexing with `m` instead of indexing threshold (https://qdrant.tech/articles/indexing-optimization/)
-        update qdrant formatter to use extra args
     rdkit plugin
         deduplicate reaction list
     misc 

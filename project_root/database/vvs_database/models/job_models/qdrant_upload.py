@@ -14,7 +14,8 @@ from vvs_database.models.job_models.job_models import Job
 class QdrantUploadJob(Job):
     __tablename__ = "qdrant_upload"
 
-    id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    # id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"), primary_key=True)
     num_uploaded = Column(Integer, nullable=True)
     num_failed = Column(Integer, nullable=True)
     index_time = Column(Float, nullable=True)

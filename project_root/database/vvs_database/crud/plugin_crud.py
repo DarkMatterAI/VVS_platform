@@ -15,7 +15,11 @@ from vvs_database.models import (
     MapperPlugin, 
     AssemblyPlugin, 
     PluginExecutionFailure,
-    plugin_embeddings
+    plugin_embeddings,
+    JobPlugin,
+    ItemSource,
+    ItemResult,
+    Assembly,
 )
 
 async def get_embeddings(db: AsyncSession, embedding_ids: List[int]):
@@ -321,15 +325,60 @@ async def delete_plugin_from_model(db: AsyncSession, db_plugin: Plugin):
     await db.commit()
     return db_plugin
 
+# async def delete_plugin(db: AsyncSession, plugin_id: int):
+#     """Delete a plugin by ID with checks for relationships."""
+#     db_plugin = await get_plugin(db, plugin_id)
+    
+#     if not db_plugin:
+#         raise NotFoundError(f"Plugin with ID {plugin_id} not found")
+    
+#     response = await delete_plugin_from_model(db, db_plugin)
+#     return response 
+
+async def plugin_delete_preflight(db: AsyncSession, plugin_id: int) -> dict:
+    """Return a dict of reference counts to decide if plugin can be deleted."""
+    counts = {}
+
+    # referenced by jobs (JobPlugin)
+    counts["job_plugins"] = await db.scalar(
+        select(func.count()).select_from(JobPlugin).where(JobPlugin.plugin_id == plugin_id)
+    )
+
+    # # used as source of items
+    # counts["item_sources"] = await db.scalar(
+    #     select(func.count()).select_from(ItemSource).where(ItemSource.plugin_id == plugin_id)
+    # )
+
+    # # produced results (scores/embeddings)
+    # counts["item_results"] = await db.scalar(
+    #     select(func.count()).select_from(ItemResult).where(ItemResult.plugin_id == plugin_id)
+    # )
+
+    # assemblies created by this plugin
+    counts["assemblies"] = await db.scalar(
+        select(func.count()).select_from(Assembly).where(Assembly.plugin_id == plugin_id)
+    )
+
+    return counts
+
+
 async def delete_plugin(db: AsyncSession, plugin_id: int):
     """Delete a plugin by ID with checks for relationships."""
     db_plugin = await get_plugin(db, plugin_id)
-    
     if not db_plugin:
         raise NotFoundError(f"Plugin with ID {plugin_id} not found")
-    
-    response = await delete_plugin_from_model(db, db_plugin)
-    return response 
+
+    # Do not cascade across the system. Block if referenced.
+    counts = await plugin_delete_preflight(db, plugin_id)
+    if any(counts.values()):
+        details = ", ".join(f"{k}={v}" for k, v in counts.items() if v)
+        await db.commit()
+        raise ReferenceError(
+            f"Cannot delete plugin {plugin_id}; still referenced ({details})."
+        )
+
+    # safe to delete
+    return await delete_plugin_from_model(db, db_plugin)
 
 async def get_plugins_summary(db: AsyncSession):
     """Get a summary count of plugins by type."""

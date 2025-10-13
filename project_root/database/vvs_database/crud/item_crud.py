@@ -3,6 +3,7 @@ from sqlalchemy import select, and_
 from typing import Optional, List
 
 from vvs_database.models import Item, ItemSource, ItemResult
+from vvs_database.crud.assembly_crud import delete_assemblies_with_component
 
 async def create_item(db: AsyncSession, item: str) -> Item:
     """Create a new item."""
@@ -27,11 +28,24 @@ async def get_item_by_name(db: AsyncSession, item: str) -> Optional[Item]:
     result = await db.execute(select(Item).filter(Item.item == item))
     return result.scalar_one_or_none()
 
+# async def delete_item(db: AsyncSession, item: Item) -> Item:
+#     """Delete an item."""
+#     await db.delete(item)
+#     await db.commit()
+#     return item 
+
 async def delete_item(db: AsyncSession, item: Item) -> Item:
-    """Delete an item."""
+    """
+    Delete an item. If the item is used as a component in any Assembly,
+    delete those Assemblies first (and their components via CASCADE).
+    """
+    # 1) remove assemblies where this item is a component
+    await delete_assemblies_with_component(db, item.id)
+
+    # 2) delete the item itself (ItemSource/ItemResult rows are CASCADEd)
     await db.delete(item)
     await db.commit()
-    return item 
+    return item
 
 async def create_item_source(
     db: AsyncSession,

@@ -1,9 +1,11 @@
 from datetime import datetime, timezone 
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, update, and_
+from sqlalchemy import select, update, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+from vvs_database.crud.assembly_crud import prune_orphan_assembly_products
 
 from vvs_database.models import (
     DataSourcePlugin, 
@@ -12,7 +14,8 @@ from vvs_database.models import (
     MapperPlugin, 
     Job,
     JobPlugin,
-    QdrantUploadFailed
+    QdrantUploadFailed,
+    Assembly
 )
 
 from vvs_database.crud.plugin_crud import (
@@ -198,12 +201,62 @@ async def update_job_from_dagster_id(db: AsyncSession,
         result.append(job)
     return result 
 
-async def delete_job(db: AsyncSession,
-                     job: Job
-                    ) -> Job:
-    """Delete a job."""
-    await db.delete(job)
+# async def delete_job(db: AsyncSession,
+#                      job: Job
+#                     ) -> Job:
+#     """Delete a job."""
+#     await db.delete(job)
+#     await db.commit()
+#     return job
+
+async def post_job_delete_cleanup(db: AsyncSession) -> dict:
+    """
+    Sweep artifacts left after job deletion:
+      - delete assemblies unreferenced by hc_results or with invalid component counts
+      - delete orphan item sources/results for former assembly products
+      - delete items that are no longer referenced anywhere
+    """
+    deleted_assemblies = await Assembly.cleanup_unreferenced(db)
+    item_stats = await prune_orphan_assembly_products(db)
+    return {"assemblies_deleted": deleted_assemblies, **item_stats}
+
+async def delete_job(
+    db: AsyncSession,
+    job: Job,
+    # job_id: int,
+    *,
+    run_cleanup: bool = True,
+    async_cleanup: bool = False,   # if True, return immediately
+) -> int:
+    """
+    Quickly delete a job and all FK-cascaded rows. Optionally trigger
+    post-delete cleanup (assemblies → items).
+    Returns the job id.
+    """
+    # Optional: serialize on job id so multiple deleters don't race
+    # await db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": job_id})
+
+    job_id = job.id 
+
+    res = await db.execute(
+        delete(Job).where(Job.id == job_id).returning(Job.id)
+    )
+    deleted = res.scalar_one_or_none()
     await db.commit()
+
+    if deleted is None:
+        raise NotFoundError(f"Job {job_id} not found")
+
+    if run_cleanup:
+        if async_cleanup:
+            # TODO: enqueue a background task (Dagster job / Celery) to run the sweeps
+            pass
+        else:
+            # run cleanup 
+            await post_job_delete_cleanup(db)
+
+    await db.commit()
+
     return job
 
 async def create_job_plugin(db: AsyncSession,

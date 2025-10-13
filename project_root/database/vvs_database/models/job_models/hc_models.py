@@ -23,7 +23,8 @@ from vvs_database.models.job_models.job_models import Job
 class HCJob(Job):
     __tablename__ = "hc_jobs"
 
-    id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    # id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"), primary_key=True)
     num_inputs = Column(Integer, nullable=True)
     inference_limit = Column(Integer, nullable=True)
     time_limit = Column(Integer, nullable=True)
@@ -42,7 +43,8 @@ class HCJob(Job):
 class HCInputJob(Job):
     __tablename__ = "hc_input_jobs"
 
-    id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    # id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"), primary_key=True)
     parent_id = Column(Integer, ForeignKey("hc_jobs.id", ondelete="CASCADE"), nullable=False)
     max_iterations = Column(Integer, nullable=False)
     inference_limit = Column(Integer, nullable=True)
@@ -88,7 +90,8 @@ class HCInputItems(Base):
 class HCIterationJob(Job):
     __tablename__ = "hc_iteration_jobs"
 
-    id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    # id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"), primary_key=True)
     input_id = Column(Integer, ForeignKey("hc_input_jobs.id", ondelete="CASCADE"), nullable=False)
     parent_id = Column(Integer, ForeignKey("hc_iteration_jobs.id"), nullable=True)
     iteration = Column(Integer, nullable=False)

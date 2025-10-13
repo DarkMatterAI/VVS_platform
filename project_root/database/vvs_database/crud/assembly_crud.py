@@ -1,9 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete, exists, and_, true
 from sqlalchemy.orm import selectinload
-from typing import Optional, List
+from typing import Optional, List, Dict
 
-from vvs_database.models import Assembly, AssemblyComponent
+from vvs_database.models.item_models import Item, ItemSource, ItemResult, Assembly, AssemblyComponent
+from vvs_database.models.plugin_models import AssemblyPlugin
 
 async def create_assembly(
     db: AsyncSession,
@@ -122,3 +123,103 @@ async def delete_assembly(
     await db.delete(assembly)
     await db.commit()
     return assembly
+
+async def delete_assemblies_with_component(
+    db: AsyncSession,
+    component_item_id: int,
+) -> int:
+    """
+    Delete every Assembly that references *component_item_id* in AssemblyComponent.
+    Returns the number of Assembly rows deleted.
+    """
+    del_stmt = (
+        delete(Assembly)
+        .where(
+            Assembly.assembly_id.in_(
+                select(AssemblyComponent.assembly_id).where(
+                    AssemblyComponent.component_id == component_item_id
+                )
+            )
+        )
+        .returning(Assembly.assembly_id)
+    )
+    result = await db.execute(del_stmt)
+    deleted_ids = result.scalars().all()
+    await db.commit()
+    return len(deleted_ids)
+
+async def prune_orphan_assembly_products(
+    session: AsyncSession,
+    *,
+    assembly_plugin_ids: Optional[List[int]] = None,
+) -> Dict[str, int]:
+    """
+    Remove item-level artifacts left after assembly pruning:
+      - Delete ItemResult rows for product items that are no longer products of any Assembly
+        (optionally restricted to Items whose ItemSource came from specific assembly plugins).
+      - Delete ItemSource rows for those orphan product items (for the assembly plugins in scope).
+      - Finally, remove any now-unreferenced Items via Item.cleanup_unreferenced().
+    Returns counts for each step.
+    """
+
+    # Base SELECT of orphan product items:
+    # Items that *had* an ItemSource from an AssemblyPlugin, but are *not* a product
+    # of any remaining Assembly (optionally require the same plugin_id to match).
+    isrc = ItemSource
+    asm  = Assembly
+
+    orphan_items_sq = (
+        select(isrc.item_id)
+        .where(
+            # restrict to ItemSource rows created by an AssemblyPlugin
+            exists(select(AssemblyPlugin.id).where(AssemblyPlugin.id == isrc.plugin_id)),
+            # optionally limit to specific assembly plugins
+            (isrc.plugin_id.in_(assembly_plugin_ids) if assembly_plugin_ids else true()),
+            # and prove there is NO Assembly referencing this item as product
+            ~exists(
+                select(1).where(
+                    and_(
+                        asm.product_id == isrc.item_id,
+                        (asm.plugin_id == isrc.plugin_id) if assembly_plugin_ids else true(),
+                    )
+                )
+            ),
+        )
+        .distinct()
+        .subquery()
+    )
+
+    # 1) Delete ItemResult rows for these items (any plugin)
+    del_results_stmt = (
+        delete(ItemResult)
+        .where(ItemResult.item_id.in_(select(orphan_items_sq.c.item_id)))
+        .returning(ItemResult.item_id)
+    )
+    res = await session.execute(del_results_stmt)
+    _deleted_result_rows = res.scalars().all()
+    results_deleted = len(_deleted_result_rows)
+
+    # 2) Delete ItemSource rows for these items (only the assembly plugins in scope)
+    del_sources_stmt = (
+        delete(ItemSource)
+        .where(
+            and_(
+                ItemSource.item_id.in_(select(orphan_items_sq.c.item_id)),
+                (ItemSource.plugin_id.in_(assembly_plugin_ids) if assembly_plugin_ids else
+                 exists(select(AssemblyPlugin.id).where(AssemblyPlugin.id == ItemSource.plugin_id)))
+            )
+        )
+        .returning(ItemSource.item_id)
+    )
+    res2 = await session.execute(del_sources_stmt)
+    _deleted_source_rows = res2.scalars().all()
+    sources_deleted = len(_deleted_source_rows)
+
+    # 3) Remove any Items that are now unreferenced anywhere
+    items_deleted = await Item.cleanup_unreferenced(session)
+
+    return {
+        "item_results_deleted": results_deleted,
+        "item_sources_deleted": sources_deleted,
+        "items_deleted": items_deleted,
+    }

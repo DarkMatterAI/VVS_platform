@@ -45,7 +45,8 @@ from vvs_database.crud.assembly_crud import (
     get_assemblies_by_component,
     get_assemblies_by_component_key,
     get_assemblies_by_component_keys,
-    delete_assembly
+    delete_assembly,
+    prune_orphan_assembly_products
 )
 
 from vvs_database.crud.job_crud import (
@@ -115,6 +116,7 @@ __all__ = [
     "get_assemblies_by_component_key",
     "get_assemblies_by_component_keys",
     "delete_assembly",
+    "prune_orphan_assembly_products",
 
     # item checkin 
     "item_checkin",

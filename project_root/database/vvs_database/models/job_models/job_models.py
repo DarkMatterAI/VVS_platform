@@ -85,7 +85,8 @@ class Job(Base):
 class TestJob(Job):
     __tablename__ = "vvs_test_jobs"
 
-    id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    # id = Column(Integer, ForeignKey("vvs_jobs.id"), primary_key=True)
+    id = Column(Integer, ForeignKey("vvs_jobs.id", ondelete="CASCADE"), primary_key=True)
 
     __mapper_args__ = {
         'polymorphic_identity': 'test_job',

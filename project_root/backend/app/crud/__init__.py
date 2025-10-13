@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.responses import JSONResponse
 
 from vvs_database.crud import (
     get_plugins,
@@ -68,6 +69,8 @@ async def delete_plugin(db: AsyncSession, plugin_id: int):
     try:
         response = await delete_func(db, db_plugin)
         return response 
+    except ReferenceError as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=409)
     except Exception as e:
         handle_db_exception(e)
 
