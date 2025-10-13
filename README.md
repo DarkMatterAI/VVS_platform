@@ -1,10 +1,10 @@
 # VVS_V2
 
 todos
-    finalize record cleanup 
-    fix HC iteration job deletion 
-    create HC job api endpoint
+    create HC job endpoint
     export hc job results endpoint 
+    bbknn endpoint
+    documentation 
 
     known bugs
         job cleanup removes HC iteration jobs because they have no plugin references

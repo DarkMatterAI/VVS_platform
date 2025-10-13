@@ -255,6 +255,8 @@ async def delete_job(
             # run cleanup 
             await post_job_delete_cleanup(db)
 
+    await Job.cleanup_unreferenced(db)
+
     await db.commit()
 
     return job

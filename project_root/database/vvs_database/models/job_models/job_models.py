@@ -48,39 +48,76 @@ class Job(Base):
         'polymorphic_load': 'selectin'
     }
 
+    # @classmethod
+    # async def cleanup_unreferenced(cls, session: AsyncSession):
+    #     """
+    #     Delete jobs that aren't referenced in vvs_job_plugins.
+    #     Returns number of items deleted.
+    #     """
+        
+    #     # workaround for circular import 
+    #     from vvs_database.models.job_models.qdrant_upload import QdrantUploadFailed
+        
+    #     # Query for jobs that have no references
+    #     unreferenced_jobs = select(cls.id).where(
+    #         and_(
+    #             ~exists().where(JobPlugin.job_id == cls.id),
+    #             ~exists().where(PluginExecutionFailure.job_id == cls.id),
+    #             ~exists().where(QdrantUploadFailed.job_id == cls.id)
+    #         )
+    #     )
+        
+    #     result = await session.execute(unreferenced_jobs)
+    #     job_ids = result.scalars().all()
+        
+    #     # Use SQLAlchemy ORM to delete these objects properly
+    #     deleted_count = 0
+    #     for job_id in job_ids:
+    #         job = await session.get(cls, job_id)
+    #         if job:
+    #             await session.delete(job)
+    #             deleted_count += 1
+        
+    #     await session.commit()
+        
+    #     return deleted_count
+
     @classmethod
-    async def cleanup_unreferenced(cls, session: AsyncSession):
+    async def cleanup_unreferenced(cls, session: AsyncSession) -> int:
         """
-        Delete jobs that aren't referenced in vvs_job_plugins.
-        Returns number of items deleted.
+        Delete jobs that have no plugin linkage / failure linkage / qdrant linkage,
+        and are NOT part of the HC job hierarchy (parent/input/iteration).
+        Returns number of jobs deleted.
         """
-        
-        # workaround for circular import 
+        # workaround for circular import
         from vvs_database.models.job_models.qdrant_upload import QdrantUploadFailed
-        
-        # Query for jobs that have no references
-        unreferenced_jobs = select(cls.id).where(
-            and_(
-                ~exists().where(JobPlugin.job_id == cls.id),
-                ~exists().where(PluginExecutionFailure.job_id == cls.id),
-                ~exists().where(QdrantUploadFailed.job_id == cls.id)
+        from vvs_database.models.job_models.hc_models import HCJob, HCInputJob, HCIterationJob
+
+        # build the selection of candidate job ids to delete
+        candidates = (
+            select(cls.id)
+            .where(
+                and_(
+                    # no plugin association
+                    ~exists().where(JobPlugin.job_id == cls.id),
+                    # no execution failure record tied to the job
+                    ~exists().where(PluginExecutionFailure.job_id == cls.id),
+                    # no qdrant upload failures linked
+                    ~exists().where(QdrantUploadFailed.job_id == cls.id),
+                    # and not an HC hierarchy member (these are structurally linked jobs)
+                    ~exists().where(HCJob.id == cls.id),
+                    ~exists().where(HCInputJob.id == cls.id),
+                    ~exists().where(HCIterationJob.id == cls.id),
+                )
             )
         )
-        
-        result = await session.execute(unreferenced_jobs)
-        job_ids = result.scalars().all()
-        
-        # Use SQLAlchemy ORM to delete these objects properly
-        deleted_count = 0
-        for job_id in job_ids:
-            job = await session.get(cls, job_id)
-            if job:
-                await session.delete(job)
-                deleted_count += 1
-        
+
+        # delete in one set-based statement for speed
+        del_stmt = delete(cls).where(cls.id.in_(candidates)).returning(cls.id)
+        res = await session.execute(del_stmt)
+        deleted_ids = res.scalars().all()
         await session.commit()
-        
-        return deleted_count
+        return len(deleted_ids)
     
 class TestJob(Job):
     __tablename__ = "vvs_test_jobs"
