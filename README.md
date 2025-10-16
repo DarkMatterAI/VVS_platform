@@ -1,13 +1,11 @@
 # VVS_V2
 
 todos
-    create HC job endpoint
-    export hc job results endpoint 
     bbknn endpoint
+        think about auto-clean up of assembly records in job delete
     documentation 
 
     known bugs
-        job cleanup removes HC iteration jobs because they have no plugin references
         rdkit plugins break with batch size override 
     performance
         speed up delete job speed for large record counts
@@ -17,9 +15,6 @@ todos
         BBKNN endpoints (or just api)
         move rdkit/qdrant code to db lib 
     HC job
-        refactor
-            do job level, not input level
-            maybe have local cache to lower redis hits?
         dagster sensor
             needs to handle job hierarchy
         dagster failure sensor
@@ -34,8 +29,6 @@ todos
             be able to export data by HCJob or HCInputJob 
         input format
             input pre-computed embeddings in addition to items 
-        optional args
-            k expansion on first query?
         misc
             check what happens when one input job gets 0 results (ie filter failure )
             possibly change mapper response schema to explicitly state assembly index
@@ -48,17 +41,11 @@ todos
         version pin on all requirements.txt
         better logs/less spam on executor
         qdrant collections after proper postgres persist 
-        "clear plugin records" function to remove items/etc
-            items with assembly won't auto-clear even after job/plugin deletion 
-        fix job cleanup
-            currently pulling any HC-related job with no plugin reference
-    update plugin type
-        new plugin type for custom update
     file organize
         move test modules into single folder
         move plugins into single folder 
     test gaps
-        anything on dagster
+        dagster
         qdrant upload failures 
     hanging design decisions
         vector database with multiple embeddings

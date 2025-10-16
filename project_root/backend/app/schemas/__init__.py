@@ -22,7 +22,10 @@ from vvs_database.schemas import (
     JobDBResponseUnion,
     JobStatus,
     JobType,
-    CreateQdrantUploadJob
+    CreateQdrantUploadJob,
+    HCJobCreate,
+    HCMapperJobCreate,
+    HCAssembledJobCreate,
 )
 
 from app.schemas.qdrant_plugin_schemas import (

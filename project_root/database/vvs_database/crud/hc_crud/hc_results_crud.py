@@ -22,9 +22,6 @@ from vvs_database.models import (
 from vvs_database.schemas.internal_schemas import InternalItem
 from vvs_database.utils import chunked, with_deadlock_retry, LOCK_NS, with_lock_and_retry
 
-# ────────────────────────────────────────────────────────────────────────────
-# 1. HCResult bulk‑upsert  (product vs assembly rows use different indexes)
-# ────────────────────────────────────────────────────────────────────────────
 async def _insert_hc_results_single(db: AsyncSession, rows, idx_cols, idx_where):
     if not rows:
         return []
@@ -99,10 +96,33 @@ async def upsert_hc_results(
     await db.flush()
     return id_map
 
+async def count_hc_job_results(
+    db,                       # AsyncSession
+    hc_job_id: int,
+    *,
+    only_valid: bool = False,
+) -> int:
+    """
+    Return the total number of HCResult rows for *hc_job_id*.
 
-# ────────────────────────────────────────────────────────────────────────────
-# 2. HCIterationResult bulk‑upsert (count accumulator)
-# ────────────────────────────────────────────────────────────────────────────
+    Args:
+        db:           SQLAlchemy ``AsyncSession``.
+        hc_job_id:    Parent HCJob primary-key.
+        only_valid:   If ``True``, count only rows where ``HCResult.valid = TRUE``.
+
+    Example
+    -------
+    >>> total = await count_hc_job_results(session, 42)
+    >>> valids = await count_hc_job_results(session, 42, only_valid=True)
+    """
+    stmt = select(func.count()).select_from(HCResult).where(HCResult.job_id == hc_job_id)
+
+    if only_valid:
+        stmt = stmt.where(HCResult.valid.is_(True))
+
+    return await db.scalar(stmt)
+
+
 async def _insert_iteration_single(db: AsyncSession, rows):
     stmt = (
         pg_insert(HCIterationResult)

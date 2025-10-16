@@ -81,11 +81,11 @@ from vvs_database.schemas.assembly_schemas import (
     NewAssembly
 )
 
-from vvs_database.schemas.connection_schemas import (
-    RabbitMQConnection,
-    RedisConnection,
-    PostgresConnection
-)
+# from vvs_database.schemas.connection_schemas import (
+#     RabbitMQConnection,
+#     RedisConnection,
+#     PostgresConnection
+# )
 
 from vvs_database.schemas.job_schemas import (
     JobDBResponse,
@@ -93,6 +93,19 @@ from vvs_database.schemas.job_schemas import (
     UserItem,
     CreateQdrantUploadJob,
     QdrantUploadInternal,
+)
+
+from vvs_database.schemas.hc_schemas import (
+    HCJobCreate,
+    HCMapperJobCreate,
+    HCAssembledJobCreate,
+    HCUpdateParams,
+    UpdateType,
+    HCConfigCreate,
+    HCAssembledConfigCreate,
+    HCMapperConfigCreate,
+    HCJobParams,
+    HCInputItem,
 )
 
 from vvs_database.schemas.internal_schemas import (
@@ -192,10 +205,10 @@ __all__ = [
     "ItemResponseUnion",
     "ExecuteResponseUnion",
 
-    # connections
-    "RabbitMQConnection",
-    "RedisConnection",
-    "PostgresConnection",
+    # # connections
+    # "RabbitMQConnection",
+    # "RedisConnection",
+    # "PostgresConnection",
 
     # job schemas
     "JobDBResponse",
@@ -203,6 +216,18 @@ __all__ = [
     "UserItem",
     "CreateQdrantUploadJob",
     "QdrantUploadInternal",
+
+    # hc job schemas
+    "HCJobCreate",
+    "HCMapperJobCreate",
+    "HCAssembledJobCreate",
+    "HCUpdateParams",
+    "UpdateType",
+    "HCConfigCreate",
+    "HCAssembledConfigCreate",
+    "HCMapperConfigCreate",
+    "HCJobParams",
+    "HCInputItem",
 
     # internal schemas
     "PluginOverrideParams",

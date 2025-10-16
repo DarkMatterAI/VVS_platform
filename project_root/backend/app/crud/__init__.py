@@ -12,6 +12,13 @@ from vvs_database.crud import (
     delete_file
 )
 
+from vvs_database.crud.hc_crud import (
+    create_hc_job,
+    fetch_hc_job_results,
+    count_hc_job_results,
+    export_hc_job_hierarchy
+)
+
 from app.crud import qdrant_crud, qdrant_utils
 from app.crud.plugin_crud import (
     handle_db_exception,

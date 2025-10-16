@@ -1,2 +1,6 @@
 from vvs_database.crud.hc_crud.hc_job_create import create_hc_job
-from vvs_database.crud.hc_crud.hc_results_crud import export_hc_job_hierarchy, fetch_hc_job_results
+from vvs_database.crud.hc_crud.hc_results_crud import (
+    export_hc_job_hierarchy, 
+    fetch_hc_job_results,
+    count_hc_job_results
+)

@@ -3,7 +3,8 @@ import asyncio
 from itertools import islice
 from typing import List, Iterable, Any
 
-from vvs_database.schemas import ExecuteRequestUnion, RabbitMQConnection
+from vvs_database.schemas import ExecuteRequestUnion #, RabbitMQConnection
+from vvs_database.execution.connections.connection_schemas import RabbitMQConnection
 from vvs_database import logging
 
 class RabbitMQService():

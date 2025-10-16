@@ -7,7 +7,8 @@ import random
 from redis.asyncio import Redis
 from typing import Optional, List, Dict, Any, Union 
 
-from vvs_database.schemas import RedisConnection
+# from vvs_database.schemas import RedisConnection
+from vvs_database.execution.connections.connection_schemas import RedisConnection
 from vvs_database import logging
 
 

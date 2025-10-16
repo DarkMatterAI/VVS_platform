@@ -4,6 +4,7 @@ from app.api.routes import (
     plugin_crud, 
     plugin_execute, 
     job_crud, 
+    hc_crud,
     core,
     s3_crud
 )
@@ -14,6 +15,7 @@ api_router.include_router(s3_crud.router, prefix="/files", tags=["files"])
 api_router.include_router(plugin_crud.router, prefix="/plugins", tags=["plugins"])
 api_router.include_router(plugin_execute.router, prefix="/execute", tags=["execute"])
 api_router.include_router(job_crud.router, prefix="/jobs", tags=["jobs"])
+api_router.include_router(hc_crud.router, prefix="/hc_jobs", tags=["hc-jobs"])
 
 config = utils.read_config()['plugins']
 if config.get('rdkit_plugin', {}).get('enabled', False):

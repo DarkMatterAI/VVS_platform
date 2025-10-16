@@ -8,7 +8,8 @@ import uuid
 from qdrant_client import AsyncQdrantClient, models
 
 from vvs_database.core import get_engine, get_session_factory
-from vvs_database.schemas import RabbitMQConnection, RedisConnection
+# from vvs_database.schemas import RabbitMQConnection, RedisConnection
+from vvs_database.execution.connections.connection_schemas import RabbitMQConnection, RedisConnection
 from vvs_database.execution.connections import DatabaseService, RabbitMQService, RedisService
 
 class PostgresResource(dg.ConfigurableResource):

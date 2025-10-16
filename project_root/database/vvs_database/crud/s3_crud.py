@@ -1,6 +1,7 @@
 import boto3 
 from botocore.exceptions import ClientError
-from vvs_database import logging, settings 
+from vvs_database import logging #, settings 
+from vvs_database.settings import settings 
 
 def add_s3_prefix(filename):
     if not filename.startswith(settings.S3_UPLOAD_PREFIX):

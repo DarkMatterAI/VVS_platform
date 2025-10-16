@@ -6,7 +6,10 @@ import itertools
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from vvs_database import Base, settings, schemas, crud
+# from vvs_database import Base, settings, schemas, crud
+from vvs_database import schemas, crud
+from vvs_database.settings import settings 
+from vvs_database.core import Base
 from vvs_database.testing import create_test_database_url, drop_test_database
 
 _item_counter = itertools.count(1)
