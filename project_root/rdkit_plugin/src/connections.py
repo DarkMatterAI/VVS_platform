@@ -3,7 +3,6 @@ from sqlalchemy import text
 from cachetools import cached
 from cachetools.keys import hashkey
 
-# from vvs_database import settings 
 from vvs_database.settings import settings 
 
 from .utils import date_print

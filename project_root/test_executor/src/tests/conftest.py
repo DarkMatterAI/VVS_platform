@@ -19,7 +19,6 @@ def event_loop():
 
 @pytest_asyncio.fixture(scope="session")
 async def test_engine():
-    # from vvs_database import settings
     from vvs_database.settings import settings 
     engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URL)
     yield engine

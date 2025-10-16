@@ -6,7 +6,6 @@ import itertools
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-# from vvs_database import Base, settings, schemas, crud
 from vvs_database import schemas, crud
 from vvs_database.settings import settings 
 from vvs_database.core import Base

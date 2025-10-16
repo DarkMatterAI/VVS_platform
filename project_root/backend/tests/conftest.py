@@ -8,11 +8,9 @@ from sqlalchemy.orm import sessionmaker
 from app.main import app
 from app.core.database import get_db
 
-# from vvs_database import settings 
 from vvs_database.settings import settings 
 from vvs_database import schemas 
 from vvs_database.core import Base
-# from vvs_database import Base, schemas
 from vvs_database.testing import create_test_database_url, drop_test_database
 
 _embedding_counter = itertools.count(1)

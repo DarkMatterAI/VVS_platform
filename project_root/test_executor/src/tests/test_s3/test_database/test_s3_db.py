@@ -7,7 +7,6 @@ from vvs_database.crud.s3_crud import (
     upload_file,
     delete_file
 )
-# from vvs_database import settings 
 from vvs_database.settings import settings 
 
 test_files = '/code/test_files'

@@ -81,12 +81,6 @@ from vvs_database.schemas.assembly_schemas import (
     NewAssembly
 )
 
-# from vvs_database.schemas.connection_schemas import (
-#     RabbitMQConnection,
-#     RedisConnection,
-#     PostgresConnection
-# )
-
 from vvs_database.schemas.job_schemas import (
     JobDBResponse,
     JobDBResponseUnion,

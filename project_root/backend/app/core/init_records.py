@@ -3,7 +3,6 @@ import logging
 
 from app import utils
 from app import crud 
-# from vvs_database import settings, logging 
 from vvs_database import logging 
 from vvs_database.settings import settings 
 from app.core.database import get_db, launch_config 

@@ -1,6 +1,5 @@
 from aioredis import Redis
 from vvs_database.core import get_engine, get_session_factory, create_all_tables
-# from vvs_database import settings, logging
 from vvs_database import logging
 from vvs_database.settings import settings 
 from vvs_database.crud import get_s3_client, init_bucket
