@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 WORKDIR /code
 
-COPY ./rdkit_plugin/requirements.txt /code/requirements.txt
+COPY ./plugins/rdkit_plugin/requirements.txt /code/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 RUN apt-get update && \
@@ -19,9 +19,9 @@ ENV PYTHONPATH="${PYTHONPATH}:/code"
 COPY ./database /code/database
 RUN pip install -e /code/database
 
-COPY ./rdkit_plugin/src /code/src
+COPY ./plugins/rdkit_plugin/src /code/src
 
-COPY ./rdkit_plugin/tests /code/tests 
+COPY ./plugins/rdkit_plugin/tests /code/tests 
 
 RUN chmod +x /code/tests/run_tests.sh
 

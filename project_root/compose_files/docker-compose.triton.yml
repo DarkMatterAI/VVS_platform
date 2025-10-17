@@ -1,7 +1,7 @@
 services:
   triton_plugin:
     build:
-      context: ../triton_plugin 
+      context: ../plugins/triton_plugin 
       dockerfile: triton_plugin.Dockerfile 
     profiles: [plugin, triton_plugin]
     env_file:

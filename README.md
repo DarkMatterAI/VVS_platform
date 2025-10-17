@@ -9,11 +9,6 @@ todos
         rdkit plugins break with batch size override 
     performance
         speed up delete job speed for large record counts
-    backend
-        HC jobs endpoints
-        export HC results endpoint
-        BBKNN endpoints (or just api)
-        move rdkit/qdrant code to db lib 
     HC job
         dagster sensor
             needs to handle job hierarchy
@@ -43,7 +38,6 @@ todos
         qdrant collections after proper postgres persist 
     file organize
         move test modules into single folder
-        move plugins into single folder 
     test gaps
         dagster
         qdrant upload failures 
@@ -56,14 +50,18 @@ todos
             check plugin exeuction failures during jobs are being accurately tracked
 
 
-documentation notes
-    backend
-    message consumer
-        role of main/dlx/alt queue
-    plugin integration
+documentation
+    setup / teardown 
+    adding plugins
+        queue
+        api
+    VVS job
+        via python
+        via json
+        parameters
     plugins
         rdkit
-            reactions assume no reagents 
+        qdrant
+        triton
         tei
-        triton 
-
+    system design

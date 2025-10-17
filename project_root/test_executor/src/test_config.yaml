@@ -10,8 +10,8 @@
 #     unit_test: False 
 #     integration_test: False 
 #   triton_plugin:
-#     unit_test: False 
-#     integration_test: False 
+#     unit_test: True 
+#     integration_test: True 
 # jobs: # note job tests require one of tmp_services to have enabled=True
 #   hc_job:
 #     run_tests: False 
@@ -20,7 +20,7 @@
 #     enabled: False
 #     run_tests: False
 #   test_server:
-#     enabled: False
+#     enabled: True
 #     run_tests: False
 
 services:

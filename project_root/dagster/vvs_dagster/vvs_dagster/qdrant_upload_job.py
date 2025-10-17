@@ -244,7 +244,7 @@ def qdrant_upload_job():
 
 @dg.sensor(job=qdrant_upload_job,
            minimum_interval_seconds=60,
-        #    default_status=dg.DefaultSensorStatus.RUNNING,
+           default_status=dg.DefaultSensorStatus.RUNNING,
            )
 def qdrant_upload_sensor(context: dg.SensorEvaluationContext,
                          postgres_resource: PostgresResource):

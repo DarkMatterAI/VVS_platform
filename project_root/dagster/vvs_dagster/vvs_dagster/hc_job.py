@@ -125,7 +125,7 @@ def hc_job():
 
 @dg.sensor(job=hc_job,
            minimum_interval_seconds=5,
-        #    default_status=dg.DefaultSensorStatus.RUNNING,
+           default_status=dg.DefaultSensorStatus.RUNNING,
            )
 def hc_sensor(context: dg.SensorEvaluationContext,
               postgres_resource: PostgresResource):
