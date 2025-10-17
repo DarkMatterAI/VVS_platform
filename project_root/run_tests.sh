@@ -2,7 +2,7 @@
 
 CONFIG_FILE="test_config.yaml"
 META_CONFIG_FILE="test_config_meta.yaml"
-INTEGRATION_EXECUTOR_DIR="./test_executor/src/"
+INTEGRATION_EXECUTOR_DIR="./tests/test_executor/src/"
 
 # Read unit test services
 unit_test_services=($(yq e '.services[] | select(.unit_test == True) | path | .[1]' "$CONFIG_FILE"))

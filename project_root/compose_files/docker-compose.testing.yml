@@ -2,7 +2,7 @@ services:
   test_server:
     build:
       context: ../
-      dockerfile: test_server/test_server.Dockerfile 
+      dockerfile: tests/test_server/test_server.Dockerfile 
     container_name: test_server
     profiles: [testing, test_server]
     env_file:
@@ -28,8 +28,8 @@ services:
 
   test_consumer:
     build:
-      context: ../test_consumer
-      dockerfile: test_consumer.Dockerfile 
+      context: ../
+      dockerfile: tests/test_consumer/test_consumer.Dockerfile 
     container_name: test_consumer
     profiles: [testing, test_consumer]
     env_file:
@@ -43,7 +43,7 @@ services:
   test_executor:
     build:
       context: ../ 
-      dockerfile: test_executor/test_executor.Dockerfile 
+      dockerfile: tests/test_executor/test_executor.Dockerfile 
     container_name: test_executor 
     profiles: [test_executor, integration_test]
     env_file:

@@ -3,7 +3,7 @@
 CONFIG_FILE="launch_config.yaml"
 META_CONFIG_FILE="launch_config_meta.yaml"
 BACKEND_APP_DIR="./backend/app"
-INTEGRATION_TEST_DIR="./test_executor/src"
+INTEGRATION_TEST_DIR="./tests/test_executor/src"
 
 get_enabled_profiles() {
     # Get enabled services into an array
