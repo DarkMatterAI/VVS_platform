@@ -28,7 +28,6 @@ from vvs_database.schemas import (
 )
 from vvs_database.models import Plugin
 from vvs_database import logging 
-# from vvs_database.execution.execution_strategy import StrategyResponse
 
 class DatabaseService:
     """Service for database operations related to plugin execution"""
@@ -119,6 +118,10 @@ class DatabaseService:
 
         for request, response, valid_ex in zip(requests, results, valid_execution):
             if not valid_ex:
+                continue 
+
+            if request.item_data.item_id == -1:
+                # skip dummy
                 continue 
 
             result_data = {"item_id": request.item_data.item_id,

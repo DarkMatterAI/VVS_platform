@@ -1,67 +1,25 @@
-# VVS_V2
+# VVS Platform 
 
-todos
-    bbknn endpoint
-        think about auto-clean up of assembly records in job delete
-    documentation 
+Vector Virtual Screening (VVS) Platform, implementing the VVS algorithm from the paper [Efficient Search of Ultra-Large Synthesis On-Demand Libraries with Chemical Language Models](https://www.biorxiv.org/content/10.1101/2025.09.04.674350v1).
 
-    known bugs
-        rdkit plugins break with batch size override 
-    performance
-        speed up delete job speed for large record counts
-    HC job
-        dagster sensor
-            needs to handle job hierarchy
-        dagster failure sensor
-            needs to handle job hierarchy, remove all semaphores
-        results tracking
-            ability to dump iteration state into json and save to postgres
-            remove HCIterationResult
-            final iteration should create a "next iteration" to save next query/grad
-            add execution time tracking for different steps 
-        data export
-            backend api for data export
-            be able to export data by HCJob or HCInputJob 
-        input format
-            input pre-computed embeddings in addition to items 
-        misc
-            check what happens when one input job gets 0 results (ie filter failure )
-            possibly change mapper response schema to explicitly state assembly index
-    qdrant job
-        need to control concurrent jobs
-            semaphore or dagster limit 
-    rdkit plugin
-        deduplicate reaction list
-    misc 
-        version pin on all requirements.txt
-        better logs/less spam on executor
-        qdrant collections after proper postgres persist 
-    file organize
-        move test modules into single folder
-    test gaps
-        dagster
-        qdrant upload failures 
-    hanging design decisions
-        vector database with multiple embeddings
-            does it work for HC/qdrant upload?
-        HC update
-            does it work to return multiple update outputs? ie fan out
-        crud
-            check plugin exeuction failures during jobs are being accurately tracked
+Code subject to change during peer review process.
 
+See `./docs` folder for setup and other instructions 
 
-documentation
-    setup / teardown 
-    adding plugins
-        queue
-        api
-    VVS job
-        via python
-        via json
-        parameters
-    plugins
-        rdkit
-        qdrant
-        triton
-        tei
-    system design
+## Bibtex
+
+```
+@UNPUBLISHED{Heyer2025-vx,
+  title     = {"Efficient search of ultra-large synthesis on-demand libraries
+               with chemical language models"},
+  author    = {"Heyer, Karl and Yang, David and Diaz, Daniel J"},
+  journal   = {"bioRxiv"},
+  month     = {sep},
+  year      = {2025},
+  url       = {https://www.biorxiv.org/content/10.1101/2025.09.04.674350v1}
+}
+```
+
+## License
+For non-commercial academic use, this project is licensed under [the 2-clause BSD License](https://opensource.org/license/bsd-2-clause). 
+For commercial use, please contact [Karl Heyer](mailto:karl@darkmatterai.xyz).

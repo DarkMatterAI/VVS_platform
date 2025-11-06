@@ -51,10 +51,10 @@ async def execute_plugin(db: AsyncSession,
                          ):
     try:
         response = await execution.execute_plugin(db, 
-                                                    plugin_id,
-                                                    execute_request,
-                                                    execute_params,
-                                                    log_id='backend')
+                                                  plugin_id,
+                                                  execute_request,
+                                                  execute_params,
+                                                  log_id='backend')
         return response 
     except AssertionError as e:
         raise HTTPException(status_code=502, detail=str(e))
