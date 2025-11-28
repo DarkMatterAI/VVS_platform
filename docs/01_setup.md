@@ -25,7 +25,13 @@
 
 ---
 
-## 2) Teardown
+## 2) Main Endpoints
+
+View backend API schema at `http://localhost:{NGINX_HTTP_PORT}/docs#/`
+
+View Dagster dashboard at `http://localhost:{NGINX_HTTP_PORT}/dagster/`
+
+## 3) Teardown
 
 Shut down and remove the stack:
 
