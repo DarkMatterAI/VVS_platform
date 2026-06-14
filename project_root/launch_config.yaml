@@ -1,13 +1,3 @@
-# plugins:
-#   qdrant_plugin:
-#     enabled: False
-#   tei_plugin:
-#     enabled: False
-#   rdkit_plugin:
-#     enabled: False
-#   triton_plugin:
-#     enabled: False
-
 plugins:
   qdrant_plugin:
     enabled: True

@@ -1,28 +1,3 @@
-# services:
-#   backend:
-#     unit_test: False 
-#     integration_test: False 
-#   qdrant_plugin:
-#     integration_test: False   
-#   tei_plugin:
-#     integration_test: False 
-#   rdkit_plugin:
-#     unit_test: False 
-#     integration_test: False 
-#   triton_plugin:
-#     unit_test: False 
-#     integration_test: False 
-# jobs: # note job tests require one of tmp_services to have enabled=True
-#   hc_job:
-#     run_tests: False 
-# temp_services:
-#   test_consumer:
-#     enabled: True
-#     run_tests: True
-#   test_server:
-#     enabled: True
-#     run_tests: True
-
 services:
   backend:
     unit_test: True 
