@@ -256,6 +256,7 @@ This triggers a Dagster run that can be viewed at `http://localhost:3000/dagster
 ```python
 from vvs_database.schemas import TERMINAL_STATUSES
 import time
+import json
 
 print("Waiting on job")
 while True:
@@ -283,7 +284,12 @@ while (total is None) or (offset < total):
     offset += limit
     
 print(all_results[0])
+
+with open("demo_results.json", "w", encoding="utf-8") as file:
+    json.dump(all_results, file, indent=4)
 ```
+
+An example of the results can be found at `demo_files/demo_results.json`. As the search process is somewhat stochastic, exact results may differ.
 
 ## Iterative Search
 
