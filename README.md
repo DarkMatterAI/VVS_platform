@@ -4,7 +4,7 @@ Vector Virtual Screening (VVS) Platform, implementing the VVS algorithm from the
 
 Code subject to change during peer review process.
 
-See `./docs` folder for setup and other instructions 
+See `./docs` folder for setup, software demo, and other instructions 
 
 ## Bibtex
 
